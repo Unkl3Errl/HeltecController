@@ -6,8 +6,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.wifi.WifiNetworkSpecifier
-import android.os.Handler
-import android.os.Looper
 
 class BruceNetworkManager(
     context: Context,
@@ -21,29 +19,17 @@ class BruceNetworkManager(
 
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    private val handler = Handler(Looper.getMainLooper())
     private var callback: ConnectivityManager.NetworkCallback? = null
-    private var requestedSsid: String? = null
-    private var requestedPassword: String = ""
-    private val reconnect = Runnable { requestInternal() }
 
     fun request(ssid: String, password: String) {
         if (ssid.isBlank()) {
             listener.onBruceNetworkError("Enter the BruceNet SSID")
             return
         }
-        requestedSsid = ssid
-        requestedPassword = password
-        handler.removeCallbacks(reconnect)
-        requestInternal()
-    }
-
-    private fun requestInternal() {
-        val ssid = requestedSsid ?: return
         releaseCallback()
 
         val specifierBuilder = WifiNetworkSpecifier.Builder().setSsid(ssid)
-        if (requestedPassword.isNotBlank()) specifierBuilder.setWpa2Passphrase(requestedPassword)
+        if (password.isNotBlank()) specifierBuilder.setWpa2Passphrase(password)
 
         val request = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
@@ -54,20 +40,22 @@ class BruceNetworkManager(
         val networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 if (callback !== this) return
-                handler.removeCallbacks(reconnect)
                 listener.onBruceNetworkAvailable(network)
             }
 
             override fun onLost(network: Network) {
                 if (callback !== this) return
+                // Network specifier requests can show system UI; retry only after a user gesture.
+                releaseCallback(this)
                 listener.onBruceNetworkLost()
-                scheduleReconnect()
             }
 
             override fun onUnavailable() {
                 if (callback !== this) return
-                listener.onBruceNetworkError("BruceNet is unavailable; retrying local link")
-                scheduleReconnect()
+                releaseCallback(this)
+                listener.onBruceNetworkError(
+                    "BruceNet connection was canceled or is unavailable; tap Detect BruceNet to retry",
+                )
             }
         }
         callback = networkCallback
@@ -75,20 +63,13 @@ class BruceNetworkManager(
     }
 
     fun release() {
-        requestedSsid = null
-        requestedPassword = ""
-        handler.removeCallbacks(reconnect)
         releaseCallback()
     }
 
-    private fun releaseCallback() {
-        callback?.let { runCatching { connectivityManager.unregisterNetworkCallback(it) } }
+    private fun releaseCallback(expected: ConnectivityManager.NetworkCallback? = null) {
+        val active = callback ?: return
+        if (expected != null && active !== expected) return
         callback = null
-    }
-
-    private fun scheduleReconnect() {
-        if (requestedSsid == null) return
-        handler.removeCallbacks(reconnect)
-        handler.postDelayed(reconnect, 2_000L)
+        runCatching { connectivityManager.unregisterNetworkCallback(active) }
     }
 }

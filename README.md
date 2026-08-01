@@ -113,7 +113,7 @@ From this directory with Android SDK 35 installed:
 
 The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.6.0`, code 10.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.6.1`, code 11.
 This preserves update continuity with the permanent Heltec Controller signing
 identity. Release builds use the four `HELTEC_RELEASE_*` environment variables
 documented in [`SIGNING.md`](SIGNING.md); without all four, Gradle deliberately
