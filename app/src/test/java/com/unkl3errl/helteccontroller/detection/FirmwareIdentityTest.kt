@@ -42,9 +42,17 @@ class FirmwareIdentityTest {
     }
 
     @Test fun verifiesTheUnauthenticatedBruceLoginSignature() {
-        val login = "<html><head><title>Bruce</title></head><form action=\"/login\"></form></html>"
-        assertTrue(FirmwareIdentity.isBruceWebUi(200, login))
-        assertFalse(FirmwareIdentity.isBruceWebUi(302, login))
+        val quoted = "<html><head><title>Bruce</title></head><form action=\"/login\"></form></html>"
+        val minified = "<html><head><title>Bruce</title></head><form action=/login method=POST></form></html>"
+        assertTrue(FirmwareIdentity.isBruceWebUi(200, quoted))
+        assertTrue(FirmwareIdentity.isBruceWebUi(200, minified))
+        assertFalse(FirmwareIdentity.isBruceWebUi(302, minified))
         assertFalse(FirmwareIdentity.isBruceWebUi(200, "<title>Router</title>"))
+        assertFalse(
+            FirmwareIdentity.isBruceWebUi(
+                200,
+                "<title>Bruce</title><form action=/login-attacker></form>",
+            ),
+        )
     }
 }

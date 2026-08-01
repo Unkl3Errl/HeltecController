@@ -11,6 +11,9 @@ data class FirmwareDetection(
 )
 
 object FirmwareIdentity {
+    private val bruceLoginAction = Regex(
+        """(?i)\baction\s*=\s*(?:[\"']/login[\"']|/login(?=\s|>))""",
+    )
     private val bruceSignatures = listOf(
         Regex("(?im)^Bruce\\s+v[^\\r\\n]*$"),
         Regex("(?im)^Device:\\s*HELTEC(?:[-_ ]|$)"),
@@ -34,5 +37,5 @@ object FirmwareIdentity {
     fun isBruceWebUi(status: Int, body: String): Boolean =
         status == 200 &&
             body.contains("<title>Bruce</title>", ignoreCase = true) &&
-            body.contains("action=\"/login\"", ignoreCase = true)
+            bruceLoginAction.containsMatchIn(body)
 }

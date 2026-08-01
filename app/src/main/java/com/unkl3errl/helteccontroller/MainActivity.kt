@@ -76,6 +76,11 @@ class MainActivity :
     private var pendingMarauderExportPath: String? = null
     private var phoneGpsRequested = false
 
+    @Suppress("DEPRECATION")
+    private val controllerVersionName: String by lazy {
+        packageManager.getPackageInfo(packageName, 0).versionName ?: "?"
+    }
+
     private val phoneLocationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) = bruceController.submitPhoneLocation(location)
     }
@@ -326,7 +331,7 @@ class MainActivity :
         }
         detectionStatus.text =
             "Verified ${detection.kind.displayName} via $source · ${detection.evidence}"
-        appSubtitle.text = "CONTROLLER 0.5.0 // ${detection.kind.displayName.uppercase()}"
+        setControllerSubtitle(detection.kind.displayName.uppercase())
         setGlobalStatus("${detection.kind.displayName.uppercase()} READY")
         tabBruce.isEnabled = detection.kind == FirmwareKind.BRUCE
         tabMarauder.isEnabled = detection.kind == FirmwareKind.MARAUDER
@@ -344,12 +349,16 @@ class MainActivity :
         detectedFirmware = null
         stopPhoneGps()
         detectionStatus.text = message
-        appSubtitle.text = "CONTROLLER 0.5.0 // DETECTING"
+        setControllerSubtitle("DETECTING")
         tabBruce.isEnabled = false
         tabMarauder.isEnabled = false
         setTabAppearance(FirmwareKind.UNKNOWN)
         container.removeAllViews()
         setGlobalStatus("UNKNOWN")
+    }
+
+    private fun setControllerSubtitle(state: String) {
+        appSubtitle.text = "CONTROLLER $controllerVersionName // $state"
     }
 
     private fun showScreen(view: View, selected: FirmwareKind) {
