@@ -30,7 +30,9 @@ class BruceApiClient {
         get() = sessionCookie != null
 
     fun configure(url: String) {
-        baseUrl = url.trim().trimEnd('/').ifBlank { "http://172.0.0.1" }
+        val normalized = url.trim().trimEnd('/').ifBlank { "http://172.0.0.1" }
+        if (normalized != baseUrl) sessionCookie = null
+        baseUrl = normalized
     }
 
     fun displayUrl(): String = baseUrl
