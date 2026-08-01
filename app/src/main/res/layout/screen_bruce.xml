@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:paddingLeft="14dp"
+    android:paddingTop="10dp"
+    android:paddingRight="14dp"
+    android:paddingBottom="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DEVICE LINK" />
+
+            <TextView
+                android:id="@+id/bruceConnectionStatus"
+                style="@style/BodyText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Not connected" />
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="12dp"
+                android:text="Bruce-only Heltec V4 firmware with authenticated WebUI control and reset-resistant GPS/BLE field logs." />
+
+            <EditText
+                android:id="@+id/bruceSsid"
+                style="@style/InputField"
+                android:hint="Device Wi-Fi network"
+                android:inputType="text"
+                android:text="BruceNet" />
+
+            <EditText
+                android:id="@+id/bruceWifiPassword"
+                style="@style/InputField"
+                android:hint="Device Wi-Fi password"
+                android:inputType="textPassword"
+                android:text="brucenet" />
+
+            <Button
+                android:id="@+id/bruceJoinWifi"
+                style="@style/ActionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="JOIN DEVICE WI-FI" />
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="12dp"
+                android:text="Android will show a system approval dialog. Supported phones can keep mobile internet active while this local link is open." />
+
+            <EditText
+                android:id="@+id/bruceBaseUrl"
+                style="@style/InputField"
+                android:hint="WebUI address"
+                android:inputType="textUri"
+                android:text="http://172.0.0.1" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/bruceUsername"
+                    style="@style/InputField"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="4dp"
+                    android:layout_weight="1"
+                    android:hint="Username"
+                    android:inputType="text"
+                    android:text="admin" />
+
+                <EditText
+                    android:id="@+id/bruceWebPassword"
+                    style="@style/InputField"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="4dp"
+                    android:layout_weight="1"
+                    android:hint="Password"
+                    android:inputType="textPassword"
+                    android:text="bruce" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/bruceLogin"
+                    style="@style/ActionButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="4dp"
+                    android:layout_weight="1"
+                    android:text="LOGIN" />
+
+                <Button
+                    android:id="@+id/bruceRefresh"
+                    style="@style/SecondaryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="4dp"
+                    android:layout_weight="1"
+                    android:text="REFRESH ALL" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BRUCENET REMOTE" />
+
+            <TextView
+                android:id="@+id/bruceRemoteStatus"
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Log in to load the Bruce vector display." />
+
+            <com.unkl3errl.helteccontroller.bruce.BruceRemoteView
+                android:id="@+id/bruceRemoteScreen"
+                android:layout_width="match_parent"
+                android:layout_height="190dp"
+                android:layout_marginTop="8dp"
+                android:background="#000000" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/bruceRemotePrev" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="PREV" />
+                <Button android:id="@+id/bruceRemoteUp" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_marginRight="3dp" android:layout_weight="1" android:text="UP" />
+                <Button android:id="@+id/bruceRemoteNext" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="NEXT" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/bruceRemoteBack" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="BACK" />
+                <Button android:id="@+id/bruceRemoteSelect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_marginRight="3dp" android:layout_weight="1" android:text="SELECT" />
+                <Button android:id="@+id/bruceRemoteDown" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="DOWN" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/bruceRemoteRefresh" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="REFRESH SCREEN" />
+                <Button android:id="@+id/bruceFileManager" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="LITTLEFS FILES" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="The remote can reach compiled Bruce tools. Review every selected function and use active network/radio tools only with authorization." />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BRUCE USB CONSOLE" />
+
+            <TextView
+                android:id="@+id/bruceUsbStatus"
+                style="@style/BodyText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No Bruce USB device connected" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/bruceUsbConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="CONNECT USB" />
+                <Button android:id="@+id/bruceUsbDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="DISCONNECT" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/bruceUsbHelp" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="2dp" android:layout_weight="1" android:text="HELP" />
+                <Button android:id="@+id/bruceUsbInfo" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="2dp" android:layout_marginRight="2dp" android:layout_weight="1" android:text="INFO" />
+                <Button android:id="@+id/bruceUsbUptime" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="2dp" android:layout_marginRight="2dp" android:layout_weight="1" android:text="UPTIME" />
+                <Button android:id="@+id/bruceUsbFree" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="2dp" android:layout_weight="1" android:text="MEMORY" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/bruceUsbOptions"
+                style="@style/SecondaryButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="READ CURRENT MENU OPTIONS" />
+
+            <TextView
+                android:id="@+id/bruceUsbConsole"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:background="@drawable/input_bg"
+                android:fontFamily="monospace"
+                android:gravity="top|left"
+                android:padding="10dp"
+                android:scrollbars="vertical"
+                android:text="Connect the Bruce device to begin."
+                android:textColor="@color/text"
+                android:textIsSelectable="true"
+                android:textSize="11sp" />
+
+            <EditText
+                android:id="@+id/bruceUsbCommand"
+                style="@style/InputField"
+                android:layout_marginTop="8dp"
+                android:hint="Bruce serial command"
+                android:inputType="text" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/bruceUsbSend" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="SEND" />
+                <Button android:id="@+id/bruceUsbClear" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="CLEAR CONSOLE" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Read-only commands send immediately. Unknown commands require review; known state-changing, script, storage-write, radio, or network commands require typed AUTHORIZE confirmation." />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SYSTEM + GPS" />
+
+            <TextView
+                android:id="@+id/bruceSystemStatus"
+                style="@style/BodyText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Connect and log in to read device telemetry." />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/bruceGpsStart" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="GPS ON" />
+                <Button android:id="@+id/bruceGpsStop" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_marginRight="3dp" android:layout_weight="1" android:text="GPS OFF" />
+                <Button android:id="@+id/bruceGpsTrack" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="TRACK" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FIELD LOGGER" />
+
+            <TextView
+                android:id="@+id/bruceLoggerStatus"
+                style="@style/BodyText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Logger status unavailable" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <Switch android:id="@+id/loggerGps" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:checked="true" android:text="GPS" android:textColor="@color/text" />
+                <Switch android:id="@+id/loggerBle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:checked="true" android:text="BLE" android:textColor="@color/text" />
+                <Switch android:id="@+id/loggerResume" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:checked="true" android:text="Resume" android:textColor="@color/text" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/loggerStart" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="START" />
+                <Button android:id="@+id/loggerStop" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_marginRight="3dp" android:layout_weight="1" android:text="STOP" />
+                <Button android:id="@+id/loggerFiles" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="EXPORT" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/brucePhoneGpsStatus"
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Phone GPS assist off · requires an active logger with GPS selected" />
+
+            <Button
+                android:id="@+id/brucePhoneGpsToggle"
+                style="@style/SecondaryButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="START PHONE GPS ASSIST" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SX1262 LORA" />
+
+            <TextView
+                android:id="@+id/bruceLoraStatus"
+                style="@style/BodyText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="LoRa status unavailable" />
+
+            <EditText
+                android:id="@+id/loraFrequency"
+                style="@style/InputField"
+                android:layout_marginTop="10dp"
+                android:hint="Frequency MHz"
+                android:inputType="numberDecimal"
+                android:text="915.0" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/loraStart" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="START RX" />
+                <Button android:id="@+id/loraStop" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_marginRight="3dp" android:layout_weight="1" android:text="STOP RX" />
+                <Button android:id="@+id/loraHistory" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="HISTORY" />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/loraPayload"
+                style="@style/InputField"
+                android:layout_marginTop="10dp"
+                android:hint="Printable ASCII payload"
+                android:inputType="text"
+                android:maxLength="64" />
+
+            <Button
+                android:id="@+id/loraTransmit"
+                style="@style/DangerButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TRANSMIT AT +2 DBM" />
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Transmission requires the receiver to be active plus a typed confirmation. Use only on frequencies and systems you are authorized to test." />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <Button android:id="@+id/bruceOpenWebUi" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="4dp" android:layout_weight="1" android:text="OPEN WEBUI" />
+            <Button android:id="@+id/bruceRestart" style="@style/DangerButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="4dp" android:layout_weight="1" android:text="RESTART" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
