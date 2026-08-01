@@ -324,8 +324,16 @@
 
                 <Switch android:id="@+id/loggerGps" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:checked="true" android:text="GPS" android:textColor="@color/text" />
                 <Switch android:id="@+id/loggerBle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:checked="true" android:text="BLE" android:textColor="@color/text" />
-                <Switch android:id="@+id/loggerResume" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:checked="true" android:text="Resume" android:textColor="@color/text" />
+                <Switch android:id="@+id/loggerWifi" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:checked="true" android:text="Wi-Fi" android:textColor="@color/text" />
             </LinearLayout>
+
+            <Switch
+                android:id="@+id/loggerResume"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="Resume session after device reset"
+                android:textColor="@color/text" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -352,6 +360,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="START PHONE GPS ASSIST" />
+
+            <TextView
+                android:id="@+id/brucePhoneWifiStatus"
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Phone Wi-Fi logging off · select Wi-Fi before starting the logger" />
         </LinearLayout>
 
         <LinearLayout

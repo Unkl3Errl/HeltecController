@@ -12,17 +12,30 @@ import android.widget.Toast
 import com.unkl3errl.helteccontroller.bruce.BruceCommandRisk
 import com.unkl3errl.helteccontroller.bruce.BruceCommandSafety
 import com.unkl3errl.helteccontroller.bruce.BruceUsbSerial
+import org.json.JSONObject
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 class BruceUsbConsoleController(
     private val activity: Activity,
     root: View,
     private val setGlobalStatus: (String) -> Unit,
+    private val bridgeState: (Boolean, String) -> Unit,
 ) : BruceUsbSerial.Listener {
     private val status: TextView = root.findViewById(R.id.bruceUsbStatus)
     private val console: TextView = root.findViewById(R.id.bruceUsbConsole)
     private val input: EditText = root.findViewById(R.id.bruceUsbCommand)
     private val serial = BruceUsbSerial(activity, this)
     private val buffer = StringBuilder("Connect the Bruce device to begin.\n")
+    private val bridgeBuffer = StringBuilder()
+    private val bridgeRequests = ConcurrentHashMap<Long, CompletableFuture<JSONObject>>()
+    private val bridgeSequence = AtomicLong()
+
+    val isBridgeConnected: Boolean get() = serial.isConnected
 
     init {
         console.movementMethod = ScrollingMovementMethod()
@@ -47,7 +60,37 @@ class BruceUsbConsoleController(
         bind(root, R.id.bruceUsbOptions, "optionsJSON")
     }
 
-    fun destroy() = serial.destroy()
+    fun destroy() {
+        failBridgeRequests("Bruce USB bridge closed")
+        serial.destroy()
+    }
+
+    fun connectBridge() = serial.connect()
+
+    fun bridgeRequest(
+        action: String,
+        values: Map<String, String> = emptyMap(),
+        timeoutMs: Long = 7_000L,
+    ): JSONObject {
+        if (!serial.isConnected) throw IllegalStateException("Connect the Bruce USB device first")
+        require(action in BRIDGE_ACTIONS) { "Unsupported USB bridge action" }
+        val id = bridgeSequence.incrementAndGet()
+        val future = CompletableFuture<JSONObject>()
+        bridgeRequests[id] = future
+        val form = values.entries.joinToString("&") { (key, value) ->
+            "${encode(key)}=${encode(value)}"
+        }
+        val command = buildString {
+            append("@HELTEC-BRIDGE ").append(id).append(' ').append(action)
+            if (form.isNotEmpty()) append(' ').append(form)
+        }
+        serial.writeCommand(command)
+        return try {
+            future.get(timeoutMs, TimeUnit.MILLISECONDS)
+        } finally {
+            bridgeRequests.remove(id)
+        }
+    }
 
     private fun bind(root: View, id: Int, command: String) {
         root.findViewById<Button>(id).setOnClickListener { sendGuarded(command) }
@@ -109,16 +152,20 @@ class BruceUsbConsoleController(
     }
 
     override fun onBruceUsbStatus(message: String, connected: Boolean) = activity.runOnUiThread {
+        if (!connected) failBridgeRequests(message)
         status.text = message
         setGlobalStatus(if (connected) "BRUCE USB" else "IDLE")
         append("\n[link] $message\n")
+        bridgeState(connected, message)
     }
 
-    override fun onBruceUsbData(data: ByteArray) = activity.runOnUiThread {
-        append(data.toString(Charsets.UTF_8))
+    override fun onBruceUsbData(data: ByteArray) {
+        parseBridgeData(data.toString(Charsets.UTF_8))
+        activity.runOnUiThread { append(data.toString(Charsets.UTF_8)) }
     }
 
     override fun onBruceUsbError(message: String) = activity.runOnUiThread {
+        failBridgeRequests(message)
         append("\n[error] $message\n")
         setGlobalStatus("USB ERROR")
         toast(message)
@@ -136,4 +183,47 @@ class BruceUsbConsoleController(
 
     private fun toast(message: String) =
         Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
+
+    private fun parseBridgeData(text: String) {
+        synchronized(bridgeBuffer) {
+            bridgeBuffer.append(text.replace("\u0000", ""))
+            while (true) {
+                val end = bridgeBuffer.indexOf("\n")
+                if (end < 0) break
+                val line = bridgeBuffer.substring(0, end).trim()
+                bridgeBuffer.delete(0, end + 1)
+                if (!line.startsWith("@HELTEC-BRIDGE ")) continue
+                val fields = line.split(' ', limit = 4)
+                if (fields.size != 4) continue
+                val id = fields[1].toLongOrNull() ?: continue
+                val future = bridgeRequests[id] ?: continue
+                val payload = runCatching { JSONObject(fields[3]) }.getOrElse {
+                    JSONObject().put("error", "Malformed USB bridge response")
+                }
+                if (fields[2] == "OK") future.complete(payload)
+                else future.completeExceptionally(
+                    IllegalStateException(payload.optString("error", "USB bridge request failed")),
+                )
+            }
+            if (bridgeBuffer.length > 32_768) bridgeBuffer.delete(0, bridgeBuffer.length - 8_192)
+        }
+    }
+
+    private fun failBridgeRequests(message: String) {
+        bridgeRequests.values.forEach { it.completeExceptionally(IllegalStateException(message)) }
+        bridgeRequests.clear()
+    }
+
+    private fun encode(value: String): String =
+        URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+
+    private companion object {
+        val BRIDGE_ACTIONS = setOf(
+            "logger-start",
+            "logger-stop",
+            "logger-status",
+            "phone-gps",
+            "phone-wifi",
+        )
+    }
 }

@@ -43,8 +43,8 @@ After Bruce is verified, the app provides:
 
 - Authenticated board, firmware, battery, memory, Wi-Fi, BLE, GPS, logger, and
   LoRa status through BruceNet.
-- GPS monitor controls, GPS/BLE field logging, phone GPS assistance, file
-  inventory, and Android document-picker export.
+- GPS monitor controls; GPS, BLE, and Android-assisted Wi-Fi field logging;
+  phone GPS assistance; file inventory; and Android document-picker export.
 - Native rendering and navigation of Bruce's compiled vector display.
 - LittleFS browsing, viewing/editing, creation, rename, delete, and download.
 - A guarded 115200-baud USB CDC console with read-only shortcuts.
@@ -79,11 +79,26 @@ provides:
 Marauder Bluetooth scanning is a firmware feature, not an app transport. The
 current Marauder build still requires USB for Android control.
 
+### Bruce phone-assisted Wi-Fi logging
+
+When Wi-Fi is enabled for a Bruce field-logger session, Android requests a
+non-disruptive scan no more than once per minute. The app selects the 32
+strongest unique BSSIDs, suppresses repeat observations for one minute, and
+sends them to Bruce over authenticated BruceNet HTTP or the direct USB-C cable.
+Android Wi-Fi and Location must be enabled, and the app must have the requested
+nearby-Wi-Fi and location permissions.
+
+The USB connection is a deliberately narrow application bridge. It supports
+logger start, stop and status plus phone GPS and Wi-Fi observations; it does not
+give the ESP32 unrestricted Android networking or Internet access. The Heltec
+does not perform Wi-Fi scans while the phone-assisted source is active.
+
 ## Security and operating limits
 
 - Detection never starts a scan, transmission, attack, or firmware update.
 - WebUI and Wi-Fi credentials are held in memory and are not persisted.
-- Phone GPS fixes go only to the selected Bruce device over its local link.
+- Phone GPS fixes and Wi-Fi observations go only to the selected Bruce device
+  over its local BruceNet or USB link.
 - Bruce uses cleartext HTTP because its isolated ESP32 WebUI is HTTP-only.
 - Use radio and network tools only on systems, devices, and spectrum you own or
   are explicitly authorized to test.
@@ -98,7 +113,7 @@ From this directory with Android SDK 35 installed:
 
 The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.5.1`, code 9.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.6.0`, code 10.
 This preserves update continuity with the permanent Heltec Controller signing
 identity. Release builds use the four `HELTEC_RELEASE_*` environment variables
 documented in [`SIGNING.md`](SIGNING.md); without all four, Gradle deliberately
