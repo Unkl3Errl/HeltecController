@@ -352,14 +352,17 @@ class BruceScreenController(
     fun exportFieldLog(fileName: String, destination: Uri) {
         configureClient()
         work("EXPORTING LOG…", {
-            try {
-                activity.contentResolver.openOutputStream(destination, "w")?.use { output ->
-                    client.downloadFieldLog(fileName, output)
-                } ?: throw IllegalStateException("Android could not open the selected destination")
-            } catch (error: Exception) {
-                runCatching { activity.contentResolver.delete(destination, null, null) }
-                throw error
-            }
+            stageAndExportDocument(
+                cacheDirectory = activity.cacheDir,
+                temporaryPrefix = "bruce-field-log-",
+                download = { output -> client.downloadFieldLog(fileName, output) },
+                openDestination = {
+                    activity.contentResolver.openOutputStream(destination, "w")
+                        ?: throw IllegalStateException(
+                            "Android could not open the selected destination",
+                        )
+                },
+            )
         }) { bytes ->
             connectionStatus.text = "Exported $fileName · ${formatBytes(bytes)}"
             toast("Saved $fileName")
@@ -369,14 +372,17 @@ class BruceScreenController(
     fun exportDeviceFile(path: String, destination: Uri) {
         configureClient()
         work("EXPORTING FILE…", {
-            try {
-                activity.contentResolver.openOutputStream(destination, "w")?.use { output ->
-                    client.downloadDeviceFile(path, output)
-                } ?: throw IllegalStateException("Android could not open the selected destination")
-            } catch (error: Exception) {
-                runCatching { activity.contentResolver.delete(destination, null, null) }
-                throw error
-            }
+            stageAndExportDocument(
+                cacheDirectory = activity.cacheDir,
+                temporaryPrefix = "bruce-device-file-",
+                download = { output -> client.downloadDeviceFile(path, output) },
+                openDestination = {
+                    activity.contentResolver.openOutputStream(destination, "w")
+                        ?: throw IllegalStateException(
+                            "Android could not open the selected destination",
+                        )
+                },
+            )
         }) { bytes ->
             connectionStatus.text = "Exported ${path.substringAfterLast('/')} · ${formatBytes(bytes)}"
             toast("Saved ${path.substringAfterLast('/')}")

@@ -99,6 +99,8 @@ does not perform Wi-Fi scans while the phone-assisted source is active.
 - WebUI and Wi-Fi credentials are held in memory and are not persisted.
 - Phone GPS fixes and Wi-Fi observations go only to the selected Bruce device
   over its local BruceNet or USB link.
+- Exports are staged in private app storage before Android opens the selected
+  document, and a failed export never asks the document provider to delete it.
 - Bruce uses cleartext HTTP because its isolated ESP32 WebUI is HTTP-only.
 - Use radio and network tools only on systems, devices, and spectrum you own or
   are explicitly authorized to test.
@@ -116,7 +118,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.6.2`, code 12.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.6.3`, code 13.
 This preserves update continuity with the permanent Heltec Controller signing
 identity. Release builds use the four `HELTEC_RELEASE_*` environment variables
 documented in [`SIGNING.md`](SIGNING.md); without all four, Gradle deliberately
