@@ -24,11 +24,14 @@ import android.widget.TextView
 import android.widget.Toast
 import com.unkl3errl.helteccontroller.bruce.BruceApiClient
 import com.unkl3errl.helteccontroller.bruce.BruceRemoteView
+import com.unkl3errl.helteccontroller.bruce.PhoneWifiObservation
 import com.unkl3errl.helteccontroller.bruce.encodeQuery
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Locale
+import java.util.ArrayDeque
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 class BruceScreenController(
     private val activity: Activity,
@@ -36,10 +39,15 @@ class BruceScreenController(
     private val client: BruceApiClient,
     private val requestWifi: (String, String) -> Unit,
     private val requestPhoneGps: (Boolean) -> Unit,
+    private val requestPhoneWifi: (Boolean) -> Unit,
     private val requestFieldLogExport: (String) -> Unit,
     private val requestDeviceFileExport: (String) -> Unit,
     private val setGlobalStatus: (String) -> Unit,
 ) {
+    private companion object {
+        const val MAX_WIFI_QUEUE = 256
+    }
+
     private data class BruceRefresh(
         val system: JSONObject,
         val logger: JSONObject,
@@ -57,6 +65,7 @@ class BruceScreenController(
     private val remoteScreen: BruceRemoteView = root.findViewById(R.id.bruceRemoteScreen)
     private val phoneGpsStatus: TextView = root.findViewById(R.id.brucePhoneGpsStatus)
     private val phoneGpsToggle: Button = root.findViewById(R.id.brucePhoneGpsToggle)
+    private val phoneWifiStatus: TextView = root.findViewById(R.id.brucePhoneWifiStatus)
     private val ssid: EditText = root.findViewById(R.id.bruceSsid)
     private val wifiPassword: EditText = root.findViewById(R.id.bruceWifiPassword)
     private val baseUrl: EditText = root.findViewById(R.id.bruceBaseUrl)
@@ -64,8 +73,18 @@ class BruceScreenController(
     private val webPassword: EditText = root.findViewById(R.id.bruceWebPassword)
     private var loginAfterNetworkApproval = false
     private var phoneGpsEnabled = false
+    private var phoneWifiEnabled = false
+    private var usbBridgeConnected = false
+    private val pendingWifiObservations = ArrayDeque<PhoneWifiObservation>()
+    private val wifiQueueLock = Any()
+    private val wifiUploadScheduled = AtomicBoolean(false)
     private var webUiDialog: Dialog? = null
-    private val usbConsole = BruceUsbConsoleController(activity, root, setGlobalStatus)
+    private val usbConsole = BruceUsbConsoleController(
+        activity,
+        root,
+        setGlobalStatus,
+        ::onUsbBridgeState,
+    )
 
     init {
         root.findViewById<Button>(R.id.bruceJoinWifi).setOnClickListener {
@@ -109,10 +128,16 @@ class BruceScreenController(
         connectionStatus.text = "BruceNet local link available · logging in…"
         loginAfterNetworkApproval = false
         login()
+        scheduleWifiUploads()
     }
 
     fun onNetworkLost() {
         connectionStatus.text = "BruceNet local link was disconnected"
+    }
+
+    fun onUsbDetected() {
+        connectionStatus.text = "Bruce detected over USB · opening field-log bridge…"
+        usbConsole.connectBridge()
     }
 
     fun onNetworkError(message: String) {
@@ -140,6 +165,47 @@ class BruceScreenController(
         toast(message)
     }
 
+    fun onPhoneWifiStarted() {
+        phoneWifiEnabled = true
+        phoneWifiStatus.text = "Phone Wi-Fi logging active · waiting for scan results"
+        scheduleWifiUploads()
+    }
+
+    fun onPhoneWifiStopped() {
+        phoneWifiEnabled = false
+        phoneWifiStatus.text = "Phone Wi-Fi logging off · select Wi-Fi before starting the logger"
+    }
+
+    fun onPhoneWifiStatus(message: String) {
+        if (!phoneWifiEnabled) return
+        val queued = synchronized(wifiQueueLock) { pendingWifiObservations.size }
+        phoneWifiStatus.text = if (queued > 0) "$message · $queued pending" else message
+    }
+
+    fun onPhoneWifiError(message: String) {
+        phoneWifiEnabled = false
+        phoneWifiStatus.text = "Phone Wi-Fi error · $message"
+        toast(message)
+    }
+
+    fun submitPhoneWifiBatch(observations: List<PhoneWifiObservation>) {
+        if (!phoneWifiEnabled || observations.isEmpty()) return
+        var dropped = 0
+        synchronized(wifiQueueLock) {
+            observations.forEach { observation ->
+                while (pendingWifiObservations.size >= MAX_WIFI_QUEUE) {
+                    pendingWifiObservations.removeFirst()
+                    dropped++
+                }
+                pendingWifiObservations.addLast(observation)
+            }
+        }
+        if (dropped > 0) {
+            phoneWifiStatus.text = "Wi-Fi queue full · dropped $dropped oldest observations"
+        }
+        scheduleWifiUploads()
+    }
+
     fun submitPhoneLocation(location: Location) {
         if (!phoneGpsEnabled) return
         configureClient()
@@ -158,7 +224,11 @@ class BruceScreenController(
 
         executor.execute {
             try {
-                val logger = client.postForm("/api/heltec/fieldlog/phone-gps", values)
+                val logger = fieldRecordRequest(
+                    "/api/heltec/fieldlog/phone-gps",
+                    "phone-gps",
+                    values,
+                )
                 activity.runOnUiThread {
                     if (!phoneGpsEnabled) return@runOnUiThread
                     loggerStatus.text = formatLogger(logger)
@@ -173,6 +243,99 @@ class BruceScreenController(
                     if (phoneGpsEnabled) {
                         phoneGpsStatus.text = "Phone GPS fix not accepted · ${error.message ?: "device error"}"
                     }
+                }
+            }
+        }
+    }
+
+    private fun scheduleWifiUploads() {
+        if (!phoneWifiEnabled || !hasFieldLogTransport()) return
+        if (!wifiUploadScheduled.compareAndSet(false, true)) return
+        executor.execute {
+            var failure: Exception? = null
+            var lastStatus: JSONObject? = null
+            var uploaded = 0
+            try {
+                while (phoneWifiEnabled) {
+                    val observation = synchronized(wifiQueueLock) {
+                        pendingWifiObservations.firstOrNull()
+                    } ?: break
+                    lastStatus = fieldRecordRequest(
+                        "/api/heltec/fieldlog/phone-wifi",
+                        "phone-wifi",
+                        observation.asForm(),
+                    )
+                    synchronized(wifiQueueLock) {
+                        if (pendingWifiObservations.firstOrNull() == observation) {
+                            pendingWifiObservations.removeFirst()
+                        } else {
+                            pendingWifiObservations.remove(observation)
+                        }
+                    }
+                    uploaded++
+                }
+            } catch (error: Exception) {
+                failure = error
+            } finally {
+                wifiUploadScheduled.set(false)
+            }
+            val remaining = synchronized(wifiQueueLock) { pendingWifiObservations.size }
+            activity.runOnUiThread {
+                lastStatus?.let { loggerStatus.text = formatLogger(it) }
+                when {
+                    !phoneWifiEnabled -> Unit
+                    failure != null -> phoneWifiStatus.text =
+                        "Wi-Fi upload paused · $remaining queued · ${failure.message ?: "link unavailable"}"
+                    uploaded > 0 -> phoneWifiStatus.text =
+                        "Phone Wi-Fi active · uploaded $uploaded · $remaining queued"
+                }
+            }
+        }
+    }
+
+    private fun fieldRecordRequest(
+        httpPath: String,
+        bridgeAction: String,
+        values: Map<String, String>,
+    ): JSONObject {
+        if (hasHttpTransport()) {
+            runCatching { return client.postForm(httpPath, values) }
+                .onFailure { if (!usbBridgeConnected) throw it }
+        }
+        if (usbBridgeConnected) return usbConsole.bridgeRequest(bridgeAction, values)
+        throw IllegalStateException("Connect BruceNet or the Bruce USB bridge")
+    }
+
+    private fun loggerRequest(values: Map<String, String>): JSONObject {
+        if (hasHttpTransport()) {
+            runCatching { return client.postForm("/api/heltec/fieldlog", values) }
+                .onFailure { if (!usbBridgeConnected) throw it }
+        }
+        if (!usbBridgeConnected) throw IllegalStateException("Connect BruceNet or the Bruce USB bridge")
+        return when (values["action"]) {
+            "start" -> usbConsole.bridgeRequest("logger-start", values - "action")
+            "stop" -> usbConsole.bridgeRequest("logger-stop")
+            else -> throw IllegalArgumentException("Unsupported logger action")
+        }
+    }
+
+    private fun hasHttpTransport(): Boolean = client.network != null && client.isAuthenticated
+
+    private fun hasFieldLogTransport(): Boolean = hasHttpTransport() || usbBridgeConnected
+
+    private fun onUsbBridgeState(connected: Boolean, message: String) {
+        usbBridgeConnected = connected
+        if (!connected) {
+            if (client.network == null) connectionStatus.text = "USB field-log bridge unavailable · $message"
+            return
+        }
+        connectionStatus.text = "USB field-log bridge ready · Wi-Fi observations can use this cable"
+        executor.execute {
+            runCatching { usbConsole.bridgeRequest("logger-status") }.onSuccess { logger ->
+                activity.runOnUiThread {
+                    applyLoggerSnapshot(logger)
+                    loggerStatus.text = formatLogger(logger)
+                    scheduleWifiUploads()
                 }
             }
         }
@@ -221,7 +384,7 @@ class BruceScreenController(
     }
 
     fun onExportCancelled() {
-        setGlobalStatus("BRUCENET READY")
+        setGlobalStatus("BRUCE READY")
     }
 
     fun onExportError(message: String) {
@@ -254,14 +417,7 @@ class BruceScreenController(
             systemStatus.text = formatSystem(snapshot.system)
             loggerStatus.text = formatLogger(snapshot.logger)
             loraStatus.text = formatLora(snapshot.lora)
-            if (snapshot.logger.optBoolean("active")) {
-                root.findViewById<Switch>(R.id.loggerGps).isChecked =
-                    snapshot.logger.optJSONObject("gps")?.optBoolean("enabled") == true
-                root.findViewById<Switch>(R.id.loggerBle).isChecked =
-                    snapshot.logger.optJSONObject("ble")?.optBoolean("enabled") == true
-                root.findViewById<Switch>(R.id.loggerResume).isChecked =
-                    snapshot.logger.optBoolean("autoResume")
-            }
+            applyLoggerSnapshot(snapshot.logger)
             connectionStatus.text = "Authenticated · Bruce telemetry refreshed"
             refreshRemote()
         }
@@ -474,27 +630,52 @@ class BruceScreenController(
     private fun startLogger() {
         val gps = root.findViewById<Switch>(R.id.loggerGps).isChecked
         val ble = root.findViewById<Switch>(R.id.loggerBle).isChecked
-        if (!gps && !ble) {
-            toast("Select GPS, BLE, or both")
+        val wifi = root.findViewById<Switch>(R.id.loggerWifi).isChecked
+        if (!gps && !ble && !wifi) {
+            toast("Select GPS, BLE, Wi-Fi, or a combination")
             return
         }
         val values = mapOf(
             "action" to "start",
             "gps" to gps.toString(),
             "ble" to ble.toString(),
+            "wifi" to wifi.toString(),
             "autoResume" to root.findViewById<Switch>(R.id.loggerResume).isChecked.toString(),
         )
         configureClient()
-        work("STARTING LOG…", { client.postForm("/api/heltec/fieldlog", values) }) {
+        work("STARTING LOG…", { loggerRequest(values) }) {
             loggerStatus.text = formatLogger(it)
+            applyLoggerSnapshot(it)
         }
     }
 
     private fun loggerAction(action: String) {
         configureClient()
         work("LOGGER ${action.uppercase()}…", {
-            client.postForm("/api/heltec/fieldlog", mapOf("action" to action))
-        }) { loggerStatus.text = formatLogger(it) }
+            loggerRequest(mapOf("action" to action))
+        }) {
+            loggerStatus.text = formatLogger(it)
+            applyLoggerSnapshot(it)
+        }
+    }
+
+    private fun applyLoggerSnapshot(logger: JSONObject) {
+        val active = logger.optBoolean("active")
+        val gps = logger.optJSONObject("gps")?.optBoolean("enabled") == true
+        val ble = logger.optJSONObject("ble")?.optBoolean("enabled") == true
+        val wifi = logger.optJSONObject("wifi")?.optBoolean("enabled") == true
+        if (active) {
+            root.findViewById<Switch>(R.id.loggerGps).isChecked = gps
+            root.findViewById<Switch>(R.id.loggerBle).isChecked = ble
+            root.findViewById<Switch>(R.id.loggerWifi).isChecked = wifi
+            root.findViewById<Switch>(R.id.loggerResume).isChecked = logger.optBoolean("autoResume")
+        }
+        root.findViewById<Switch>(R.id.loggerGps).isEnabled = !active
+        root.findViewById<Switch>(R.id.loggerBle).isEnabled = !active
+        root.findViewById<Switch>(R.id.loggerWifi).isEnabled = !active
+        root.findViewById<Switch>(R.id.loggerResume).isEnabled = !active
+        requestPhoneWifi(active && wifi)
+        if (!active && phoneGpsEnabled) requestPhoneGps(false)
     }
 
     private fun showLoggerFiles() {
@@ -708,7 +889,7 @@ class BruceScreenController(
                 val result = action()
                 activity.runOnUiThread {
                     success(result)
-                    setGlobalStatus("BRUCENET READY")
+                    setGlobalStatus("BRUCE READY")
                 }
             } catch (error: Exception) {
                 activity.runOnUiThread {
@@ -747,12 +928,14 @@ class BruceScreenController(
     private fun formatLogger(json: JSONObject): String {
         val gps = json.optJSONObject("gps") ?: JSONObject()
         val ble = json.optJSONObject("ble") ?: JSONObject()
+        val wifi = json.optJSONObject("wifi") ?: JSONObject()
         val storage = json.optJSONObject("storage") ?: JSONObject()
         return buildString {
             append(if (json.optBoolean("active")) "● RECORDING" else "○ STOPPED")
             append(" · session ${json.optLong("sessionId")} / segment ${json.optInt("segment")}\n")
             append("GPS ${gps.optLong("fixes")} fixes (${gps.optLong("phoneFixes")} phone)\n")
             append("BLE ${ble.optLong("observations")} observations / ${ble.optInt("uniqueDevices")} unique\n")
+            append("Wi-Fi ${wifi.optLong("observations")} observations / ${wifi.optInt("uniqueNetworks")} unique · Android\n")
             append("${storage.optString("fileName", "no file")} · ${formatBytes(storage.optLong("sessionBytes"))}")
             json.optString("lastError").takeIf { it.isNotBlank() }?.let { append("\nError: $it") }
         }

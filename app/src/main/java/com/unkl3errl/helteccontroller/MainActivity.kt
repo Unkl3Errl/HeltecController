@@ -23,6 +23,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import com.unkl3errl.helteccontroller.bruce.BruceApiClient
 import com.unkl3errl.helteccontroller.bruce.BruceNetworkManager
+import com.unkl3errl.helteccontroller.bruce.PhoneWifiObservation
 import com.unkl3errl.helteccontroller.detection.DetectionSource
 import com.unkl3errl.helteccontroller.detection.FirmwareDetection
 import com.unkl3errl.helteccontroller.detection.FirmwareIdentity
@@ -34,11 +35,13 @@ import java.util.concurrent.Executors
 class MainActivity :
     Activity(),
     BruceNetworkManager.Listener,
+    AndroidWifiFieldScanner.Listener,
     UsbFirmwareDetector.Listener {
     companion object {
         private const val WIFI_PERMISSION_REQUEST = 2001
         private const val BRUCE_EXPORT_REQUEST = 2002
         private const val PHONE_GPS_PERMISSION_REQUEST = 2003
+        private const val PHONE_WIFI_PERMISSION_REQUEST = 2004
         private const val MARAUDER_EXPORT_REQUEST = 3001
         private const val STATE_BRUCE_EXPORT_NAME = "pendingBruceExportName"
         private const val STATE_BRUCE_EXPORT_PATH = "pendingBruceExportPath"
@@ -63,6 +66,7 @@ class MainActivity :
     private lateinit var networkManager: BruceNetworkManager
     private lateinit var usbDetector: UsbFirmwareDetector
     private lateinit var phoneLocationManager: LocationManager
+    private lateinit var phoneWifiScanner: AndroidWifiFieldScanner
 
     private val client = BruceApiClient()
     private val detectorExecutor = Executors.newSingleThreadExecutor()
@@ -75,6 +79,7 @@ class MainActivity :
     private var pendingMarauderExportName: String? = null
     private var pendingMarauderExportPath: String? = null
     private var phoneGpsRequested = false
+    private var phoneWifiRequested = false
 
     @Suppress("DEPRECATION")
     private val controllerVersionName: String by lazy {
@@ -112,6 +117,7 @@ class MainActivity :
         networkManager = BruceNetworkManager(this, this)
         usbDetector = UsbFirmwareDetector(this, this)
         phoneLocationManager = getSystemService(LocationManager::class.java)
+        phoneWifiScanner = AndroidWifiFieldScanner(this, this)
         registerUsbDetachReceiver()
 
         val inflater = LayoutInflater.from(this)
@@ -123,6 +129,7 @@ class MainActivity :
             client = client,
             requestWifi = ::requestBruceWifi,
             requestPhoneGps = ::requestPhoneGps,
+            requestPhoneWifi = ::requestPhoneWifi,
             requestFieldLogExport = ::requestBruceFieldLogExport,
             requestDeviceFileExport = ::requestBruceDeviceFileExport,
             setGlobalStatus = ::setGlobalStatus,
@@ -163,6 +170,7 @@ class MainActivity :
     }
 
     override fun onDestroy() {
+        stopPhoneWifi()
         stopPhoneGps()
         if (::bruceController.isInitialized) bruceController.destroy()
         if (::marauderController.isInitialized) marauderController.destroy()
@@ -205,6 +213,17 @@ class MainActivity :
             else {
                 phoneGpsRequested = false
                 bruceController.onPhoneGpsError("Precise location permission was denied")
+            }
+            return
+        }
+        if (requestCode == PHONE_WIFI_PERMISSION_REQUEST) {
+            val granted = phoneWifiPermissions().all {
+                checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+            }
+            if (granted && phoneWifiRequested) startPhoneWifi()
+            else {
+                phoneWifiRequested = false
+                bruceController.onPhoneWifiError("Wi-Fi scan permission was denied")
             }
             return
         }
@@ -338,6 +357,7 @@ class MainActivity :
         when (detection.kind) {
             FirmwareKind.BRUCE -> {
                 showScreen(bruceView, FirmwareKind.BRUCE)
+                if (detection.source == DetectionSource.USB) bruceController.onUsbDetected()
                 if (client.network != null) bruceController.onNetworkAvailable()
             }
             FirmwareKind.MARAUDER -> showScreen(marauderView, FirmwareKind.MARAUDER)
@@ -348,6 +368,7 @@ class MainActivity :
     private fun clearDetection(message: String) {
         detectedFirmware = null
         stopPhoneGps()
+        stopPhoneWifi()
         detectionStatus.text = message
         setControllerSubtitle("DETECTING")
         tabBruce.isEnabled = false
@@ -463,6 +484,55 @@ class MainActivity :
             runCatching { phoneLocationManager.removeUpdates(phoneLocationListener) }
         }
         if (::bruceController.isInitialized) bruceController.onPhoneGpsStopped()
+    }
+
+    private fun requestPhoneWifi(enabled: Boolean) {
+        if (!enabled) {
+            stopPhoneWifi()
+            return
+        }
+        phoneWifiRequested = true
+        val permissions = phoneWifiPermissions()
+        if (permissions.all { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) {
+            startPhoneWifi()
+        } else requestPermissions(permissions, PHONE_WIFI_PERMISSION_REQUEST)
+    }
+
+    private fun phoneWifiPermissions(): Array<String> = buildList {
+        add(Manifest.permission.ACCESS_FINE_LOCATION)
+        if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.NEARBY_WIFI_DEVICES)
+    }.toTypedArray()
+
+    private fun startPhoneWifi() {
+        if (!phoneWifiRequested || detectedFirmware?.kind != FirmwareKind.BRUCE) return
+        phoneWifiScanner.start()
+    }
+
+    private fun stopPhoneWifi() {
+        phoneWifiRequested = false
+        if (::phoneWifiScanner.isInitialized) phoneWifiScanner.stop()
+        if (::bruceController.isInitialized) bruceController.onPhoneWifiStopped()
+    }
+
+    override fun onPhoneWifiStarted() = runOnUiThread {
+        bruceController.onPhoneWifiStarted()
+    }
+
+    override fun onPhoneWifiStopped() = runOnUiThread {
+        bruceController.onPhoneWifiStopped()
+    }
+
+    override fun onPhoneWifiStatus(message: String) = runOnUiThread {
+        bruceController.onPhoneWifiStatus(message)
+    }
+
+    override fun onPhoneWifiBatch(observations: List<PhoneWifiObservation>) = runOnUiThread {
+        bruceController.submitPhoneWifiBatch(observations)
+    }
+
+    override fun onPhoneWifiError(message: String) = runOnUiThread {
+        phoneWifiRequested = false
+        bruceController.onPhoneWifiError(message)
     }
 
     private fun requestBruceFieldLogExport(fileName: String) {
