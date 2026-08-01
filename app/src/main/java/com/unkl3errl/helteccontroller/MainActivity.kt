@@ -610,14 +610,14 @@ class MainActivity :
             return
         }
         runCatching {
-            contentResolver.openOutputStream(destination, "w")?.use { output ->
-                File(path).inputStream().use { input -> input.copyTo(output) }
-            } ?: throw IllegalStateException("Android could not open the selected destination")
+            copyPreparedDocument(File(path)) {
+                contentResolver.openOutputStream(destination, "w")
+                    ?: throw IllegalStateException("Android could not open the selected destination")
+            }
         }.onSuccess {
             clearPendingMarauderExport()
             marauderController.onExportSaved(name)
         }.onFailure { error ->
-            runCatching { contentResolver.delete(destination, null, null) }
             clearPendingMarauderExport()
             marauderController.onExportError(
                 "Export failed: ${error.message ?: error.javaClass.simpleName}",
