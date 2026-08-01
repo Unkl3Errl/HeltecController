@@ -272,6 +272,7 @@ class MainActivity :
         if (pendingBruceNetDetection || detectedFirmware == null) {
             pendingBruceNetDetection = false
             detectionStatus.text = message
+            setControllerSubtitle("DETECT ERROR")
             setGlobalStatus("DETECT ERROR")
         } else if (detectedFirmware?.kind == FirmwareKind.BRUCE) {
             bruceController.onNetworkError(message)

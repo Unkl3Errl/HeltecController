@@ -111,9 +111,12 @@ From this directory with Android SDK 35 installed:
 ./gradlew testDebugUnitTest assembleDebug
 ```
 
-The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
+The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. On macOS,
+Gradle instead uses
+`~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
+concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.6.1`, code 11.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.6.2`, code 12.
 This preserves update continuity with the permanent Heltec Controller signing
 identity. Release builds use the four `HELTEC_RELEASE_*` environment variables
 documented in [`SIGNING.md`](SIGNING.md); without all four, Gradle deliberately

@@ -21,6 +21,15 @@ if (!releaseSigningConfigured && releaseSigningValues.any { it.isPresent }) {
     )
 }
 
+// Apple File Provider can create conflict-renamed copies when Gradle performs
+// concurrent writes below a synced Documents folder. Keep disposable macOS
+// outputs in the user's cache while retaining app/build on CI and other OSes.
+if (System.getProperty("os.name").equals("Mac OS X", ignoreCase = true)) {
+    layout.buildDirectory.set(
+        file(System.getProperty("user.home")).resolve("Library/Caches/HeltecController/app"),
+    )
+}
+
 android {
     namespace = "com.unkl3errl.helteccontroller"
     compileSdk = 35
@@ -29,8 +38,8 @@ android {
         applicationId = "com.unkl3errl.helteccontroller"
         minSdk = 29
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.6.1"
+        versionCode = 12
+        versionName = "0.6.2"
 
         testInstrumentationRunner = "android.test.InstrumentationTestRunner"
     }
