@@ -6,4 +6,9 @@
         <domain includeSubdomains="false">172.0.0.1</domain>
         <domain includeSubdomains="false">bruce.local</domain>
     </domain-config>
+    <!-- GhostNet is the GhostESP device-local access point and serves HTTP only. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">192.168.4.1</domain>
+        <domain includeSubdomains="false">ghost.local</domain>
+    </domain-config>
 </network-security-config>

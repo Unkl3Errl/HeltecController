@@ -32,12 +32,31 @@ class FirmwareIdentityTest {
         )
     }
 
+    @Test fun detectsGhostEspFromVersionHelpAndPromptResponses() {
+        assertEquals(
+            FirmwareKind.GHOSTESP,
+            FirmwareIdentity.classifyUsb("GhostESP v2.1 (Revival)\r\nBuild: 42\r\n"),
+        )
+        assertEquals(
+            FirmwareKind.GHOSTESP,
+            FirmwareIdentity.classifyUsb("\r\nGhost ESP Command Categories:\r\n\r\nWiFi\r\n"),
+        )
+        assertEquals(
+            FirmwareKind.GHOSTESP,
+            FirmwareIdentity.classifyUsb("command complete\r\nghost> "),
+        )
+    }
+
     @Test fun refusesEmptyAmbiguousAndUnrelatedResponses() {
         assertEquals(FirmwareKind.UNKNOWN, FirmwareIdentity.classifyUsb(""))
         assertEquals(FirmwareKind.UNKNOWN, FirmwareIdentity.classifyUsb("ready\r\n> "))
         assertEquals(
             FirmwareKind.UNKNOWN,
             FirmwareIdentity.classifyUsb("Bruce v1\nFirmware: Marauder\n"),
+        )
+        assertEquals(
+            FirmwareKind.UNKNOWN,
+            FirmwareIdentity.classifyUsb("Bruce v1\nghost> \n"),
         )
     }
 
@@ -54,5 +73,22 @@ class FirmwareIdentityTest {
                 "<title>Bruce</title><form action=/login-attacker></form>",
             ),
         )
+    }
+
+    @Test fun recognizesGhostEspWebUiBranding() {
+        assertTrue(
+            FirmwareIdentity.isGhostEspWebUi(
+                200,
+                "<html><head><title>GhostNet</title></head><body></body></html>",
+            ),
+        )
+        assertTrue(
+            FirmwareIdentity.isGhostEspWebUi(
+                200,
+                "<html><head><title>Device</title></head><body>GhostESP console</body></html>",
+            ),
+        )
+        assertFalse(FirmwareIdentity.isGhostEspWebUi(302, "<title>GhostNet</title>"))
+        assertFalse(FirmwareIdentity.isGhostEspWebUi(200, "<title>Router</title>"))
     }
 }

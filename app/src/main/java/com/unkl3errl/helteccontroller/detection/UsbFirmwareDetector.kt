@@ -33,7 +33,7 @@ class UsbFirmwareDetector(
             "com.unkl3errl.helteccontroller.DETECT_USB_PERMISSION"
         private const val ESPRESSIF_VID = 0x303A
         private const val ESP32_USB_JTAG_PID = 0x1001
-        private const val PROBE_TIMEOUT_MS = 3_500L
+        private const val PROBE_TIMEOUT_MS = 12_000L
         private const val MAX_EVIDENCE_CHARS = 16_384
     }
 
@@ -167,13 +167,17 @@ class UsbFirmwareDetector(
                 ?: throw IllegalStateException("The USB device has no serial port")
             selected.open(connection)
             selected.setParameters(115_200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE)
+            runCatching { selected.setDTR(true) }
             port = selected
             evidence.clear()
             probing = true
             ioManager = SerialInputOutputManager(selected, this).also { it.start() }
             listener.onUsbDetectionStatus("Probing attached firmware with read-only commands…")
-            scheduleWrite("info", 250L)
-            scheduleWrite("help", 850L)
+            scheduleWrite("info", 500L)
+            scheduleWrite("help", 1_500L)
+            scheduleWrite("version", 2_500L)
+            scheduleWrite("help", 6_000L)
+            scheduleWrite("version", 8_500L)
             mainHandler.postDelayed(probeTimeout, PROBE_TIMEOUT_MS)
         } catch (error: Exception) {
             finishUnknown("USB detection failed: ${error.message ?: error.javaClass.simpleName}")

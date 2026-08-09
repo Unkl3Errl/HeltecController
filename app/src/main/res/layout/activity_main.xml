@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/activityRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:paddingTop="12dp">
+    android:clipToPadding="false"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -74,7 +81,7 @@
             style="@style/MutedText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Connect a board by USB, or detect Bruce through BruceNet. Firmware tabs stay locked until a signature is verified." />
+            android:text="Connect a board by USB, or detect GhostESP through GhostNet. Firmware tabs stay locked until a signature is verified." />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -97,8 +104,18 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="4dp"
+                android:layout_weight="0"
+                android:text="DETECT BRUCENET"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/detectGhostNet"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
                 android:layout_weight="1"
-                android:text="DETECT BRUCENET" />
+                android:text="DETECT GHOSTNET" />
         </LinearLayout>
     </LinearLayout>
 
@@ -115,10 +132,20 @@
             style="@style/SecondaryButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:enabled="false"
+            android:text="BRUCE"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/tabGhost"
+            style="@style/SecondaryButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginRight="5dp"
             android:layout_weight="1"
             android:enabled="false"
-            android:text="BRUCE" />
+            android:text="GHOSTESP" />
 
         <Button
             android:id="@+id/tabMarauder"
@@ -134,8 +161,8 @@
     <FrameLayout
         android:id="@+id/screenContainer"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="4dp"
-        android:layout_weight="1" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" />
 
-</LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

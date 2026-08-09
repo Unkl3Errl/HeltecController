@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:clipToPadding="false"
-    android:fillViewport="true"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
     android:paddingLeft="14dp"
     android:paddingTop="10dp"
     android:paddingRight="14dp"
     android:paddingBottom="24dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -43,7 +37,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Connect the Heltec with a data-capable USB OTG adapter. Android must be the USB host." />
+                android:text="The app detects and opens Marauder automatically after USB-C attachment. Android must be the USB host; use Reconnect only for link recovery." />
 
             <TextView
                 style="@style/MutedText"
@@ -51,14 +45,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="10dp"
-                android:text="Validated with ESP32 Marauder v1.14.0-heltec.2. OLED PRG: 1x next, hold select/start, 2x back/stop; the first press wakes a blank display." />
+                android:text="Validated with ESP32 Marauder v1.14.1 on Heltec V4. OLED PRG: 1x next, hold select/start, 2x back/stop; the first press wakes a blank display." />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <Button android:id="@+id/marauderConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="4dp" android:layout_weight="1" android:text="CONNECT" />
+                <Button android:id="@+id/marauderConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="4dp" android:layout_weight="1" android:text="RECONNECT TO DEVICE" />
                 <Button android:id="@+id/marauderDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="4dp" android:layout_weight="1" android:text="DISCONNECT" />
             </LinearLayout>
         </LinearLayout>
@@ -116,7 +110,7 @@
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                <Button android:id="@+id/cmdWifiScan" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="AP SURVEY 18S" />
+                <Button android:id="@+id/cmdWifiScan" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="AP SCAN" />
                 <Button android:id="@+id/cmdBleScan" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_marginRight="3dp" android:layout_weight="1" android:text="BLE SCAN" />
                 <Button android:id="@+id/cmdStop" style="@style/DangerButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="STOP" />
             </LinearLayout>
@@ -172,6 +166,8 @@
                 android:fadeScrollbars="false"
                 android:fontFamily="monospace"
                 android:gravity="bottom"
+                android:lineSpacingExtra="4dp"
+                android:lineSpacingMultiplier="1.05"
                 android:overScrollMode="always"
                 android:padding="12dp"
                 android:scrollbarStyle="insideInset"
@@ -179,7 +175,7 @@
                 android:text="Connect to begin.\n"
                 android:textColor="@color/teal"
                 android:textIsSelectable="true"
-                android:textSize="12sp" />
+                android:textSize="13sp" />
 
             <EditText
                 android:id="@+id/marauderCommand"
@@ -234,5 +230,4 @@
             android:layout_marginTop="12dp"
             android:gravity="center"
             android:text="Operate only on systems and radio spectrum you own or are authorized to test." />
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>
