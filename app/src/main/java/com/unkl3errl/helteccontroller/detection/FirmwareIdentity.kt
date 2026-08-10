@@ -1,8 +1,8 @@
 package com.unkl3errl.helteccontroller.detection
 
-enum class FirmwareKind { UNKNOWN, BRUCE, MARAUDER }
+enum class FirmwareKind { UNKNOWN, BRUCE, MARAUDER, GHOSTESP }
 
-enum class DetectionSource { USB, BRUCENET, MANUAL }
+enum class DetectionSource { USB, BRUCENET, GHOSTNET, MANUAL }
 
 data class FirmwareDetection(
     val kind: FirmwareKind,
@@ -23,13 +23,21 @@ object FirmwareIdentity {
         Regex("(?im)^Firmware:\\s*Marauder\\s*$"),
         Regex("(?m)^============ Commands ============$"),
     )
+    private val ghostEspSignatures = listOf(
+        Regex("(?i)GhostESP v2\\.1 \\(Revival\\)"),
+        Regex("(?i)Ghost ESP Command Categories:"),
+        Regex("(?im)^\\s*ghost>\\s*$"),
+    )
+    private val ghostEspWebUiBranding = Regex("(?i)\\b(?:GhostNet|GhostESP)\\b")
 
     fun classifyUsb(text: String): FirmwareKind {
         val bruce = bruceSignatures.any { it.containsMatchIn(text) }
         val marauder = marauderSignatures.any { it.containsMatchIn(text) }
+        val ghostEsp = ghostEspSignatures.any { it.containsMatchIn(text) }
         return when {
-            bruce && !marauder -> FirmwareKind.BRUCE
-            marauder && !bruce -> FirmwareKind.MARAUDER
+            bruce && !marauder && !ghostEsp -> FirmwareKind.BRUCE
+            marauder && !bruce && !ghostEsp -> FirmwareKind.MARAUDER
+            ghostEsp && !bruce && !marauder -> FirmwareKind.GHOSTESP
             else -> FirmwareKind.UNKNOWN
         }
     }
@@ -38,4 +46,7 @@ object FirmwareIdentity {
         status == 200 &&
             body.contains("<title>Bruce</title>", ignoreCase = true) &&
             bruceLoginAction.containsMatchIn(body)
+
+    fun isGhostEspWebUi(status: Int, body: String): Boolean =
+        status == 200 && ghostEspWebUiBranding.containsMatchIn(body)
 }

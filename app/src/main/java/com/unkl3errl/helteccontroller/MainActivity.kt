@@ -21,14 +21,19 @@ import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.unkl3errl.helteccontroller.bruce.BruceApiClient
 import com.unkl3errl.helteccontroller.bruce.BruceNetworkManager
 import com.unkl3errl.helteccontroller.bruce.PhoneWifiObservation
+import com.unkl3errl.helteccontroller.connection.PersistentDeviceConnections
+import com.unkl3errl.helteccontroller.connection.PersistentUsbKind
 import com.unkl3errl.helteccontroller.detection.DetectionSource
 import com.unkl3errl.helteccontroller.detection.FirmwareDetection
 import com.unkl3errl.helteccontroller.detection.FirmwareIdentity
 import com.unkl3errl.helteccontroller.detection.FirmwareKind
 import com.unkl3errl.helteccontroller.detection.UsbFirmwareDetector
+import com.unkl3errl.helteccontroller.ghost.GhostApiClient
 import java.io.File
 import java.util.concurrent.Executors
 
@@ -43,14 +48,23 @@ class MainActivity :
         private const val PHONE_GPS_PERMISSION_REQUEST = 2003
         private const val PHONE_WIFI_PERMISSION_REQUEST = 2004
         private const val MARAUDER_EXPORT_REQUEST = 3001
+        private const val GHOST_EXPORT_REQUEST = 4001
         private const val STATE_BRUCE_EXPORT_NAME = "pendingBruceExportName"
         private const val STATE_BRUCE_EXPORT_PATH = "pendingBruceExportPath"
         private const val STATE_BRUCE_EXPORT_DEVICE = "pendingBruceExportDevice"
         private const val STATE_MARAUDER_EXPORT_NAME = "pendingMarauderExportName"
         private const val STATE_MARAUDER_EXPORT_PATH = "pendingMarauderExportPath"
+        private const val STATE_GHOST_EXPORT_NAME = "pendingGhostExportName"
+        private const val STATE_GHOST_EXPORT_PATH = "pendingGhostExportPath"
         private const val DEFAULT_BRUCENET_SSID = "BruceNet"
         private const val DEFAULT_BRUCENET_PASSWORD = "brucenet"
         private const val DEFAULT_BRUCE_URL = "http://172.0.0.1"
+        private const val DEFAULT_GHOSTNET_SSID = "GhostNet"
+        private const val DEFAULT_GHOSTNET_PASSWORD = "GhostNet"
+        private const val DEFAULT_GHOST_URL = "http://192.168.4.1"
+        private const val SESSION_PREFS = "persistent_device_session"
+        private const val PREF_FIRMWARE_KIND = "firmware_kind"
+        private const val PREF_DETECTION_SOURCE = "detection_source"
     }
 
     private lateinit var globalStatus: TextView
@@ -58,10 +72,13 @@ class MainActivity :
     private lateinit var detectionStatus: TextView
     private lateinit var container: FrameLayout
     private lateinit var tabBruce: Button
+    private lateinit var tabGhost: Button
     private lateinit var tabMarauder: Button
     private lateinit var bruceView: View
+    private lateinit var ghostView: View
     private lateinit var marauderView: View
     private lateinit var bruceController: BruceScreenController
+    private lateinit var ghostController: GhostScreenController
     private lateinit var marauderController: MarauderScreenController
     private lateinit var networkManager: BruceNetworkManager
     private lateinit var usbDetector: UsbFirmwareDetector
@@ -69,17 +86,22 @@ class MainActivity :
     private lateinit var phoneWifiScanner: AndroidWifiFieldScanner
 
     private val client = BruceApiClient()
+    private val ghostClient = GhostApiClient()
     private val detectorExecutor = Executors.newSingleThreadExecutor()
     private var detectedFirmware: FirmwareDetection? = null
     private var pendingWifi: Pair<String, String>? = null
     private var pendingBruceNetDetection = false
+    private var pendingGhostNetDetection = false
     private var pendingBruceExportName: String? = null
     private var pendingBruceExportPath: String? = null
     private var pendingBruceExportDevice = false
     private var pendingMarauderExportName: String? = null
     private var pendingMarauderExportPath: String? = null
+    private var pendingGhostExportName: String? = null
+    private var pendingGhostExportPath: String? = null
     private var phoneGpsRequested = false
     private var phoneWifiRequested = false
+    private var usbTransportDetached = false
 
     @Suppress("DEPRECATION")
     private val controllerVersionName: String by lazy {
@@ -96,9 +118,7 @@ class MainActivity :
                 intent.action == android.hardware.usb.UsbManager.ACTION_USB_DEVICE_DETACHED &&
                 detectedFirmware?.source == DetectionSource.USB
             ) {
-                runOnUiThread {
-                    clearDetection("USB board disconnected. Connect a board and detect its firmware again.")
-                }
+                runOnUiThread(::retainDetectedFirmwareAfterUsbDetach)
             }
         }
     }
@@ -106,6 +126,7 @@ class MainActivity :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        applySystemBarInsets()
         restoreExportState(savedInstanceState)
 
         globalStatus = findViewById(R.id.globalStatus)
@@ -113,8 +134,9 @@ class MainActivity :
         detectionStatus = findViewById(R.id.detectionStatus)
         container = findViewById(R.id.screenContainer)
         tabBruce = findViewById(R.id.tabBruce)
+        tabGhost = findViewById(R.id.tabGhost)
         tabMarauder = findViewById(R.id.tabMarauder)
-        networkManager = BruceNetworkManager(this, this)
+        networkManager = BruceNetworkManager.get(this)
         usbDetector = UsbFirmwareDetector(this, this)
         phoneLocationManager = getSystemService(LocationManager::class.java)
         phoneWifiScanner = AndroidWifiFieldScanner(this, this)
@@ -122,6 +144,7 @@ class MainActivity :
 
         val inflater = LayoutInflater.from(this)
         bruceView = inflater.inflate(R.layout.screen_bruce, container, false)
+        ghostView = inflater.inflate(R.layout.screen_ghost, container, false)
         marauderView = inflater.inflate(R.layout.screen_marauder, container, false)
         bruceController = BruceScreenController(
             activity = this,
@@ -140,9 +163,18 @@ class MainActivity :
             requestExport = ::requestMarauderExport,
             setGlobalStatus = ::setGlobalStatus,
         )
+        ghostController = GhostScreenController(
+            activity = this,
+            root = ghostView,
+            requestGhostNet = ::requestGhostNet,
+            requestExport = ::requestGhostExport,
+            setGlobalStatus = ::setGlobalStatus,
+        )
+        networkManager.attach(this)
 
         findViewById<Button>(R.id.detectUsb).setOnClickListener { startUsbDetection() }
         findViewById<Button>(R.id.detectBruceNet).setOnClickListener { startBruceNetDetection() }
+        findViewById<Button>(R.id.detectGhostNet).setOnClickListener { startGhostNetDetection() }
         tabBruce.setOnClickListener {
             if (detectedFirmware?.kind == FirmwareKind.BRUCE) showScreen(bruceView, FirmwareKind.BRUCE)
         }
@@ -151,14 +183,39 @@ class MainActivity :
                 showScreen(marauderView, FirmwareKind.MARAUDER)
             }
         }
+        tabGhost.setOnClickListener {
+            if (detectedFirmware?.kind == FirmwareKind.GHOSTESP) {
+                showScreen(ghostView, FirmwareKind.GHOSTESP)
+            }
+        }
 
         clearDetection(
-            "Connect a board by USB, or detect Bruce through BruceNet. " +
+            "Connect a board by USB, or detect GhostESP through GhostNet. " +
                 "Firmware tabs stay locked until a signature is verified.",
         )
-        container.post {
-            if (usbDetector.hasCandidate()) startUsbDetection()
+        container.post(::restorePersistentConnectionOrDetect)
+    }
+
+    private fun applySystemBarInsets() {
+        val root = findViewById<View>(R.id.activityRoot)
+        val initialLeft = root.paddingLeft
+        val initialTop = root.paddingTop
+        val initialRight = root.paddingRight
+        val initialBottom = root.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val safeArea = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout(),
+            )
+            view.setPadding(
+                initialLeft + safeArea.left,
+                initialTop + safeArea.top,
+                initialRight + safeArea.right,
+                initialBottom + safeArea.bottom,
+            )
+            insets
         }
+        ViewCompat.requestApplyInsets(root)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -173,12 +230,16 @@ class MainActivity :
         stopPhoneWifi()
         stopPhoneGps()
         if (::bruceController.isInitialized) bruceController.destroy()
+        if (::ghostController.isInitialized) ghostController.destroy()
         if (::marauderController.isInitialized) marauderController.destroy()
-        if (::networkManager.isInitialized) networkManager.release()
+        if (::networkManager.isInitialized) networkManager.detach(this)
         if (::usbDetector.isInitialized) usbDetector.destroy()
         runCatching { unregisterReceiver(usbDetachReceiver) }
         detectorExecutor.shutdownNow()
-        if (isFinishing) clearPendingMarauderExport()
+        if (isFinishing) {
+            clearPendingMarauderExport()
+            clearPendingGhostExport()
+        }
         super.onDestroy()
     }
 
@@ -188,6 +249,8 @@ class MainActivity :
         outState.putBoolean(STATE_BRUCE_EXPORT_DEVICE, pendingBruceExportDevice)
         pendingMarauderExportName?.let { outState.putString(STATE_MARAUDER_EXPORT_NAME, it) }
         pendingMarauderExportPath?.let { outState.putString(STATE_MARAUDER_EXPORT_PATH, it) }
+        pendingGhostExportName?.let { outState.putString(STATE_GHOST_EXPORT_NAME, it) }
+        pendingGhostExportPath?.let { outState.putString(STATE_GHOST_EXPORT_PATH, it) }
         super.onSaveInstanceState(outState)
     }
 
@@ -197,6 +260,7 @@ class MainActivity :
         when (requestCode) {
             BRUCE_EXPORT_REQUEST -> finishBruceExport(resultCode, data?.data)
             MARAUDER_EXPORT_REQUEST -> finishMarauderExport(resultCode, data?.data)
+            GHOST_EXPORT_REQUEST -> finishGhostExport(resultCode, data?.data)
         }
     }
 
@@ -238,42 +302,81 @@ class MainActivity :
 
         if (granted && request != null) {
             networkManager.request(request.first, request.second)
+        } else if (pendingGhostNetDetection) {
+            pendingGhostNetDetection = false
+            onUsbDetectionUnknown("Nearby Wi-Fi permission was denied")
         } else if (pendingBruceNetDetection) {
             pendingBruceNetDetection = false
             onUsbDetectionUnknown("Nearby Wi-Fi permission was denied")
         } else {
-            bruceController.onNetworkError("Nearby Wi-Fi permission was denied")
+            when (detectedFirmware?.kind) {
+                FirmwareKind.GHOSTESP ->
+                    ghostController.onNetworkError("Nearby Wi-Fi permission was denied")
+                FirmwareKind.BRUCE ->
+                    bruceController.onNetworkError("Nearby Wi-Fi permission was denied")
+                else -> onUsbDetectionUnknown("Nearby Wi-Fi permission was denied")
+            }
         }
     }
 
     override fun onBruceNetworkAvailable(network: Network) {
         client.network = network
-        if (pendingBruceNetDetection || detectedFirmware == null) {
+        ghostClient.network = network
+        if (pendingGhostNetDetection) {
+            probeGhostNet()
+            return
+        }
+        if (pendingBruceNetDetection) {
             probeBruceNet()
             return
         }
         runOnUiThread {
-            if (detectedFirmware?.kind == FirmwareKind.BRUCE) bruceController.onNetworkAvailable()
+            when (detectedFirmware?.kind) {
+                FirmwareKind.GHOSTESP -> {
+                    if (usbTransportDetached) {
+                        detectedFirmware = detectedFirmware?.copy(
+                            source = DetectionSource.GHOSTNET,
+                            evidence = "USB detached · continuing through GhostNet",
+                        )
+                        detectionStatus.text =
+                            "Verified GhostESP · USB detached · continuing through GhostNet"
+                    }
+                    ghostController.onNetworkAvailable(network)
+                }
+                FirmwareKind.BRUCE -> bruceController.onNetworkAvailable()
+                else -> Unit
+            }
         }
     }
 
     override fun onBruceNetworkLost() {
         client.network = null
+        ghostClient.network = null
         runOnUiThread {
-            if (detectedFirmware?.source == DetectionSource.BRUCENET) {
-                clearDetection("BruceNet disconnected. Reconnect and detect the firmware again.")
-            } else if (detectedFirmware?.kind == FirmwareKind.BRUCE) {
-                bruceController.onNetworkLost()
+            when {
+                detectedFirmware?.source == DetectionSource.GHOSTNET -> {
+                    detectionStatus.text =
+                        "GhostNet disconnected. GhostESP remains available standalone; " +
+                            "reconnect GhostNet or attach USB to resume control."
+                    ghostController.onNetworkLost()
+                }
+                detectedFirmware?.source == DetectionSource.BRUCENET ->
+                    clearDetection("BruceNet disconnected. Reconnect and detect the firmware again.")
+                detectedFirmware?.kind == FirmwareKind.GHOSTESP -> ghostController.onNetworkLost()
+                detectedFirmware?.kind == FirmwareKind.BRUCE -> bruceController.onNetworkLost()
             }
         }
     }
 
     override fun onBruceNetworkError(message: String) = runOnUiThread {
-        if (pendingBruceNetDetection || detectedFirmware == null) {
+        if (pendingGhostNetDetection || pendingBruceNetDetection || detectedFirmware == null) {
+            pendingGhostNetDetection = false
             pendingBruceNetDetection = false
             detectionStatus.text = message
             setControllerSubtitle("DETECT ERROR")
             setGlobalStatus("DETECT ERROR")
+        } else if (detectedFirmware?.kind == FirmwareKind.GHOSTESP) {
+            ghostController.onNetworkError(message)
         } else if (detectedFirmware?.kind == FirmwareKind.BRUCE) {
             bruceController.onNetworkError(message)
         }
@@ -294,7 +397,14 @@ class MainActivity :
     }
 
     private fun startUsbDetection() {
+        val activeKind = PersistentDeviceConnections.activeUsbKind()
+        if (activeKind != null) {
+            restorePersistentUsbDetection(activeKind)
+            return
+        }
+        usbTransportDetached = false
         pendingBruceNetDetection = false
+        pendingGhostNetDetection = false
         clearDetection("Opening the attached board for a read-only firmware identity probe…")
         usbDetector.detect()
     }
@@ -303,7 +413,16 @@ class MainActivity :
         usbDetector.cancel()
         clearDetection("Requesting the default BruceNet local Wi-Fi link…")
         pendingBruceNetDetection = true
+        pendingGhostNetDetection = false
         requestWifi(DEFAULT_BRUCENET_SSID, DEFAULT_BRUCENET_PASSWORD)
+    }
+
+    private fun startGhostNetDetection() {
+        usbDetector.cancel()
+        clearDetection("Requesting the default GhostNet local Wi-Fi link…")
+        pendingBruceNetDetection = false
+        pendingGhostNetDetection = true
+        requestWifi(DEFAULT_GHOSTNET_SSID, DEFAULT_GHOSTNET_PASSWORD)
     }
 
     private fun probeBruceNet() {
@@ -342,41 +461,192 @@ class MainActivity :
         }
     }
 
+    private fun probeGhostNet() {
+        detectionStatus.post {
+            detectionStatus.text = "Checking the local Web UI for a GhostESP signature…"
+            setGlobalStatus("DETECTING")
+        }
+        detectorExecutor.execute {
+            val outcome = runCatching {
+                ghostClient.configure(DEFAULT_GHOST_URL, ghostClient.network)
+                ghostClient.probeWebUi()
+            }
+            runOnUiThread {
+                pendingGhostNetDetection = false
+                outcome.onSuccess { result ->
+                    if (FirmwareIdentity.isGhostEspWebUi(result.status, result.body)) {
+                        applyDetection(
+                            FirmwareDetection(
+                                FirmwareKind.GHOSTESP,
+                                DetectionSource.GHOSTNET,
+                                "GhostNet Web UI signature",
+                            ),
+                        )
+                    } else {
+                        clearDetection(
+                            "The local server did not present a recognized GhostESP Web UI signature.",
+                        )
+                    }
+                }.onFailure { error ->
+                    clearDetection(
+                        "GhostNet identity check failed: " +
+                            (error.message ?: error.javaClass.simpleName),
+                    )
+                }
+            }
+        }
+    }
+
     private fun applyDetection(detection: FirmwareDetection) {
+        usbTransportDetached = false
         detectedFirmware = detection
+        getSharedPreferences(SESSION_PREFS, MODE_PRIVATE).edit()
+            .putString(PREF_FIRMWARE_KIND, detection.kind.name)
+            .putString(PREF_DETECTION_SOURCE, detection.source.name)
+            .apply()
         val source = when (detection.source) {
             DetectionSource.USB -> "USB"
             DetectionSource.BRUCENET -> "BruceNet"
+            DetectionSource.GHOSTNET -> "GhostNet"
             DetectionSource.MANUAL -> "manual override"
         }
         detectionStatus.text =
             "Verified ${detection.kind.displayName} via $source · ${detection.evidence}"
         setControllerSubtitle(detection.kind.displayName.uppercase())
         setGlobalStatus("${detection.kind.displayName.uppercase()} READY")
-        tabBruce.isEnabled = detection.kind == FirmwareKind.BRUCE
+        tabBruce.isEnabled = false
+        tabGhost.isEnabled = detection.kind == FirmwareKind.GHOSTESP
         tabMarauder.isEnabled = detection.kind == FirmwareKind.MARAUDER
         when (detection.kind) {
             FirmwareKind.BRUCE -> {
-                showScreen(bruceView, FirmwareKind.BRUCE)
-                if (detection.source == DetectionSource.USB) bruceController.onUsbDetected()
-                if (client.network != null) bruceController.onNetworkAvailable()
+                container.removeAllViews()
+                setTabAppearance(FirmwareKind.UNKNOWN)
+                detectionStatus.text =
+                    "Verified Bruce via $source · Bruce controls are temporarily hidden in this release."
+                setGlobalStatus("BRUCE HIDDEN")
             }
-            FirmwareKind.MARAUDER -> showScreen(marauderView, FirmwareKind.MARAUDER)
+            FirmwareKind.MARAUDER -> {
+                showScreen(marauderView, FirmwareKind.MARAUDER)
+                if (detection.source == DetectionSource.USB) marauderController.connectUsb()
+            }
+            FirmwareKind.GHOSTESP -> {
+                showScreen(ghostView, FirmwareKind.GHOSTESP)
+                if (detection.source == DetectionSource.USB) ghostController.connectUsb()
+                ghostClient.network?.let(ghostController::onNetworkAvailable)
+            }
             FirmwareKind.UNKNOWN -> clearDetection("The firmware signature is unknown.")
         }
     }
 
     private fun clearDetection(message: String) {
+        usbTransportDetached = false
         detectedFirmware = null
         stopPhoneGps()
         stopPhoneWifi()
         detectionStatus.text = message
         setControllerSubtitle("DETECTING")
         tabBruce.isEnabled = false
+        tabGhost.isEnabled = false
         tabMarauder.isEnabled = false
         setTabAppearance(FirmwareKind.UNKNOWN)
         container.removeAllViews()
         setGlobalStatus("UNKNOWN")
+    }
+
+    private fun retainDetectedFirmwareAfterUsbDetach() {
+        val detection = detectedFirmware ?: return
+        usbTransportDetached = true
+        when (detection.kind) {
+            FirmwareKind.GHOSTESP -> {
+                val network = ghostClient.network
+                if (network != null) {
+                    detectedFirmware = detection.copy(
+                        source = DetectionSource.GHOSTNET,
+                        evidence = "USB detached · continuing through GhostNet",
+                    )
+                    detectionStatus.text =
+                        "GhostESP USB detached · continuing automatically through GhostNet."
+                    ghostController.onNetworkAvailable(network)
+                    setGlobalStatus("GHOSTNET")
+                } else {
+                    detectionStatus.text =
+                        "GhostESP USB detached. The board continues standalone; connect GhostNet " +
+                            "or reattach USB to resume control."
+                    setGlobalStatus("GHOST OFFLINE")
+                }
+            }
+            FirmwareKind.MARAUDER -> {
+                detectionStatus.text =
+                    "Marauder USB detached. The board continues standalone; reattach USB to " +
+                        "resume the saved app session automatically."
+                setGlobalStatus("MARAUDER OFFLINE")
+            }
+            FirmwareKind.BRUCE -> {
+                detectionStatus.text =
+                    "Bruce USB detached. Its controls remain hidden in this release."
+                setGlobalStatus("BRUCE HIDDEN")
+            }
+            FirmwareKind.UNKNOWN -> clearDetection("The disconnected firmware was unknown.")
+        }
+    }
+
+    private fun restorePersistentConnectionOrDetect() {
+        val activeKind = PersistentDeviceConnections.activeUsbKind()
+        if (activeKind != null) {
+            restorePersistentUsbDetection(activeKind)
+            return
+        }
+
+        val network = networkManager.activeNetwork
+        if (network != null) {
+            val preferences = getSharedPreferences(SESSION_PREFS, MODE_PRIVATE)
+            val storedKind = runCatching {
+                FirmwareKind.valueOf(preferences.getString(PREF_FIRMWARE_KIND, "") ?: "")
+            }.getOrNull()
+            val expectedSsid = when (storedKind) {
+                FirmwareKind.GHOSTESP -> DEFAULT_GHOSTNET_SSID
+                FirmwareKind.BRUCE -> DEFAULT_BRUCENET_SSID
+                else -> null
+            }
+            if (
+                storedKind != null &&
+                expectedSsid != null &&
+                networkManager.requestedSsid == expectedSsid
+            ) {
+                client.network = network
+                ghostClient.network = network
+                val restoredSource = if (storedKind == FirmwareKind.GHOSTESP) {
+                    DetectionSource.GHOSTNET
+                } else {
+                    DetectionSource.BRUCENET
+                }
+                applyDetection(
+                    FirmwareDetection(
+                        storedKind,
+                        restoredSource,
+                        "restored live background ${networkManager.requestedSsid} session",
+                    ),
+                )
+                return
+            }
+        }
+
+        if (usbDetector.hasCandidate()) startUsbDetection()
+    }
+
+    private fun restorePersistentUsbDetection(kind: PersistentUsbKind) {
+        val firmwareKind = when (kind) {
+            PersistentUsbKind.BRUCE -> FirmwareKind.BRUCE
+            PersistentUsbKind.GHOSTESP -> FirmwareKind.GHOSTESP
+            PersistentUsbKind.MARAUDER -> FirmwareKind.MARAUDER
+        }
+        applyDetection(
+            FirmwareDetection(
+                firmwareKind,
+                DetectionSource.USB,
+                "resumed existing background USB session without reopening it",
+            ),
+        )
     }
 
     private fun setControllerSubtitle(state: String) {
@@ -399,6 +669,11 @@ class MainActivity :
             selected == FirmwareKind.BRUCE -> active
             else -> inactive
         }
+        tabGhost.backgroundTintList = when {
+            !tabGhost.isEnabled -> disabled
+            selected == FirmwareKind.GHOSTESP -> active
+            else -> inactive
+        }
         tabMarauder.backgroundTintList = when {
             !tabMarauder.isEnabled -> disabled
             selected == FirmwareKind.MARAUDER -> active
@@ -407,6 +682,9 @@ class MainActivity :
         tabBruce.setTextColor(
             getColor(if (selected == FirmwareKind.BRUCE) R.color.bg else R.color.text),
         )
+        tabGhost.setTextColor(
+            getColor(if (selected == FirmwareKind.GHOSTESP) R.color.bg else R.color.text),
+        )
         tabMarauder.setTextColor(
             getColor(if (selected == FirmwareKind.MARAUDER) R.color.bg else R.color.text),
         )
@@ -414,7 +692,14 @@ class MainActivity :
 
     private fun requestBruceWifi(ssid: String, password: String) {
         pendingBruceNetDetection = false
+        pendingGhostNetDetection = false
         requestWifi(ssid, password)
+    }
+
+    private fun requestGhostNet() {
+        pendingBruceNetDetection = false
+        pendingGhostNetDetection = false
+        requestWifi(DEFAULT_GHOSTNET_SSID, DEFAULT_GHOSTNET_PASSWORD)
     }
 
     private fun requestWifi(ssid: String, password: String) {
@@ -625,12 +910,62 @@ class MainActivity :
         }
     }
 
+    private fun requestGhostExport(request: GhostExportRequest) {
+        clearPendingGhostExport()
+        val temporary = runCatching {
+            File.createTempFile("ghost-export-", ".tmp", cacheDir).apply {
+                writeBytes(request.content)
+            }
+        }.getOrElse {
+            ghostController.onExportError("Could not prepare the export: ${it.message}")
+            return
+        }
+        pendingGhostExportPath = temporary.absolutePath
+        pendingGhostExportName = request.suggestedName
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = request.mimeType
+            putExtra(Intent.EXTRA_TITLE, request.suggestedName)
+        }
+        runCatching { startActivityForResult(intent, GHOST_EXPORT_REQUEST) }
+            .onFailure {
+                clearPendingGhostExport()
+                ghostController.onExportError("No Android document provider is available")
+            }
+    }
+
+    private fun finishGhostExport(resultCode: Int, destination: Uri?) {
+        val path = pendingGhostExportPath
+        val name = pendingGhostExportName
+        if (resultCode != RESULT_OK || destination == null || path == null || name == null) {
+            clearPendingGhostExport()
+            ghostController.onExportCancelled()
+            return
+        }
+        runCatching {
+            copyPreparedDocument(File(path)) {
+                contentResolver.openOutputStream(destination, "w")
+                    ?: throw IllegalStateException("Android could not open the selected destination")
+            }
+        }.onSuccess {
+            clearPendingGhostExport()
+            ghostController.onExportSaved(name)
+        }.onFailure { error ->
+            clearPendingGhostExport()
+            ghostController.onExportError(
+                "Export failed: ${error.message ?: error.javaClass.simpleName}",
+            )
+        }
+    }
+
     private fun restoreExportState(state: Bundle?) {
         pendingBruceExportName = state?.getString(STATE_BRUCE_EXPORT_NAME)
         pendingBruceExportPath = state?.getString(STATE_BRUCE_EXPORT_PATH)
         pendingBruceExportDevice = state?.getBoolean(STATE_BRUCE_EXPORT_DEVICE) ?: false
         pendingMarauderExportName = state?.getString(STATE_MARAUDER_EXPORT_NAME)
         pendingMarauderExportPath = state?.getString(STATE_MARAUDER_EXPORT_PATH)
+        pendingGhostExportName = state?.getString(STATE_GHOST_EXPORT_NAME)
+        pendingGhostExportPath = state?.getString(STATE_GHOST_EXPORT_PATH)
     }
 
     private fun clearPendingBruceExport() {
@@ -643,6 +978,12 @@ class MainActivity :
         pendingMarauderExportPath?.let { path -> runCatching { File(path).delete() } }
         pendingMarauderExportName = null
         pendingMarauderExportPath = null
+    }
+
+    private fun clearPendingGhostExport() {
+        pendingGhostExportPath?.let { path -> runCatching { File(path).delete() } }
+        pendingGhostExportName = null
+        pendingGhostExportPath = null
     }
 
     private fun mimeTypeFor(name: String): String =
@@ -673,6 +1014,7 @@ class MainActivity :
         get() = when (this) {
             FirmwareKind.BRUCE -> "Bruce"
             FirmwareKind.MARAUDER -> "Marauder"
+            FirmwareKind.GHOSTESP -> "GhostESP"
             FirmwareKind.UNKNOWN -> "Unknown"
         }
 }

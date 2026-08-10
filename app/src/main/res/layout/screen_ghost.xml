@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="14dp"
+    android:paddingTop="10dp"
+    android:paddingRight="14dp"
+    android:paddingBottom="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/card_bg"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="USB SERIAL LINK" />
+
+        <TextView
+            android:id="@+id/ghostUsbStatus"
+            style="@style/BodyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No GhostESP USB device connected" />
+
+        <TextView
+            style="@style/MutedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="10dp"
+            android:text="The app detects GhostESP automatically after USB-C attachment. Android must be the USB host; use Reconnect only for link recovery." />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/ghostUsbConnect"
+                style="@style/ActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="4dp"
+                android:layout_weight="1"
+                android:text="RECONNECT TO DEVICE" />
+
+            <Button
+                android:id="@+id/ghostUsbDisconnect"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:layout_weight="1"
+                android:text="DISCONNECT" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/card_bg"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GHOSTNET WEB UI" />
+
+        <TextView
+            android:id="@+id/ghostNetStatus"
+            style="@style/BodyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Not connected to GhostNet" />
+
+        <TextView
+            style="@style/MutedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="10dp"
+            android:text="Connect to the device access point, refresh its status, or open the verified local Web UI." />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/ghostNetConnect"
+                style="@style/ActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="3dp"
+                android:layout_weight="1"
+                android:text="CONNECT" />
+
+            <Button
+                android:id="@+id/ghostNetRefresh"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:layout_marginRight="3dp"
+                android:layout_weight="1"
+                android:text="REFRESH" />
+
+            <Button
+                android:id="@+id/ghostOpenWebUi"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:layout_weight="1"
+                android:text="OPEN WEB UI" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/card_bg"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="QUICK DIAGNOSTICS // NO ATTACKS" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/ghostCmdHelp"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="3dp"
+                android:layout_weight="1"
+                android:text="HELP" />
+
+            <Button
+                android:id="@+id/ghostCmdVersion"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:layout_marginRight="3dp"
+                android:layout_weight="1"
+                android:text="VERSION" />
+
+            <Button
+                android:id="@+id/ghostCmdStatus"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:layout_weight="1"
+                android:text="STATUS" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/ghostCmdChipInfo"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="3dp"
+                android:layout_weight="1"
+                android:text="CHIP INFO" />
+
+            <Button
+                android:id="@+id/ghostCmdGpsInfo"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:layout_marginRight="3dp"
+                android:layout_weight="1"
+                android:text="GPS INFO" />
+
+            <Button
+                android:id="@+id/ghostCmdWifiStatus"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:layout_weight="1"
+                android:text="WI-FI STATUS" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/ghostCmdStop"
+            style="@style/DangerButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="STOP" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/card_bg"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LIVE CONSOLE // 115200" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/ghostConsolePageUp"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginRight="2dp"
+                android:layout_weight="1"
+                android:minHeight="0dp"
+                android:text="UP" />
+
+            <Button
+                android:id="@+id/ghostConsolePageDown"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginLeft="2dp"
+                android:layout_marginRight="2dp"
+                android:layout_weight="1"
+                android:minHeight="0dp"
+                android:text="DOWN" />
+
+            <Button
+                android:id="@+id/ghostConsoleLive"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginLeft="2dp"
+                android:layout_marginRight="2dp"
+                android:layout_weight="1"
+                android:minHeight="0dp"
+                android:text="LIVE ON" />
+
+            <Button
+                android:id="@+id/ghostConsoleClear"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginLeft="2dp"
+                android:layout_weight="1"
+                android:minHeight="0dp"
+                android:text="CLEAR" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/MutedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:text="Drag inside the console or use UP/DOWN to pause auto-follow. Tap LIVE to resume at the newest output." />
+
+        <TextView
+            android:id="@+id/ghostConsole"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:background="@drawable/input_bg"
+            android:fadeScrollbars="false"
+            android:fontFamily="monospace"
+            android:gravity="bottom"
+            android:lineSpacingExtra="4dp"
+            android:lineSpacingMultiplier="1.05"
+            android:overScrollMode="always"
+            android:padding="12dp"
+            android:scrollbarStyle="insideInset"
+            android:scrollbars="vertical"
+            android:text="Connect to begin.\n"
+            android:textColor="@color/teal"
+            android:textIsSelectable="true"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/ghostCommand"
+            style="@style/InputField"
+            android:layout_marginTop="10dp"
+            android:hint="GhostESP command"
+            android:imeOptions="actionSend"
+            android:inputType="text" />
+
+        <Button
+            android:id="@+id/ghostSend"
+            style="@style/ActionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SEND COMMAND" />
+
+        <TextView
+            style="@style/MutedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Review free-form commands before sending. Use active network or radio functions only with authorization." />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/card_bg"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CONSOLE EXPORT" />
+
+        <TextView
+            style="@style/MutedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Save the current console output as a text file for later review." />
+
+        <Button
+            android:id="@+id/ghostExportConsole"
+            style="@style/SecondaryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="EXPORT CONSOLE" />
+    </LinearLayout>
+
+    <TextView
+        style="@style/MutedText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:text="Operate only on systems and radio spectrum you own or are authorized to test." />
+</LinearLayout>

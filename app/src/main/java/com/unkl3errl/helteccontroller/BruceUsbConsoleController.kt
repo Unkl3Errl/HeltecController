@@ -45,10 +45,10 @@ class BruceUsbConsoleController(
         }
         root.findViewById<Button>(R.id.bruceUsbDisconnect).setOnClickListener {
             serial.close()
-            onBruceUsbStatus("Bruce USB disconnected", false)
         }
         root.findViewById<Button>(R.id.bruceUsbClear).setOnClickListener {
             buffer.clear()
+            consoleText.reset()
             console.text = ""
             console.scrollTo(0, 0)
         }
@@ -171,8 +171,10 @@ class BruceUsbConsoleController(
         toast(message)
     }
 
+    private val consoleText = SerialConsoleText()
+
     private fun append(text: String) {
-        buffer.append(text.replace("\u0000", ""))
+        buffer.append(consoleText.normalize(text))
         if (buffer.length > 40_000) buffer.delete(0, buffer.length - 32_000)
         console.text = buffer.toString()
         console.post {

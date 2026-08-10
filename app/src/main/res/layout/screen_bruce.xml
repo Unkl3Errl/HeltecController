@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:clipToPadding="false"
-    android:fillViewport="true"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
     android:paddingLeft="14dp"
     android:paddingTop="10dp"
     android:paddingRight="14dp"
     android:paddingBottom="24dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -240,12 +234,14 @@
                 android:background="@drawable/input_bg"
                 android:fontFamily="monospace"
                 android:gravity="top|left"
+                android:lineSpacingExtra="4dp"
+                android:lineSpacingMultiplier="1.05"
                 android:padding="10dp"
                 android:scrollbars="vertical"
                 android:text="Connect the Bruce device to begin."
                 android:textColor="@color/text"
                 android:textIsSelectable="true"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <EditText
                 android:id="@+id/bruceUsbCommand"
@@ -439,5 +435,4 @@
             <Button android:id="@+id/bruceOpenWebUi" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="4dp" android:layout_weight="1" android:text="OPEN WEBUI" />
             <Button android:id="@+id/bruceRestart" style="@style/DangerButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="4dp" android:layout_weight="1" android:text="RESTART" />
         </LinearLayout>
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>

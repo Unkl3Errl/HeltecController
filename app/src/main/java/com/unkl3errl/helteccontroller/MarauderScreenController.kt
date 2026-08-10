@@ -20,11 +20,13 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.unkl3errl.helteccontroller.marauder.CommandRisk
 import com.unkl3errl.helteccontroller.marauder.CommandSafety
+import com.unkl3errl.helteccontroller.marauder.MarauderCommandGuidance
 import com.unkl3errl.helteccontroller.marauder.MarauderAccessPoint
 import com.unkl3errl.helteccontroller.marauder.MarauderBleDevice
 import com.unkl3errl.helteccontroller.marauder.MarauderResultParser
 import com.unkl3errl.helteccontroller.marauder.MarauderSession
 import com.unkl3errl.helteccontroller.marauder.MarauderSessionStore
+import com.unkl3errl.helteccontroller.marauder.MarauderSurveyPlan
 import com.unkl3errl.helteccontroller.marauder.MarauderUsbSerial
 import java.io.File
 import java.text.DateFormat
@@ -54,11 +56,12 @@ class MarauderScreenController(
     private val resultParser = MarauderResultParser()
     private val timedCommandHandler = Handler(Looper.getMainLooper())
     private val consoleBuffer = StringBuilder("Connect to begin.\n")
+    private val consoleText = SerialConsoleText()
     private var consoleFollowing = true
+    private var accessPointScanRunning = false
 
     companion object {
-        private const val WIFI_SURVEY_DURATION_MS = 18_000L
-        private const val COMMAND_SETTLE_MS = 400L
+        private const val COMMAND_SETTLE_MS = 500L
         private const val MAX_SESSION_PREVIEW_CHARS = 80_000
         private val EXPORT_STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
             .withZone(ZoneOffset.UTC)
@@ -78,16 +81,15 @@ class MarauderScreenController(
             false
         }
         root.findViewById<Button>(R.id.marauderConnect).setOnClickListener {
-            setGlobalStatus("USB CONNECTING…")
-            serial.connect()
+            connectUsb()
         }
         root.findViewById<Button>(R.id.marauderDisconnect).setOnClickListener {
-            cancelTimedWifiSurvey()
+            cancelAccessPointScan()
             serial.close()
-            onSerialStatus("Marauder USB disconnected", false)
         }
         root.findViewById<Button>(R.id.consoleClear).setOnClickListener {
             consoleBuffer.clear()
+            consoleText.reset()
             console.text = ""
             setConsoleFollowing(true)
             console.scrollTo(0, 0)
@@ -113,15 +115,14 @@ class MarauderScreenController(
         bindCommand(R.id.cmdHelp, "help")
         bindCommand(R.id.cmdGpsFix, "gps -g fix")
         bindCommand(R.id.cmdGpsData, "gpsdata")
-        wifiSurveyButton.setOnClickListener { startTimedWifiSurvey() }
+        wifiSurveyButton.setOnClickListener { startAccessPointScan() }
         root.findViewById<Button>(R.id.cmdBleScan).setOnClickListener {
             resultParser.clearBleDevices()
             updateStructuredResults()
             sendGuarded("sniffbt")
         }
         root.findViewById<Button>(R.id.cmdStop).setOnClickListener {
-            cancelTimedWifiSurvey()
-            sendGuarded("stopscan")
+            stopActiveScan()
         }
         root.findViewById<Button>(R.id.cmdListAp).setOnClickListener {
             stopAndListAccessPoints()
@@ -153,8 +154,15 @@ class MarauderScreenController(
         updateStructuredResults()
     }
 
+    fun connectUsb() {
+        if (serial.isConnected) return
+        connectionStatus.text = "Opening the detected Marauder USB link…"
+        setGlobalStatus("USB CONNECTING…")
+        serial.connect()
+    }
+
     fun destroy() {
-        cancelTimedWifiSurvey()
+        cancelAccessPointScan()
         sessionStore.append("SESSION", "Controller activity closed")
         sessionStore.stop()
         serial.destroy()
@@ -185,7 +193,7 @@ class MarauderScreenController(
             }
         }.exceptionOrNull()
         activity.runOnUiThread {
-            if (!connected) cancelTimedWifiSurvey()
+            if (!connected) cancelAccessPointScan()
             connectionStatus.text = message
             updateRecordingStatus(sessionError?.message)
             setGlobalStatus(if (connected) "MARAUDER USB" else "IDLE")
@@ -216,33 +224,51 @@ class MarauderScreenController(
         root.findViewById<Button>(buttonId).setOnClickListener { sendGuarded(command) }
     }
 
-    private fun startTimedWifiSurvey() {
+    private fun startAccessPointScan() {
         if (!serial.isConnected) {
             Toast.makeText(activity, "Connect the Marauder USB device first", Toast.LENGTH_LONG).show()
             return
         }
-        cancelTimedWifiSurvey()
+        cancelAccessPointScan()
         resultParser.clearAccessPoints()
         updateStructuredResults()
-        wifiSurveyButton.text = "SCANNING…"
-        appendConsole("\n[survey] Clearing the old AP list…\n")
-        send("clearlist -a")
-        timedCommandHandler.postDelayed({
-            if (!serial.isConnected) return@postDelayed
-            appendConsole("\n[survey] Scanning every 2.4 GHz channel for 18 seconds…\n")
-            send("scanall")
-            timedCommandHandler.postDelayed(::finishTimedWifiSurvey, WIFI_SURVEY_DURATION_MS)
-        }, COMMAND_SETTLE_MS)
+        runSurveyStartupStep(0)
     }
 
-    private fun finishTimedWifiSurvey() {
-        wifiSurveyButton.text = "AP SURVEY 18S"
+    private fun runSurveyStartupStep(index: Int) {
         if (!serial.isConnected) return
-        appendConsole("\n[survey] Scan complete; stopping and listing access points…\n")
+        val step = MarauderSurveyPlan.startupSteps.getOrNull(index) ?: return
+        wifiSurveyButton.text = step.buttonLabel
+        appendConsole("\n[survey] ${step.status}\n")
+        send(step.command)
+        val next = MarauderSurveyPlan.startupSteps.getOrNull(index + 1)
+        if (next == null) {
+            accessPointScanRunning = true
+        } else {
+            timedCommandHandler.postDelayed(
+                { runSurveyStartupStep(index + 1) },
+                next.delayAfterPreviousMs,
+            )
+        }
+    }
+
+    private fun stopActiveScan() {
+        if (!serial.isConnected) {
+            Toast.makeText(activity, "Connect the Marauder USB device first", Toast.LENGTH_LONG).show()
+            return
+        }
+        val listAccessPoints = accessPointScanRunning
+        cancelAccessPointScan()
+        appendConsole(
+            if (listAccessPoints) "\n[survey] Stopping AP scan and listing access points…\n"
+            else "\n[scan] Stopping the current operation…\n",
+        )
         send("stopscan")
-        timedCommandHandler.postDelayed({
-            if (serial.isConnected) send("list -a")
-        }, COMMAND_SETTLE_MS)
+        if (listAccessPoints) {
+            timedCommandHandler.postDelayed({
+                if (serial.isConnected) send("list -a")
+            }, COMMAND_SETTLE_MS)
+        }
     }
 
     private fun stopAndListAccessPoints() {
@@ -250,7 +276,7 @@ class MarauderScreenController(
             Toast.makeText(activity, "Connect the Marauder USB device first", Toast.LENGTH_LONG).show()
             return
         }
-        cancelTimedWifiSurvey()
+        cancelAccessPointScan()
         appendConsole("\n[survey] Stopping the current scan before listing access points…\n")
         send("stopscan")
         timedCommandHandler.postDelayed({
@@ -258,14 +284,20 @@ class MarauderScreenController(
         }, COMMAND_SETTLE_MS)
     }
 
-    private fun cancelTimedWifiSurvey() {
+    private fun cancelAccessPointScan() {
         timedCommandHandler.removeCallbacksAndMessages(null)
-        wifiSurveyButton.text = "AP SURVEY 18S"
+        accessPointScanRunning = false
+        wifiSurveyButton.text = "AP SCAN"
     }
 
     private fun sendInput() {
         val command = commandInput.text.toString().trim()
         if (command.isBlank()) return
+        MarauderCommandGuidance.validationError(command)?.let { message ->
+            appendConsole("\n[usage] $message\n")
+            Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
+            return
+        }
         sendGuarded(command) { commandInput.text.clear() }
     }
 
@@ -362,7 +394,7 @@ class MarauderScreenController(
         if (accessPoints.isEmpty()) {
             AlertDialog.Builder(activity)
                 .setTitle("Access points")
-                .setMessage("No structured AP results are available. Run AP Survey 18s first.")
+                .setMessage("No structured AP results are available. Run AP Scan, then press Stop.")
                 .setPositiveButton("OK", null)
                 .show()
             return
@@ -567,7 +599,7 @@ class MarauderScreenController(
     }
 
     private fun appendConsole(text: String) {
-        consoleBuffer.append(text.replace("\u0000", ""))
+        consoleBuffer.append(consoleText.normalize(text))
         if (consoleBuffer.length > 30_000) {
             consoleBuffer.delete(0, consoleBuffer.length - 24_000)
         }
