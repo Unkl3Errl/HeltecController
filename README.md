@@ -13,6 +13,10 @@ The app locks all three firmware tabs until it identifies the connected
 firmware, then reveals the matching controller. It does not merge firmware
 images or assume that the common Espressif USB ID identifies a project.
 
+Each application keeps its applicable transport controls visible: Bruce has
+**Connect BruceNet** and **Reconnect USB**, GhostESP has **Connect GhostNet**
+and **Reconnect USB**, and Marauder has **Reconnect USB**.
+
 ## Firmware detection
 
 USB detection opens the attached CDC serial port at 115200 baud and sends only
@@ -32,6 +36,10 @@ Bruce continue through an already-connected device Wi-Fi link; otherwise the
 app shows an offline/standalone state. Reattaching a board triggers identity
 verification and reopens USB automatically.
 
+The former firmware-detection card is no longer shown. A slim status line
+reports detection progress, and tapping the status badge opens **USB Detect**
+plus BruceNet and GhostNet recovery actions.
+
 Once a USB or local-device Wi-Fi session is opened, a low-priority Android
 foreground service owns it independently of the visible screen. Switching apps,
 locking the phone, or recreating the Activity therefore keeps the existing serial
@@ -40,11 +48,11 @@ session** notification returns to the controller; reopening the Activity attache
 to the live session instead of probing and reopening the device. Serial output
 received while the screen is absent is buffered and delivered when it returns.
 
-Bruce can also be detected without USB. **Detect BruceNet** requests the
+Bruce can also be detected without USB. **Connect BruceNet** in the status menu requests the
 default local-only `BruceNet` / `brucenet` network and verifies the Bruce WebUI
 login signature at `http://172.0.0.1`.
 
-GhostESP can likewise be detected without USB. **Detect GhostNet** requests the
+GhostESP can likewise be detected without USB. **Connect GhostNet** in the status menu requests the
 default local-only `GhostNet` / `GhostNet` network and verifies GhostESP
 branding at `http://192.168.4.1`. Marauder detection remains USB-only.
 
@@ -71,7 +79,10 @@ the verified BruceNet link. The interface provides:
 - A guarded 115200-baud USB CDC console with read-only shortcuts.
 - SX1262 receive controls/history and firmware-constrained transmission with
   typed confirmation.
-- The original WebUI in a network-bound embedded browser.
+- A dedicated **BruceNet Web UI** card with Connect, Refresh, and Open actions.
+- The original WebUI in a network-bound embedded browser. An authenticated
+  native session is handed to the WebView for seamless opening and removed
+  from WebView storage when the browser closes.
 
 Default Bruce values are:
 
@@ -115,8 +126,8 @@ After Marauder is verified, the app automatically reopens its USB port. The
 Reconnect control remains available for permission or cable recovery. The app provides:
 
 - A live 115200-baud console with reliable page and live-follow controls.
-- One continuous, cutout-safe page lets the title, firmware detection controls,
-  tabs, and selected firmware interface scroll together.
+- One continuous, cutout-safe page lets the title, connection status, tabs, and
+  selected firmware interface scroll together.
 - Screen rotation reflows that page without recreating the controller or
   disconnecting an active USB serial session.
 - Read-only/help/GPS shortcuts plus user-controlled Wi-Fi and BLE discovery workflows.
@@ -152,6 +163,8 @@ does not perform Wi-Fi scans while the phone-assisted source is active.
 
 - Detection never starts a scan, transmission, attack, or firmware update.
 - WebUI and Wi-Fi credentials are held in memory and are not persisted.
+- Bruce's WebView receives only the current in-memory session cookie, scoped to
+  the configured local WebUI origin, and clears it when the embedded browser closes.
 - Phone GPS fixes and Wi-Fi observations go only to the selected Bruce device
   over its local BruceNet or USB link.
 - Exports are staged in private app storage before Android opens the selected

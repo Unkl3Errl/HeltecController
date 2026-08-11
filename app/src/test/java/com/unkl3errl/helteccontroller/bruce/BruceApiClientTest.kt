@@ -5,6 +5,7 @@ import java.net.ServerSocket
 import kotlin.concurrent.thread
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -39,13 +40,16 @@ class BruceApiClientTest {
             val client = BruceApiClient()
             val loopbackUrl = "http://127.0.0.1:${server.port}"
             client.configure(loopbackUrl)
+            assertNull(client.webViewSessionCookie())
             assertTrue(client.login("admin", "bruce"))
+            assertEquals("BRUCESESSION=test-session", client.webViewSessionCookie())
 
             client.configure("$loopbackUrl/")
             assertTrue("normalizing the same URL must retain its session", client.isAuthenticated)
 
             client.configure("http://localhost:${server.port}")
             assertFalse("a different WebUI origin must not inherit the session", client.isAuthenticated)
+            assertNull(client.webViewSessionCookie())
         }
     }
 

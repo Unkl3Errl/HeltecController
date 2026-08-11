@@ -48,7 +48,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="4dp"
                 android:layout_weight="1"
-                android:text="RECONNECT TO DEVICE" />
+                android:text="RECONNECT USB" />
 
             <Button
                 android:id="@+id/ghostUsbDisconnect"
@@ -102,7 +102,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="3dp"
                 android:layout_weight="1"
-                android:text="CONNECT" />
+                android:text="CONNECT GHOSTNET" />
 
             <Button
                 android:id="@+id/ghostNetRefresh"

@@ -20,6 +20,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -65,6 +66,9 @@ class MainActivity :
         private const val SESSION_PREFS = "persistent_device_session"
         private const val PREF_FIRMWARE_KIND = "firmware_kind"
         private const val PREF_DETECTION_SOURCE = "detection_source"
+        private const val MENU_DETECT_USB = 5001
+        private const val MENU_CONNECT_BRUCENET = 5002
+        private const val MENU_CONNECT_GHOSTNET = 5003
     }
 
     private lateinit var globalStatus: TextView
@@ -172,9 +176,7 @@ class MainActivity :
         )
         networkManager.attach(this)
 
-        findViewById<Button>(R.id.detectUsb).setOnClickListener { startUsbDetection() }
-        findViewById<Button>(R.id.detectBruceNet).setOnClickListener { startBruceNetDetection() }
-        findViewById<Button>(R.id.detectGhostNet).setOnClickListener { startGhostNetDetection() }
+        globalStatus.setOnClickListener { showConnectionMenu() }
         tabBruce.setOnClickListener {
             if (detectedFirmware?.kind == FirmwareKind.BRUCE) showScreen(bruceView, FirmwareKind.BRUCE)
         }
@@ -190,8 +192,8 @@ class MainActivity :
         }
 
         clearDetection(
-            "Connect a board by USB, or detect Bruce or GhostESP through its device Wi-Fi. " +
-                "Firmware tabs stay locked until a signature is verified.",
+            "Automatic USB detection is active. Tap the status badge to reconnect USB, " +
+                "BruceNet, or GhostNet.",
         )
         container.post(::restorePersistentConnectionOrDetect)
     }
@@ -1022,6 +1024,24 @@ class MainActivity :
     private fun setGlobalStatus(status: String) {
         if (Thread.currentThread() == mainLooper.thread) globalStatus.text = status
         else runOnUiThread { globalStatus.text = status }
+    }
+
+    private fun showConnectionMenu() {
+        PopupMenu(this, globalStatus).apply {
+            menu.add(0, MENU_DETECT_USB, 0, "USB Detect")
+            menu.add(0, MENU_CONNECT_BRUCENET, 1, "Connect BruceNet")
+            menu.add(0, MENU_CONNECT_GHOSTNET, 2, "Connect GhostNet")
+            setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    MENU_DETECT_USB -> startUsbDetection()
+                    MENU_CONNECT_BRUCENET -> startBruceNetDetection()
+                    MENU_CONNECT_GHOSTNET -> startGhostNetDetection()
+                    else -> return@setOnMenuItemClickListener false
+                }
+                true
+            }
+            show()
+        }
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")

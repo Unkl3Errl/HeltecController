@@ -13,6 +13,7 @@ import android.text.InputType
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -93,8 +94,7 @@ class BruceScreenController(
             setGlobalStatus("JOINING…")
             requestWifi(ssid.text.toString().trim(), wifiPassword.text.toString())
         }
-        root.findViewById<Button>(R.id.bruceLogin).setOnClickListener { login() }
-        root.findViewById<Button>(R.id.bruceRefresh).setOnClickListener { refreshAll() }
+        root.findViewById<Button>(R.id.bruceRefresh).setOnClickListener { login() }
         root.findViewById<Button>(R.id.bruceGpsStart).setOnClickListener { gpsAction("start") }
         root.findViewById<Button>(R.id.bruceGpsStop).setOnClickListener { gpsAction("stop") }
         root.findViewById<Button>(R.id.bruceGpsTrack).setOnClickListener { showGpsTrack() }
@@ -136,7 +136,9 @@ class BruceScreenController(
     }
 
     fun onUsbDetected() {
-        connectionStatus.text = "Bruce detected over USB · opening field-log bridge…"
+        if (client.network == null) {
+            connectionStatus.text = "Bruce detected over USB · connect BruceNet for the Web UI"
+        }
         usbConsole.connectBridge()
     }
 
@@ -326,10 +328,14 @@ class BruceScreenController(
     private fun onUsbBridgeState(connected: Boolean, message: String) {
         usbBridgeConnected = connected
         if (!connected) {
-            if (client.network == null) connectionStatus.text = "USB field-log bridge unavailable · $message"
+            if (client.network == null) {
+                connectionStatus.text = "Not connected to BruceNet · USB bridge unavailable: $message"
+            }
             return
         }
-        connectionStatus.text = "USB field-log bridge ready · Wi-Fi observations can use this cable"
+        if (client.network == null) {
+            connectionStatus.text = "USB bridge ready · connect BruceNet for the Web UI"
+        }
         executor.execute {
             runCatching { usbConsole.bridgeRequest("logger-status") }.onSuccess { logger ->
                 activity.runOnUiThread {
@@ -798,9 +804,20 @@ class BruceScreenController(
             return
         }
 
-        val baseUri = Uri.parse(client.displayUrl())
+        val cookieOrigin = client.displayUrl()
+        val baseUri = Uri.parse(cookieOrigin)
+        val cookieManager = CookieManager.getInstance().apply { setAcceptCookie(true) }
+        val injectedSession = client.webViewSessionCookie()
+        if (injectedSession != null) {
+            cookieManager.setCookie(
+                cookieOrigin,
+                "$injectedSession; Path=/; HttpOnly; SameSite=Strict",
+            )
+            cookieManager.flush()
+        }
         val webView = runCatching {
             WebView(activity).apply {
+                cookieManager.setAcceptThirdPartyCookies(this, false)
                 setBackgroundColor(Color.rgb(7, 16, 20))
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
@@ -821,7 +838,7 @@ class BruceScreenController(
                         return !local
                     }
                 }
-                loadUrl(client.displayUrl())
+                loadUrl(cookieOrigin)
             }
         }.getOrElse { error ->
             connectivityManager.bindProcessToNetwork(null)
@@ -873,6 +890,13 @@ class BruceScreenController(
         dialog.setOnDismissListener {
             webView.stopLoading()
             webView.destroy()
+            if (injectedSession != null) {
+                cookieManager.setCookie(
+                    cookieOrigin,
+                    "BRUCESESSION=0; Path=/; Max-Age=0; HttpOnly; SameSite=Strict",
+                )
+                cookieManager.flush()
+            }
             connectivityManager.bindProcessToNetwork(null)
             if (webUiDialog === dialog) webUiDialog = null
         }
