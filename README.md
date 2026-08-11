@@ -3,14 +3,15 @@
 This is the single Android companion for the independent Heltec WiFi LoRa 32 V4
 firmware builds in this workspace:
 
+- Bruce in [`Unkl3Errl/HeltecFirmware`](https://github.com/Unkl3Errl/HeltecFirmware)
 - GhostESP, adapted from the upstream `Development-deki` branch
-- ESP32 Marauder in [`Unkl3Errl/ESP32Marauder`](https://github.com/Unkl3Errl/ESP32Marauder)
+- ESP32 Marauder in the independent
+  [`heltec-v4-full`](https://github.com/Unkl3Errl/ESP32Marauder/tree/heltec-v4-full)
+  branch
 
-The app locks both visible firmware tabs until it identifies the connected
-firmware. The existing Bruce implementation remains in source for later reuse,
-but its detection button, tab, and controls are intentionally hidden in this
-release. The app does not merge firmware images or assume that the common
-Espressif USB ID identifies a project.
+The app locks all three firmware tabs until it identifies the connected
+firmware, then reveals the matching controller. It does not merge firmware
+images or assume that the common Espressif USB ID identifies a project.
 
 ## Firmware detection
 
@@ -26,9 +27,9 @@ the read-only `info`, `help`, and `version` commands. It recognizes:
 The detector closes the serial port before enabling the matching controller, so
 the selected module can claim the port normally. Empty, unrelated, or
 conflicting output leaves the app in **Unknown** state. Detaching a
-USB-identified board retains its verified screen and session. GhostESP
-continues through an already-connected GhostNet link; otherwise the app shows
-an offline/standalone state. Reattaching either board triggers identity
+USB-identified board retains its verified screen and session. GhostESP and
+Bruce continue through an already-connected device Wi-Fi link; otherwise the
+app shows an offline/standalone state. Reattaching a board triggers identity
 verification and reopens USB automatically.
 
 Once a USB or local-device Wi-Fi session is opened, a low-priority Android
@@ -39,7 +40,11 @@ session** notification returns to the controller; reopening the Activity attache
 to the live session instead of probing and reopening the device. Serial output
 received while the screen is absent is buffered and delivered when it returns.
 
-GhostESP can also be detected without USB. **Detect GhostNet** requests the
+Bruce can also be detected without USB. **Detect BruceNet** requests the
+default local-only `BruceNet` / `brucenet` network and verifies the Bruce WebUI
+login signature at `http://172.0.0.1`.
+
+GhostESP can likewise be detected without USB. **Detect GhostNet** requests the
 default local-only `GhostNet` / `GhostNet` network and verifies GhostESP
 branding at `http://192.168.4.1`. Marauder detection remains USB-only.
 
@@ -48,8 +53,35 @@ branding at `http://192.168.4.1`. Marauder detection remains USB-only.
 - Android 10 (API 29) or newer.
 - A phone with USB host support and a data-capable USB-C OTG connection for USB
   detection and control.
+- Bruce WebUI mode for BruceNet operation.
 - GhostESP's GhostNet access point for network operation.
 - The customized Marauder firmware for its USB controller.
+
+## Bruce interface
+
+After Bruce is verified, the app automatically opens its USB link or retains
+the verified BruceNet link. The interface provides:
+
+- Authenticated board, firmware, battery, memory, Wi-Fi, BLE, GPS, logger, and
+  LoRa status through BruceNet.
+- GPS monitor controls; GPS, BLE, and Android-assisted Wi-Fi field logging;
+  phone GPS assistance; file inventory; and Android document-picker export.
+- Native rendering and navigation of Bruce's compiled vector display.
+- LittleFS browsing, viewing/editing, creation, rename, delete, and download.
+- A guarded 115200-baud USB CDC console with read-only shortcuts.
+- SX1262 receive controls/history and firmware-constrained transmission with
+  typed confirmation.
+- The original WebUI in a network-bound embedded browser.
+
+Default Bruce values are:
+
+| Setting | Default |
+| --- | --- |
+| Wi-Fi SSID | `BruceNet` |
+| Wi-Fi password | `brucenet` |
+| WebUI URL | `http://172.0.0.1` |
+| WebUI username | `admin` |
+| WebUI password | `bruce` |
 
 ## GhostESP interface
 
@@ -77,12 +109,6 @@ Default GhostESP values are:
 | WebUI URL | `http://192.168.4.1` |
 | Web authentication | Disabled by firmware default |
 
-## Hidden Bruce interface
-
-Bruce USB/WebUI code is preserved in the project, but no Bruce tab or BruceNet
-detection button is shown in version 0.8.0. If a Bruce USB signature is found,
-the app identifies it and explains that its controls are temporarily hidden.
-
 ## Marauder interface
 
 After Marauder is verified, the app automatically reopens its USB port. The
@@ -108,7 +134,7 @@ Reconnect control remains available for permission or cable recovery. The app pr
 Marauder Bluetooth scanning is a firmware feature, not an app transport. The
 current Marauder build still requires USB for Android control.
 
-### Bruce phone-assisted Wi-Fi logging
+## Bruce phone-assisted Wi-Fi logging
 
 When Wi-Fi is enabled for a Bruce field-logger session, Android requests a
 non-disruptive scan no more than once per minute. The app selects the 32
@@ -148,7 +174,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.8.0`, code 21.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.8.1`, code 22.
 This preserves update continuity with the permanent Heltec Controller signing
 identity. Release builds use the four `HELTEC_RELEASE_*` environment variables
 documented in [`SIGNING.md`](SIGNING.md); without all four, Gradle deliberately

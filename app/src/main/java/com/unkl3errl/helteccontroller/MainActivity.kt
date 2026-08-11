@@ -190,7 +190,7 @@ class MainActivity :
         }
 
         clearDetection(
-            "Connect a board by USB, or detect GhostESP through GhostNet. " +
+            "Connect a board by USB, or detect Bruce or GhostESP through its device Wi-Fi. " +
                 "Firmware tabs stay locked until a signature is verified.",
         )
         container.post(::restorePersistentConnectionOrDetect)
@@ -343,7 +343,17 @@ class MainActivity :
                     }
                     ghostController.onNetworkAvailable(network)
                 }
-                FirmwareKind.BRUCE -> bruceController.onNetworkAvailable()
+                FirmwareKind.BRUCE -> {
+                    if (usbTransportDetached) {
+                        detectedFirmware = detectedFirmware?.copy(
+                            source = DetectionSource.BRUCENET,
+                            evidence = "USB detached · continuing through BruceNet",
+                        )
+                        detectionStatus.text =
+                            "Verified Bruce · USB detached · continuing through BruceNet"
+                    }
+                    bruceController.onNetworkAvailable()
+                }
                 else -> Unit
             }
         }
@@ -360,8 +370,13 @@ class MainActivity :
                             "reconnect GhostNet or attach USB to resume control."
                     ghostController.onNetworkLost()
                 }
-                detectedFirmware?.source == DetectionSource.BRUCENET ->
-                    clearDetection("BruceNet disconnected. Reconnect and detect the firmware again.")
+                detectedFirmware?.source == DetectionSource.BRUCENET -> {
+                    detectionStatus.text =
+                        "BruceNet disconnected. Bruce remains available standalone; " +
+                            "reconnect BruceNet or attach USB to resume control."
+                    bruceController.onNetworkLost()
+                    setGlobalStatus("BRUCE OFFLINE")
+                }
                 detectedFirmware?.kind == FirmwareKind.GHOSTESP -> ghostController.onNetworkLost()
                 detectedFirmware?.kind == FirmwareKind.BRUCE -> bruceController.onNetworkLost()
             }
@@ -514,16 +529,14 @@ class MainActivity :
             "Verified ${detection.kind.displayName} via $source · ${detection.evidence}"
         setControllerSubtitle(detection.kind.displayName.uppercase())
         setGlobalStatus("${detection.kind.displayName.uppercase()} READY")
-        tabBruce.isEnabled = false
+        tabBruce.isEnabled = detection.kind == FirmwareKind.BRUCE
         tabGhost.isEnabled = detection.kind == FirmwareKind.GHOSTESP
         tabMarauder.isEnabled = detection.kind == FirmwareKind.MARAUDER
         when (detection.kind) {
             FirmwareKind.BRUCE -> {
-                container.removeAllViews()
-                setTabAppearance(FirmwareKind.UNKNOWN)
-                detectionStatus.text =
-                    "Verified Bruce via $source · Bruce controls are temporarily hidden in this release."
-                setGlobalStatus("BRUCE HIDDEN")
+                showScreen(bruceView, FirmwareKind.BRUCE)
+                if (detection.source == DetectionSource.USB) bruceController.onUsbDetected()
+                if (client.network != null) bruceController.onNetworkAvailable()
             }
             FirmwareKind.MARAUDER -> {
                 showScreen(marauderView, FirmwareKind.MARAUDER)
@@ -582,9 +595,21 @@ class MainActivity :
                 setGlobalStatus("MARAUDER OFFLINE")
             }
             FirmwareKind.BRUCE -> {
-                detectionStatus.text =
-                    "Bruce USB detached. Its controls remain hidden in this release."
-                setGlobalStatus("BRUCE HIDDEN")
+                if (client.network != null) {
+                    detectedFirmware = detection.copy(
+                        source = DetectionSource.BRUCENET,
+                        evidence = "USB detached · continuing through BruceNet",
+                    )
+                    detectionStatus.text =
+                        "Bruce USB detached · continuing automatically through BruceNet."
+                    bruceController.onNetworkAvailable()
+                    setGlobalStatus("BRUCENET")
+                } else {
+                    detectionStatus.text =
+                        "Bruce USB detached. The board continues standalone; connect BruceNet " +
+                            "or reattach USB to resume control."
+                    setGlobalStatus("BRUCE OFFLINE")
+                }
             }
             FirmwareKind.UNKNOWN -> clearDetection("The disconnected firmware was unknown.")
         }
