@@ -17,8 +17,11 @@ upload the keystore or its password.
    transfer and releases it only after Android verifies the final size and
    CRC-32.
 6. Rebuild all three complete firmware images, update `../firmware-catalog.json`
-   with their exact source commits, sizes, and SHA-256 values, and place the
-   matching assets under `app/src/main/assets/firmware/`.
+   with their exact customized source commits, upstream baseline versions and
+   commits, sizes, and SHA-256 values, and place the matching assets under
+   `app/src/main/assets/firmware/`. The baseline must identify the stable
+   upstream source actually integrated into the image, not merely the newest
+   release detected by GitHub.
 7. Test a firmware change through the Android recovery card and confirm its
    ROM MD5 verification, reboot, version redetection, and **Current Device
    Firmware** state. Do this without erasing any pending device spool data.
@@ -51,6 +54,27 @@ when an individual source repository is private. The normal GitHub Actions
 build intentionally publishes only an unsigned
 release APK because the private signing identity is not stored in the
 repository.
+
+## Stable upstream release automation
+
+The parent repository checks the official Bruce, GhostESP, and Marauder
+`releases/latest` endpoints every six hours. It ignores drafts, prereleases,
+nightlies, and non-semantic tags and opens or refreshes the single
+`upstream-release` integration issue whenever a signed compatible image is
+behind a stable source release. The Android app performs the same read-only
+check at launch so the upstream version shown on each tab does not depend on a
+new app release.
+
+That automation deliberately does not publish a flash image. A maintainer must
+port the stable tag onto the customization branch, preserve the Android-backed
+storage protocol, build the board target, run the hardware gate, update the
+catalog baseline, and sign the catalog with the permanent offline key. This is
+the boundary that prevents an upstream release from replacing the lossless
+storage behavior with an untested generic image.
+
+New customized firmware releases use `<upstream>-mobile.<revision>` (for
+example, `1.16.1-mobile.1`). Increment the mobile revision for customization-only
+changes; reset it to `1` when the integrated stable upstream version advances.
 
 ## Firmware and parent repository
 

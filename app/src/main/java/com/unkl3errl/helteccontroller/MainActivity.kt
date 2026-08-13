@@ -44,6 +44,7 @@ import com.unkl3errl.helteccontroller.firmware.FirmwareCatalog
 import com.unkl3errl.helteccontroller.firmware.FirmwareImageRepository
 import com.unkl3errl.helteccontroller.firmware.FirmwareRelease
 import com.unkl3errl.helteccontroller.firmware.FirmwareVersion
+import com.unkl3errl.helteccontroller.firmware.UpstreamRelease
 import com.unkl3errl.helteccontroller.ghost.GhostApiClient
 import com.unkl3errl.helteccontroller.usb.UsbDeviceRegistry
 import com.unkl3errl.helteccontroller.usb.UsbDeviceTarget
@@ -252,8 +253,14 @@ class MainActivity :
         firmwareRepository.initialize(object : FirmwareImageRepository.Listener {
             override fun onCatalogChanged(catalog: FirmwareCatalog) = runOnUiThread {
                 updateFirmwareCards()
-                showReleaseNotice(selectedScreen)
                 notifyIfFirmwareUpdateExists()
+            }
+
+            override fun onUpstreamReleasesChanged(
+                releases: Map<FirmwareKind, UpstreamRelease>,
+            ) = runOnUiThread {
+                updateFirmwareCards()
+                showReleaseNotice(selectedScreen)
             }
 
             override fun onCatalogStatus(message: String) = runOnUiThread {
@@ -1053,11 +1060,26 @@ class MainActivity :
         }
         val imageReady = firmwareRepository.imageFile(kind) != null
         val flashTargets = bootloaderFlasher.targets()
-        status.text = if (imageReady) {
-            "Newest ${release.version} · ${release.releasedAt} · Complete bootable image retained in app files."
+        val upstream = firmwareRepository.upstreamReleases[kind]
+        val upstreamPending = upstream != null &&
+            FirmwareVersion.isUpstreamBaselineOlder(
+                release.upstream.baselineVersion,
+                upstream.version,
+            ) == true
+        val imageStatus = if (imageReady) {
+            "Compatible image ${release.version} · ${release.releasedAt} · retained in app files."
         } else {
-            "Newest ${release.version} · image download or verification is still pending."
+            "Compatible image ${release.version} · download or verification is still pending."
         }
+        val upstreamStatus = when {
+            upstreamPending ->
+                "Upstream ${upstream.version} · ${upstream.releasedAt} · compatibility build pending."
+            upstream != null -> "Upstream ${upstream.version} · ${upstream.releasedAt} · included."
+            firmwareRepository.upstreamRefreshComplete ->
+                "Newest upstream check unavailable · compatible image retained."
+            else -> "Checking the newest stable upstream release…"
+        }
+        status.text = "$imageStatus\n$upstreamStatus"
         val detection = detectedFirmwares[kind]
         val exactCurrent = detection?.kind == kind &&
             FirmwareVersion.matches(detection.version, release.version)
@@ -1077,13 +1099,28 @@ class MainActivity :
     private fun showReleaseNotice(kind: FirmwareKind) {
         if (kind == FirmwareKind.UNKNOWN || !::firmwareRepository.isInitialized) return
         val release = firmwareRepository.catalog?.releases?.get(kind) ?: return
-        val key = "seen_${kind.name}_${release.version}"
+        val upstream = firmwareRepository.upstreamReleases[kind]
+        val upstreamPending = upstream != null &&
+            FirmwareVersion.isUpstreamBaselineOlder(
+                release.upstream.baselineVersion,
+                upstream.version,
+            ) == true
+        val key = if (upstreamPending) {
+            "seen_upstream_${kind.name}_${upstream.version}"
+        } else {
+            "seen_${kind.name}_${release.version}"
+        }
         val preferences = getSharedPreferences(RELEASE_NOTICE_PREFS, MODE_PRIVATE)
         if (preferences.getBoolean(key, false)) return
         preferences.edit().putBoolean(key, true).apply()
         Toast.makeText(
             this,
-            "${release.displayName} ${release.version} · ${release.releasedAt}\n${release.summary}",
+            if (upstreamPending) {
+                "${release.displayName} upstream ${upstream.version} · ${upstream.releasedAt}\n" +
+                    "Compatible image ${release.version} remains current while integration is validated."
+            } else {
+                "${release.displayName} ${release.version} · ${release.releasedAt}\n${release.summary}"
+            },
             Toast.LENGTH_LONG,
         ).show()
     }

@@ -11,10 +11,25 @@ data class FirmwareRelease(
     val summary: String,
     val sourceRepository: String,
     val sourceCommit: String,
+    val upstream: FirmwareUpstream,
     val imageAsset: String?,
     val imageUrl: String?,
     val imageSha256: String,
     val imageSizeBytes: Long,
+)
+
+data class FirmwareUpstream(
+    val repository: String,
+    val latestReleaseApi: String,
+    val baselineVersion: String,
+    val baselineCommit: String,
+)
+
+data class UpstreamRelease(
+    val kind: FirmwareKind,
+    val version: String,
+    val releasedAt: String,
+    val releaseUrl: String,
 )
 
 data class FirmwareCatalog(
@@ -43,6 +58,7 @@ object FirmwareCatalogParser {
                 }
                 require(!containsKey(kind)) { "Duplicate firmware id" }
                 val source = item.getJSONObject("source")
+                val upstream = item.getJSONObject("upstream")
                 val image = item.getJSONObject("image")
                 val sha256 = image.getString("sha256").lowercase()
                 require(sha256.matches(Regex("[0-9a-f]{64}"))) { "Invalid image digest" }
@@ -58,6 +74,12 @@ object FirmwareCatalogParser {
                         summary = item.getString("summary"),
                         sourceRepository = source.getString("repository"),
                         sourceCommit = source.getString("commit"),
+                        upstream = FirmwareUpstream(
+                            repository = upstream.getString("repository"),
+                            latestReleaseApi = upstream.getString("latestReleaseApi"),
+                            baselineVersion = upstream.getString("baselineVersion"),
+                            baselineCommit = upstream.getString("baselineCommit"),
+                        ),
                         imageAsset = image.optionalString("asset"),
                         imageUrl = image.optionalString("url"),
                         imageSha256 = sha256,
@@ -101,10 +123,33 @@ object FirmwareVersion {
     fun matches(installed: String?, latest: String): Boolean =
         installed != null && normalize(installed) == normalize(latest)
 
+    fun stableVersion(value: String): String? =
+        Regex("^v?(\\d+\\.\\d+(?:\\.\\d+)?)$")
+            .matchEntire(value.trim())
+            ?.groupValues
+            ?.get(1)
+
+    fun isUpstreamBaselineOlder(baseline: String, latestStable: String): Boolean? {
+        val latest = stableVersion(latestStable)?.let(::numericComponents) ?: return null
+        val match = Regex("^v?(\\d+\\.\\d+(?:\\.\\d+)?)(?:-pre\\d+)?$")
+            .matchEntire(baseline.trim()) ?: return null
+        val current = numericComponents(match.groupValues[1])
+        val count = maxOf(current.size, latest.size)
+        for (index in 0 until count) {
+            val left = current.getOrElse(index) { 0 }
+            val right = latest.getOrElse(index) { 0 }
+            if (left != right) return left < right
+        }
+        return "-pre" in baseline.lowercase()
+    }
+
     private fun components(value: String): List<Int>? {
         val match = Regex("^v?(\\d+(?:\\.\\d+){1,3})").find(value.trim()) ?: return null
-        return match.groupValues[1].split('.').map(String::toInt)
+        return numericComponents(match.groupValues[1])
     }
+
+    private fun numericComponents(value: String): List<Int> =
+        value.split('.').map(String::toInt)
 
     private fun normalize(value: String): String = value.trim().removePrefix("v").lowercase()
 
