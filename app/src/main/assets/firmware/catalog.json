@@ -11,47 +11,47 @@
     {
       "id": "bruce",
       "displayName": "Bruce",
-      "version": "0.6.1",
+      "version": "1.16.1-mobile.1",
       "releasedAt": "2026-08-13",
       "summary": "Complete recovery image with resilient Android-backed storage mounting and acknowledged rolling field-log handoff.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/HeltecFirmware",
-        "commit": "3201990838e0e836f18ab08c07da038106c8b57b"
+        "commit": "252fbc736b9d53c78ffacbf544d266742331e4a7"
       },
       "upstream": {
         "repository": "https://github.com/BruceDevices/firmware",
         "latestReleaseApi": "https://api.github.com/repos/BruceDevices/firmware/releases/latest",
-        "baselineVersion": "1.15",
-        "baselineCommit": "ac869d3d99ba222fd2fe7f76b707e4929385bd4c"
+        "baselineVersion": "1.16.1",
+        "baselineCommit": "ba519c936c87b89c9c667c15b932d7faca5360d5"
       },
       "image": {
-        "asset": "bruce-0.6.1.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.11.0/bruce-0.6.1.bin",
-        "sha256": "dd24cfe5bd8fa1d6dfedec079d80506d48a6ac0bf04494550d8fd88859196b9f",
-        "sizeBytes": 3124928
+        "asset": "bruce-1.16.1-mobile.1.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.0/bruce-1.16.1-mobile.1.bin",
+        "sha256": "48465b7fd911876e358b34f265241198acca2951d38833bcb5249700526daad0",
+        "sizeBytes": 3883760
       }
     },
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.0-mobile.4",
+      "version": "2.1.0-mobile.5",
       "releasedAt": "2026-08-13",
       "summary": "Complete recovery image with reliable virtual-storage initialization, acknowledged Android archive handoff, and persistent Web UI settings.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "6b0a24a5c0421113fd3de5c4f00e6721dafde3bd"
+        "commit": "a1ac57c8e8b278453d8ff33a62b4a8ccab300dd4"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
         "latestReleaseApi": "https://api.github.com/repos/GhostESP-Revival/GhostESP/releases/latest",
-        "baselineVersion": "2.1-pre8",
-        "baselineCommit": "fb05244ecbafad0d030f5b57e0e0a14c4e4e5728"
+        "baselineVersion": "2.1",
+        "baselineCommit": "9151548e8d841afb38f97ac9bc31d4e33e71a243"
       },
       "image": {
-        "asset": "ghostesp-2.1.0-mobile.4.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.10.1/ghostesp-2.1.0-mobile.4.bin",
-        "sha256": "29229a2caf10105b9c1512ebdbc6fc24d7abceeebf26989d15e8d0bdb48ee034",
-        "sizeBytes": 3124416
+        "asset": "ghostesp-2.1.0-mobile.5.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.0/ghostesp-2.1.0-mobile.5.bin",
+        "sha256": "80b03b97aaa0769e2758f09d92875a3c51e77c7a22fb2dad0ac870f7ab51d891",
+        "sizeBytes": 3124000
       }
     },
     {
