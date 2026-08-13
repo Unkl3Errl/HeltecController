@@ -39,6 +39,22 @@
             android:layout_marginBottom="10dp"
             android:text="Preparing the offline bootable image…" />
 
+        <TextView
+            android:id="@+id/ghostUsbTargetStatus"
+            style="@style/BodyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="No wired device assigned" />
+
+        <Button
+            android:id="@+id/selectGhostUsbTarget"
+            style="@style/SecondaryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="SELECT WIRED DEVICE" />
+
         <Button
             android:id="@+id/flashGhostFirmware"
             style="@style/ActionButton"

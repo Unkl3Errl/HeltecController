@@ -11,11 +11,11 @@ import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import com.hoho.android.usbserial.driver.CdcAcmSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
-import com.hoho.android.usbserial.driver.UsbSerialProber
 import com.hoho.android.usbserial.util.SerialInputOutputManager
+import com.unkl3errl.helteccontroller.usb.UsbDeviceRegistry
+import com.unkl3errl.helteccontroller.usb.UsbDeviceTarget
 import java.util.EnumMap
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
@@ -43,8 +43,6 @@ class PersistentUsbSerialSession internal constructor(
     }
 
     private companion object {
-        const val ESPRESSIF_VID = 0x303A
-        const val ESP32_USB_JTAG_PID = 0x1001
         const val BAUD_RATE = 115_200
         const val MAX_BACKLOG_BYTES = 64 * 1024
     }
@@ -72,10 +70,16 @@ class PersistentUsbSerialSession internal constructor(
     private var currentDeviceId: Int? = null
 
     @Volatile
+    private var boundTarget: UsbDeviceTarget? = null
+
+    @Volatile
     private var lastStatus = "${kind.displayName} USB is not connected"
 
     val isConnected: Boolean
         get() = port?.isOpen == true
+
+    val target: UsbDeviceTarget?
+        get() = boundTarget
 
     private val permissionAction =
         "com.unkl3errl.helteccontroller.${kind.name}_USB_PERMISSION"
@@ -143,10 +147,35 @@ class PersistentUsbSerialSession internal constructor(
             emitStatus("${kind.displayName} USB is already connected", true)
             return
         }
-        val driver = findDriver()
+        val selectedTarget = boundTarget ?: UsbDeviceRegistry.serialTargets(usbManager)
+            .singleOrNull()
+            ?.takeIf { candidate ->
+                val assigned = PersistentDeviceConnections.assignedKind(candidate)
+                if (assigned == null || assigned == kind) {
+                    true
+                } else {
+                    emitStatus(
+                        "That wired device is assigned to ${assigned.displayName}. " +
+                            "Use Select wired device on the ${kind.displayName} tab to verify another board.",
+                        false,
+                    )
+                    false
+                }
+            }
+            ?.also(::bind)
+        if (selectedTarget == null) {
+            val count = UsbDeviceRegistry.serialTargets(usbManager).size
+            emitStatus(
+                if (count > 1) "Select which USB device belongs to ${kind.displayName} first."
+                else "No compatible USB serial device found. Check the OTG adapter and cable.",
+                false,
+            )
+            return
+        }
+        val driver = UsbDeviceRegistry.driverFor(usbManager, selectedTarget)
         if (driver == null) {
             emitStatus(
-                "No compatible USB serial device found. Check the OTG adapter and cable.",
+                "The selected ${kind.displayName} USB device is no longer attached.",
                 false,
             )
             return
@@ -164,6 +193,24 @@ class PersistentUsbSerialSession internal constructor(
             return
         }
         open(driver)
+    }
+
+    fun bind(target: UsbDeviceTarget) {
+        val previous = boundTarget
+        if (previous?.samePhysicalDevice(target) == true) {
+            boundTarget = target
+            return
+        }
+        if (isConnected || pendingDriver != null) disconnect()
+        boundTarget = target
+        emitStatus("${kind.displayName} assigned to ${target.displayLabel()}", false)
+    }
+
+    internal fun clearBindingIf(target: UsbDeviceTarget) {
+        if (boundTarget?.samePhysicalDevice(target) != true) return
+        disconnect()
+        boundTarget = null
+        emitStatus("${kind.displayName} USB target is not assigned", false)
     }
 
     fun write(data: ByteArray) {
@@ -247,19 +294,6 @@ class PersistentUsbSerialSession internal constructor(
         }
     }
 
-    private fun findDriver(): UsbSerialDriver? {
-        val detected = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
-        detected.firstOrNull {
-            it.device.vendorId == ESPRESSIF_VID && it.device.productId == ESP32_USB_JTAG_PID
-        }?.let { return it }
-        detected.firstOrNull()?.let { return it }
-
-        val nativeEspressif = usbManager.deviceList.values.firstOrNull {
-            it.vendorId == ESPRESSIF_VID && it.productId == ESP32_USB_JTAG_PID
-        }
-        return nativeEspressif?.let(::CdcAcmSerialDriver)
-    }
-
     private fun open(driver: UsbSerialDriver) {
         try {
             val connection = usbManager.openDevice(driver.device)
@@ -276,9 +310,10 @@ class PersistentUsbSerialSession internal constructor(
             runCatching { selectedPort.setDTR(true) }
             port = selectedPort
             currentDeviceId = driver.device.deviceId
+            boundTarget = UsbDeviceRegistry.target(usbManager, driver.device)
             ioManager = SerialInputOutputManager(selectedPort, this).also { it.start() }
             emitStatus(
-                "Connected: ${driver.device.productName ?: kind.displayName} · $BAUD_RATE baud",
+                "Connected: ${boundTarget?.displayLabel() ?: kind.displayName} · $BAUD_RATE baud",
                 true,
             )
             DeviceConnectionService.refresh(appContext)
@@ -334,6 +369,34 @@ object PersistentDeviceConnections {
                 }
             }
         }
+
+    fun bindUsb(context: Context, kind: PersistentUsbKind, target: UsbDeviceTarget) =
+        synchronized(lock) {
+            sessions.entries
+                .filter { it.key != kind && it.value.target?.samePhysicalDevice(target) == true }
+                .forEach { it.value.clearBindingIf(target) }
+            usb(context, kind).bind(target)
+        }
+
+    fun disconnectUsbTarget(target: UsbDeviceTarget) = synchronized(lock) {
+        sessions.values
+            .filter { it.target?.samePhysicalDevice(target) == true }
+            .forEach(PersistentUsbSerialSession::disconnect)
+    }
+
+    fun assignedKind(target: UsbDeviceTarget): PersistentUsbKind? = synchronized(lock) {
+        sessions.entries.firstOrNull {
+            it.value.target?.samePhysicalDevice(target) == true
+        }?.key
+    }
+
+    fun activeUsbKinds(): List<PersistentUsbKind> = synchronized(lock) {
+        sessions.filterValues { it.isConnected }.keys.toList()
+    }
+
+    fun target(kind: PersistentUsbKind): UsbDeviceTarget? = synchronized(lock) {
+        sessions[kind]?.target
+    }
 
     fun activeUsbKind(): PersistentUsbKind? = synchronized(lock) {
         sessions.entries.firstOrNull { it.value.isConnected }?.key

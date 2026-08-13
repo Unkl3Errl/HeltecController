@@ -1,5 +1,7 @@
 package com.unkl3errl.helteccontroller.detection
 
+import com.unkl3errl.helteccontroller.usb.UsbDeviceTarget
+
 enum class FirmwareKind { UNKNOWN, BRUCE, MARAUDER, GHOSTESP }
 
 enum class DetectionSource { USB, BRUCENET, GHOSTNET, MANUAL }
@@ -10,6 +12,7 @@ data class FirmwareDetection(
     val evidence: String,
     val version: String? = null,
     val commit: String? = null,
+    val usbTarget: UsbDeviceTarget? = null,
 )
 
 object FirmwareIdentity {
