@@ -18,6 +18,12 @@
         "repository": "https://github.com/Unkl3Errl/HeltecFirmware",
         "commit": "3201990838e0e836f18ab08c07da038106c8b57b"
       },
+      "upstream": {
+        "repository": "https://github.com/BruceDevices/firmware",
+        "latestReleaseApi": "https://api.github.com/repos/BruceDevices/firmware/releases/latest",
+        "baselineVersion": "1.15",
+        "baselineCommit": "ac869d3d99ba222fd2fe7f76b707e4929385bd4c"
+      },
       "image": {
         "asset": "bruce-0.6.1.bin",
         "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.11.0/bruce-0.6.1.bin",
@@ -35,6 +41,12 @@
         "repository": "https://github.com/Unkl3Errl/GhostESP",
         "commit": "6b0a24a5c0421113fd3de5c4f00e6721dafde3bd"
       },
+      "upstream": {
+        "repository": "https://github.com/GhostESP-Revival/GhostESP",
+        "latestReleaseApi": "https://api.github.com/repos/GhostESP-Revival/GhostESP/releases/latest",
+        "baselineVersion": "2.1-pre8",
+        "baselineCommit": "fb05244ecbafad0d030f5b57e0e0a14c4e4e5728"
+      },
       "image": {
         "asset": "ghostesp-2.1.0-mobile.4.bin",
         "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.10.1/ghostesp-2.1.0-mobile.4.bin",
@@ -51,6 +63,12 @@
       "source": {
         "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
         "commit": "8ed677109305fc3ca9d3de3ce9e909b77eee28c9"
+      },
+      "upstream": {
+        "repository": "https://github.com/justcallmekoko/ESP32Marauder",
+        "latestReleaseApi": "https://api.github.com/repos/justcallmekoko/ESP32Marauder/releases/latest",
+        "baselineVersion": "1.14.1",
+        "baselineCommit": "43aa8bc127f95c9ea205726bd1e059b4bacd97d9"
       },
       "image": {
         "asset": "marauder-1.14.1-mobile.4.bin",

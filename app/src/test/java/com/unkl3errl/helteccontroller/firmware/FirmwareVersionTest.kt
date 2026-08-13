@@ -25,4 +25,26 @@ class FirmwareVersionTest {
     @Test fun unknownInstalledVersionIsNotCalledOlder() {
         assertNull(FirmwareVersion.isOlder(null, "1.0.0"))
     }
+
+    @Test fun stableReleaseTagsAreNormalized() {
+        assertEquals("1.16.1", FirmwareVersion.stableVersion("1.16.1"))
+        assertEquals("2.1", FirmwareVersion.stableVersion("v2.1"))
+        assertNull(FirmwareVersion.stableVersion("v2.1-pre1"))
+        assertNull(FirmwareVersion.stableVersion("nightly-20260813"))
+    }
+
+    @Test fun upstreamPrereleaseAndTrailingZeroBaselinesCompareCorrectly() {
+        assertEquals(
+            true,
+            FirmwareVersion.isUpstreamBaselineOlder("2.1-pre8", "2.1"),
+        )
+        assertEquals(
+            false,
+            FirmwareVersion.isUpstreamBaselineOlder("2.1.0", "2.1"),
+        )
+        assertEquals(
+            true,
+            FirmwareVersion.isUpstreamBaselineOlder("1.15", "1.16.1"),
+        )
+    }
 }

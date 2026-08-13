@@ -43,12 +43,21 @@ physical USB target. Use a powered USB-C OTG hub with Power Delivery pass-throug
 because several radio boards can exceed a phone's source-current budget.
 
 At launch the app checks the signed catalog at
-`Unkl3Errl/Heltec-Pentest-Firmware`. New images are downloaded only from an
+`Unkl3Errl/HeltecController`. New images are downloaded only from an
 allowlisted GitHub HTTPS host and accepted only when the signed catalog size,
 ESP32-S3 image header, and SHA-256 all match. The first visit to each tab shows
 that release's version, date, and summary once. When a connected device reports
 an older version, the tab changes to an update action and the app shows an
 update notice.
+
+The app separately queries each project's official GitHub `releases/latest`
+endpoint over a validated internet connection. This keeps the newest stable
+upstream version and release date current even while the process is connected
+to a device-only Wi-Fi network. Drafts, prereleases, nightlies, and tags that
+are not stable semantic versions are ignored. If upstream is newer than the
+source baseline of the signed image, the tab reports **compatibility build
+pending**; it never substitutes a generic upstream binary for the customized
+Android-storage build.
 
 ## Firmware detection
 
@@ -257,7 +266,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.11.0`, code 30.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.12.0`, code 31.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password
