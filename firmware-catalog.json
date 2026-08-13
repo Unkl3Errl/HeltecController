@@ -28,17 +28,17 @@
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.0-mobile.2",
+      "version": "2.1.0-mobile.3",
       "releasedAt": "2026-08-12",
       "summary": "Complete recovery image with acknowledged Android archive handoff and non-destructive virtual-storage mounting.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "f2855778046ef797b74e1ad1395b40c2fa70ac0e"
+        "commit": "5b7ce6cf2c9629350b13b1c7b9eb22eb9b75c90f"
       },
       "image": {
-        "asset": "ghostesp-2.1.0-mobile.2.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.9.0/ghostesp-2.1.0-mobile.2.bin",
-        "sha256": "6bb540d27c41297b5f1f28b379d7e7db1ee14f116c401ef32fbf9ecedb29114f",
+        "asset": "ghostesp-2.1.0-mobile.3.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.9.1/ghostesp-2.1.0-mobile.3.bin",
+        "sha256": "6ff52038d2c6566e5839670eb9201675d2336e3939af84d8798e0f4fa5222ae0",
         "sizeBytes": 3189152
       }
     },
