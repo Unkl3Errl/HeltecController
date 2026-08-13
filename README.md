@@ -4,7 +4,7 @@ This is the single Android companion for the independent Heltec WiFi LoRa 32 V4
 firmware builds in this workspace:
 
 - Bruce in [`Unkl3Errl/HeltecFirmware`](https://github.com/Unkl3Errl/HeltecFirmware)
-- GhostESP, adapted from the upstream `Development-deki` branch
+- GhostESP, adapted from the upstream `v2.1` stable release
 - ESP32 Marauder in the independent
   [`heltec-v4-full`](https://github.com/Unkl3Errl/ESP32Marauder/tree/heltec-v4-full)
   branch
@@ -266,7 +266,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.12.0`, code 31.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.13.0`, code 32.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password
