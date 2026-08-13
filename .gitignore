@@ -7,6 +7,8 @@ local.properties
 app/build/
 build/
 captures/
+backups/
+dist/
 *.jks
 *.keystore
 *.p12

@@ -45,7 +45,7 @@ class MarauderSessionStore(
         val stamp = FILE_STAMP.format(now())
         val file = uniqueFile("marauder-$stamp.txt")
         writer = file.bufferedWriter().also { output ->
-            output.write("Heltec Controller Marauder USB session\n")
+            output.write("Firmware Controller Marauder USB session\n")
             output.write("Started: ${now()}\n\n")
             output.flush()
         }

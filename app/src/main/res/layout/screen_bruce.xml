@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bruceScreenScroll"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingLeft="14dp"
-    android:paddingTop="10dp"
-    android:paddingRight="14dp"
-    android:paddingBottom="24dp">
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:overScrollMode="ifContentScrolls"
+    android:scrollbarStyle="insideOverlay"
+    android:scrollbars="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="14dp"
+        android:paddingTop="10dp"
+        android:paddingRight="14dp"
+        android:paddingBottom="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -15,14 +25,45 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DEVICE LINK" />
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BRUCE FIRMWARE IMAGE" />
+
+            <TextView
+                android:id="@+id/bruceFirmwareImageStatus"
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="Preparing the offline bootable image…" />
+
+            <Button
+                android:id="@+id/flashBruceFirmware"
+                style="@style/ActionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:text="PREPARING BRUCE IMAGE" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BRUCENET WEB UI" />
 
             <TextView
                 android:id="@+id/bruceConnectionStatus"
                 style="@style/BodyText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Not connected" />
+                android:text="Not connected to BruceNet" />
 
             <TextView
                 style="@style/MutedText"
@@ -30,7 +71,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp"
-                android:text="Bruce-only Heltec V4 firmware with authenticated WebUI control and reset-resistant GPS/BLE field logs." />
+                android:text="Connect to the device access point, authenticate, refresh its status, or open the verified local Web UI." />
 
             <EditText
                 android:id="@+id/bruceSsid"
@@ -45,13 +86,6 @@
                 android:hint="Device Wi-Fi password"
                 android:inputType="textPassword"
                 android:text="brucenet" />
-
-            <Button
-                android:id="@+id/bruceJoinWifi"
-                style="@style/ActionButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="JOIN DEVICE WI-FI" />
 
             <TextView
                 style="@style/MutedText"
@@ -102,22 +136,32 @@
                 android:orientation="horizontal">
 
                 <Button
-                    android:id="@+id/bruceLogin"
+                    android:id="@+id/bruceJoinWifi"
                     style="@style/ActionButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginRight="4dp"
+                    android:layout_marginRight="3dp"
                     android:layout_weight="1"
-                    android:text="LOGIN" />
+                    android:text="CONNECT BRUCENET" />
 
                 <Button
                     android:id="@+id/bruceRefresh"
                     style="@style/SecondaryButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="4dp"
+                    android:layout_marginLeft="3dp"
+                    android:layout_marginRight="3dp"
                     android:layout_weight="1"
-                    android:text="REFRESH ALL" />
+                    android:text="REFRESH" />
+
+                <Button
+                    android:id="@+id/bruceOpenWebUi"
+                    style="@style/SecondaryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="3dp"
+                    android:layout_weight="1"
+                    android:text="OPEN WEB UI" />
             </LinearLayout>
         </LinearLayout>
 
@@ -205,7 +249,7 @@
                 android:layout_marginTop="6dp"
                 android:orientation="horizontal">
 
-                <Button android:id="@+id/bruceUsbConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="CONNECT USB" />
+                <Button android:id="@+id/bruceUsbConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="RECONNECT USB" />
                 <Button android:id="@+id/bruceUsbDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="DISCONNECT" />
             </LinearLayout>
 
@@ -227,37 +271,65 @@
                 android:layout_height="wrap_content"
                 android:text="READ CURRENT MENU OPTIONS" />
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/bruceUsbConsolePageUp"
+                    style="@style/ConsoleControlButton"
+                    android:layout_marginRight="2dp"
+                    android:text="UP" />
+
+                <Button
+                    android:id="@+id/bruceUsbConsolePageDown"
+                    style="@style/ConsoleControlButton"
+                    android:layout_marginLeft="2dp"
+                    android:layout_marginRight="2dp"
+                    android:text="DOWN" />
+
+                <Button
+                    android:id="@+id/bruceUsbConsoleLive"
+                    style="@style/ConsoleControlButton"
+                    android:layout_marginLeft="2dp"
+                    android:layout_marginRight="2dp"
+                    android:text="LIVE ON" />
+
+                <Button
+                    android:id="@+id/bruceUsbClear"
+                    style="@style/ConsoleControlButton"
+                    android:layout_marginLeft="2dp"
+                    android:text="CLEAR" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="Drag inside the console or use UP/DOWN to pause auto-follow. Tap LIVE to resume at the newest output." />
+
             <TextView
                 android:id="@+id/bruceUsbConsole"
-                android:layout_width="match_parent"
-                android:layout_height="180dp"
-                android:background="@drawable/input_bg"
-                android:fontFamily="monospace"
-                android:gravity="top|left"
-                android:lineSpacingExtra="4dp"
-                android:lineSpacingMultiplier="1.05"
-                android:padding="10dp"
-                android:scrollbars="vertical"
-                android:text="Connect the Bruce device to begin."
-                android:textColor="@color/text"
-                android:textIsSelectable="true"
-                android:textSize="12sp" />
+                style="@style/ConsoleText"
+                android:text="Connect the Bruce device to begin.\n" />
 
             <EditText
                 android:id="@+id/bruceUsbCommand"
                 style="@style/InputField"
                 android:layout_marginTop="8dp"
                 android:hint="Bruce serial command"
+                android:imeOptions="actionSend"
                 android:inputType="text" />
 
-            <LinearLayout
+            <Button
+                android:id="@+id/bruceUsbSend"
+                style="@style/ActionButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button android:id="@+id/bruceUsbSend" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="SEND" />
-                <Button android:id="@+id/bruceUsbClear" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="CLEAR CONSOLE" />
-            </LinearLayout>
+                android:text="SEND COMMAND" />
 
             <TextView
                 style="@style/MutedText"
@@ -429,10 +501,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:background="@drawable/card_bg"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:padding="12dp">
 
-            <Button android:id="@+id/bruceOpenWebUi" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="4dp" android:layout_weight="1" android:text="OPEN WEBUI" />
-            <Button android:id="@+id/bruceRestart" style="@style/DangerButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="4dp" android:layout_weight="1" android:text="RESTART" />
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DEVICE POWER" />
+            <Button android:id="@+id/bruceRestart" style="@style/DangerButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="RESTART" />
         </LinearLayout>
-</LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

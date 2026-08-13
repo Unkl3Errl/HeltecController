@@ -29,6 +29,8 @@ class BruceApiClient {
     val isAuthenticated: Boolean
         get() = sessionCookie != null
 
+    internal fun webViewSessionCookie(): String? = sessionCookie
+
     fun configure(url: String) {
         val normalized = url.trim().trimEnd('/').ifBlank { "http://172.0.0.1" }
         if (normalized != baseUrl) sessionCookie = null

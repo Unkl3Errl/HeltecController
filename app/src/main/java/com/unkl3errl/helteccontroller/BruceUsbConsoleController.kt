@@ -1,10 +1,13 @@
 package com.unkl3errl.helteccontroller
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.text.InputType
 import android.text.method.ScrollingMovementMethod
+import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -20,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
+@SuppressLint("ClickableViewAccessibility")
 class BruceUsbConsoleController(
     private val activity: Activity,
     root: View,
@@ -28,17 +32,30 @@ class BruceUsbConsoleController(
 ) : BruceUsbSerial.Listener {
     private val status: TextView = root.findViewById(R.id.bruceUsbStatus)
     private val console: TextView = root.findViewById(R.id.bruceUsbConsole)
+    private val consoleLive: Button = root.findViewById(R.id.bruceUsbConsoleLive)
     private val input: EditText = root.findViewById(R.id.bruceUsbCommand)
     private val serial = BruceUsbSerial(activity, this)
     private val buffer = StringBuilder("Connect the Bruce device to begin.\n")
     private val bridgeBuffer = StringBuilder()
     private val bridgeRequests = ConcurrentHashMap<Long, CompletableFuture<JSONObject>>()
     private val bridgeSequence = AtomicLong()
+    private var consoleFollowing = true
 
     val isBridgeConnected: Boolean get() = serial.isConnected
 
     init {
         console.movementMethod = ScrollingMovementMethod()
+        console.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    setConsoleFollowing(false)
+                    view.parent.requestDisallowInterceptTouchEvent(true)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                    view.parent.requestDisallowInterceptTouchEvent(false)
+            }
+            false
+        }
         root.findViewById<Button>(R.id.bruceUsbConnect).setOnClickListener {
             setGlobalStatus("USB CONNECTING…")
             serial.connect()
@@ -50,9 +67,26 @@ class BruceUsbConsoleController(
             buffer.clear()
             consoleText.reset()
             console.text = ""
+            setConsoleFollowing(true)
             console.scrollTo(0, 0)
         }
+        root.findViewById<Button>(R.id.bruceUsbConsolePageUp).setOnClickListener {
+            scrollConsoleBy(-(console.height * 3 / 4).coerceAtLeast(1))
+        }
+        root.findViewById<Button>(R.id.bruceUsbConsolePageDown).setOnClickListener {
+            scrollConsoleBy((console.height * 3 / 4).coerceAtLeast(1))
+        }
+        consoleLive.setOnClickListener {
+            setConsoleFollowing(true)
+            console.post(::scrollConsoleToBottom)
+        }
         root.findViewById<Button>(R.id.bruceUsbSend).setOnClickListener { sendInput() }
+        input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEND) {
+                sendInput()
+                true
+            } else false
+        }
         bind(root, R.id.bruceUsbHelp, "help")
         bind(root, R.id.bruceUsbInfo, "info")
         bind(root, R.id.bruceUsbUptime, "uptime")
@@ -177,10 +211,29 @@ class BruceUsbConsoleController(
         buffer.append(consoleText.normalize(text))
         if (buffer.length > 40_000) buffer.delete(0, buffer.length - 32_000)
         console.text = buffer.toString()
-        console.post {
-            val bottom = (console.layout?.getLineTop(console.lineCount) ?: 0) - console.height
-            console.scrollTo(0, bottom.coerceAtLeast(0))
-        }
+        if (consoleFollowing) console.post(::scrollConsoleToBottom)
+    }
+
+    private fun scrollConsoleBy(delta: Int) {
+        setConsoleFollowing(false)
+        console.scrollTo(0, (console.scrollY + delta).coerceIn(0, maxConsoleScroll()))
+    }
+
+    private fun scrollConsoleToBottom() {
+        console.scrollTo(0, maxConsoleScroll())
+    }
+
+    private fun maxConsoleScroll(): Int {
+        val layout = console.layout ?: return 0
+        return (
+            layout.getLineTop(console.lineCount) - console.height +
+                console.totalPaddingTop + console.totalPaddingBottom
+            ).coerceAtLeast(0)
+    }
+
+    private fun setConsoleFollowing(following: Boolean) {
+        consoleFollowing = following
+        consoleLive.text = if (following) "LIVE ON" else "LIVE"
     }
 
     private fun toast(message: String) =
@@ -224,6 +277,9 @@ class BruceUsbConsoleController(
             "logger-start",
             "logger-stop",
             "logger-status",
+            "logger-files",
+            "logger-read",
+            "logger-ack",
             "phone-gps",
             "phone-wifi",
         )

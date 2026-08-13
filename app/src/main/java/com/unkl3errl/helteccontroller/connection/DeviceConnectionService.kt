@@ -1,5 +1,6 @@
 package com.unkl3errl.helteccontroller.connection
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -7,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.unkl3errl.helteccontroller.MainActivity
@@ -14,18 +16,38 @@ import com.unkl3errl.helteccontroller.R
 
 /** Keeps live board transports outside the Activity lifecycle. */
 class DeviceConnectionService : Service() {
+    private lateinit var transferWakeLock: PowerManager.WakeLock
+
     override fun onCreate() {
         super.onCreate()
+        transferWakeLock = getSystemService(PowerManager::class.java).newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "$packageName:storage-transfer",
+        ).apply { setReferenceCounted(false) }
         createChannel()
         startForeground(NOTIFICATION_ID, notification())
+        updateWakeLock()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        updateWakeLock()
         updateNotification()
         return START_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onDestroy() {
+        if (::transferWakeLock.isInitialized && transferWakeLock.isHeld) transferWakeLock.release()
+        super.onDestroy()
+    }
+
+    @SuppressLint("WakelockTimeout")
+    private fun updateWakeLock() {
+        val usbConnected = PersistentDeviceConnections.activeUsbKind() != null
+        if (usbConnected && !transferWakeLock.isHeld) transferWakeLock.acquire()
+        else if (!usbConnected && transferWakeLock.isHeld) transferWakeLock.release()
+    }
 
     private fun createChannel() {
         val channel = NotificationChannel(
@@ -33,7 +55,7 @@ class DeviceConnectionService : Service() {
             "Device connection",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Keeps the Heltec USB or local Wi-Fi session running in the background"
+            description = "Keeps USB or local Wi-Fi device sessions running in the background"
             setShowBadge(false)
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -41,7 +63,7 @@ class DeviceConnectionService : Service() {
 
     private fun notification() = NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_launcher)
-        .setContentTitle("Heltec device session")
+        .setContentTitle("Firmware device session")
         .setContentText(PersistentDeviceConnections.connectionSummary())
         .setContentIntent(
             PendingIntent.getActivity(

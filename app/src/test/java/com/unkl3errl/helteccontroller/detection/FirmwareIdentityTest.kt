@@ -60,6 +60,25 @@ class FirmwareIdentityTest {
         )
     }
 
+    @Test fun extractsReleaseVersionsAndSourceCommits() {
+        val bruce = "Bruce v0.6.0\r\n12496e7e572d-dirty\r\n"
+        assertEquals("0.6.0", FirmwareIdentity.version(FirmwareKind.BRUCE, bruce))
+        assertEquals("12496e7e572d-dirty", FirmwareIdentity.commit(FirmwareKind.BRUCE, bruce))
+
+        val ghost = "GhostESP v2.1.0-mobile.2 (Revival)\r\nGit: main @ fb21cebe\r\n"
+        assertEquals(
+            "2.1.0-mobile.2",
+            FirmwareIdentity.version(FirmwareKind.GHOSTESP, ghost),
+        )
+        assertEquals("fb21cebe", FirmwareIdentity.commit(FirmwareKind.GHOSTESP, ghost))
+
+        val marauder = "Firmware: Marauder\r\nVersion: v1.14.1-mobile.3\r\n"
+        assertEquals(
+            "1.14.1-mobile.3",
+            FirmwareIdentity.version(FirmwareKind.MARAUDER, marauder),
+        )
+    }
+
     @Test fun verifiesTheUnauthenticatedBruceLoginSignature() {
         val quoted = "<html><head><title>Bruce</title></head><form action=\"/login\"></form></html>"
         val minified = "<html><head><title>Bruce</title></head><form action=/login method=POST></form></html>"
