@@ -158,6 +158,7 @@ class MainActivity :
     private val usbDetachReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == UsbManager.ACTION_USB_DEVICE_DETACHED) {
+                if (flashingKind != null) return
                 val device = intent.usbDevice() ?: return
                 val target = UsbDeviceRegistry.target(
                     getSystemService(Context.USB_SERVICE) as UsbManager,
@@ -288,6 +289,9 @@ class MainActivity :
         setIntent(intent)
         if (intent.action == UsbManager.ACTION_USB_DEVICE_ATTACHED) {
             updateFirmwareCards()
+            // The flasher owns re-enumeration while a recovery attempt is active. Opening the
+            // normal detector here would claim the same serial interface before it can resume.
+            if (flashingKind != null) return
             val device = intent.usbDevice()
             if (device != null) {
                 startUsbDetection(

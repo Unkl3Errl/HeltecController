@@ -9,16 +9,46 @@ import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
+import android.util.Log
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.unkl3errl.helteccontroller.usb.UsbDeviceRegistry
 import com.unkl3errl.helteccontroller.usb.UsbDeviceTarget
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
 import java.security.MessageDigest
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.ceil
+
+internal data class Esp32S3SecurityInfo(
+    val flags: Long,
+    val flashCryptCount: Int,
+    val chipId: Int,
+)
+
+/** Parses the 20-byte ESP32-S3 ROM GET_SECURITY_INFO payload (without status bytes). */
+internal fun parseEsp32S3SecurityInfo(data: ByteArray): Esp32S3SecurityInfo {
+    require(data.size >= 20) {
+        "ESP32-S3 security payload was ${data.size} bytes; expected 20"
+    }
+    fun uint32(offset: Int): Long =
+        (data[offset].toLong() and 0xff) or
+            ((data[offset + 1].toLong() and 0xff) shl 8) or
+            ((data[offset + 2].toLong() and 0xff) shl 16) or
+            ((data[offset + 3].toLong() and 0xff) shl 24)
+
+    return Esp32S3SecurityInfo(
+        flags = uint32(0),
+        flashCryptCount = data[4].toInt() and 0xff,
+        chipId = uint32(12).toInt(),
+    )
+}
+
+/** USB bulk transfers report a detached or reset Android host endpoint as an IOException. */
+internal fun isRecoverableEsp32S3UsbFailure(error: Throwable): Boolean =
+    generateSequence(error as Throwable?) { it.cause }.any { it is IOException }
 
 /** Minimal ESP32-S3 ROM flasher for a checksum-verified, merged offset-0 image. */
 class Esp32S3BootloaderFlasher(context: Context) {
@@ -29,6 +59,7 @@ class Esp32S3BootloaderFlasher(context: Context) {
     }
 
     companion object {
+        private const val TAG = "Esp32S3Flasher"
         private const val ACTION_USB_PERMISSION =
             "com.unkl3errl.helteccontroller.FLASH_USB_PERMISSION"
         private const val FLASH_BEGIN = 0x02
@@ -44,6 +75,9 @@ class Esp32S3BootloaderFlasher(context: Context) {
         private const val FLASH_BYTES = 16 * 1024 * 1024
         private const val ESP32_S3_CHIP_ID = 9
         private const val MAX_IMAGE_BYTES = 4 * 1024 * 1024
+        private const val MAX_FLASH_ATTEMPTS = 3
+        private const val RECONNECT_TIMEOUT_MS = 30_000L
+        private const val RECONNECT_POLL_MS = 200L
         private const val RTC_CNTL_WDTCONFIG0_REG = 0x60008098L
         private const val RTC_CNTL_WDTWPROTECT_REG = 0x600080B0L
         private const val RTC_CNTL_WDT_WKEY = 0x50D83AA1L
@@ -65,6 +99,10 @@ class Esp32S3BootloaderFlasher(context: Context) {
         val listener: Listener,
     )
     private data class Reply(val value: Long, val data: ByteArray)
+    private class FlashAttemptFailure(
+        val stage: String,
+        cause: Exception,
+    ) : Exception(cause.message, cause)
 
     private val permissionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -107,13 +145,7 @@ class Esp32S3BootloaderFlasher(context: Context) {
         if (usbManager.hasPermission(device)) begin(device, request)
         else {
             pending = request
-            val permissionIntent = PendingIntent.getBroadcast(
-                appContext,
-                9001,
-                Intent(ACTION_USB_PERMISSION).setPackage(appContext.packageName),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
-            usbManager.requestPermission(device, permissionIntent)
+            usbManager.requestPermission(device, permissionIntent())
             listener.onFlashProgress(0, "Waiting for USB permission…")
         }
     }
@@ -126,58 +158,202 @@ class Esp32S3BootloaderFlasher(context: Context) {
 
     private fun begin(device: UsbDevice, request: PendingFlash) {
         executor.execute {
-            var port: UsbSerialPort? = null
             try {
-                request.listener.onFlashProgress(0, "Entering ESP32-S3 recovery mode…")
-                require(request.target.matches(device)) { "Android opened a different USB target" }
-                val driver = UsbDeviceRegistry.driverForNative(device)
-                val connection = usbManager.openDevice(device)
-                    ?: error("Android could not open the USB target")
-                port = driver.ports.firstOrNull() ?: error("The USB target has no serial port")
-                port.open(connection)
-                port.setParameters(115_200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE)
-                port.purgeHwBuffers(true, true)
-                enterBootloader(port)
-                sync(port)
-                val security = command(
-                    port,
-                    GET_SECURITY_INFO,
-                    byteArrayOf(),
-                    responseBytes = 20,
-                    timeoutMs = 3_000,
-                )
-                require(security.data.size >= 24) { "ESP32-S3 security response was incomplete" }
-                val flags = security.data.uint32(0)
-                val flashCryptCount = security.data[4].toInt() and 0xff
-                val chipId = security.data.uint32(12).toInt()
-                require(chipId == ESP32_S3_CHIP_ID) { "Attached chip is not an ESP32-S3" }
-                require(flags and 0x1L == 0L) { "Secure Boot is enabled; unsigned recovery is blocked" }
-                require(flags and 0x4L == 0L) { "Secure Download Mode is enabled; recovery is blocked" }
-                require(Integer.bitCount(flashCryptCount) % 2 == 0) {
-                    "Flash encryption is enabled; plaintext recovery is blocked"
+                var currentDevice = device
+                for (attempt in 1..MAX_FLASH_ATTEMPTS) {
+                    try {
+                        Log.i(
+                            TAG,
+                            "Starting flash attempt $attempt/$MAX_FLASH_ATTEMPTS for " +
+                                request.target.displayLabel(),
+                        )
+                        val flashedTarget = flashSession(
+                            currentDevice,
+                            request,
+                            resumeBootloader = attempt > 1,
+                        )
+                        Log.i(TAG, "Flash verified for ${request.target.displayLabel()}")
+                        request.listener.onFlashComplete(flashedTarget)
+                        return@execute
+                    } catch (failure: FlashAttemptFailure) {
+                        val cause = failure.cause ?: failure
+                        val detail = cause.message ?: cause.javaClass.simpleName
+                        val canRetry = attempt < MAX_FLASH_ATTEMPTS &&
+                            isRecoverableEsp32S3UsbFailure(cause)
+                        if (!canRetry) {
+                            Log.e(
+                                TAG,
+                                "${failure.stage} failed for ${request.target.displayLabel()}: $detail",
+                                cause,
+                            )
+                            request.listener.onFlashFailed("${failure.stage} failed: $detail")
+                            return@execute
+                        }
+
+                        Log.w(
+                            TAG,
+                            "USB link dropped during ${failure.stage}; waiting for " +
+                                "${request.target.displayLabel()} before attempt ${attempt + 1}",
+                            cause,
+                        )
+                        request.listener.onFlashProgress(
+                            0,
+                            "USB link reset. Waiting for the board; unplug and reconnect it " +
+                                "if Android does not restore USB automatically…",
+                        )
+                        val reattached = waitForReattachedDevice(request)
+                        if (reattached == null) {
+                            request.listener.onFlashFailed(
+                                "USB link was lost during ${failure.stage.lowercase()} and the " +
+                                    "same board did not reconnect within 30 seconds",
+                            )
+                            return@execute
+                        }
+                        currentDevice = reattached
+                        request.listener.onFlashProgress(
+                            0,
+                            "Board reconnected. Restarting the flash safely " +
+                                "(${attempt + 1}/$MAX_FLASH_ATTEMPTS)…",
+                        )
+                    }
                 }
-                request.listener.onFlashProgress(0, "Preparing a stable recovery session…")
-                disableUsbWatchdogs(port)
-                command(port, SPI_ATTACH, ByteArray(8), timeoutMs = 3_000)
-                command(
-                    port,
-                    SPI_SET_PARAMS,
-                    le32(0, FLASH_BYTES, 64 * 1024, 4 * 1024, 256, 0xffff),
-                    timeoutMs = 3_000,
-                )
-                writeImage(port, request.image, request.listener)
-                verifyImage(port, request.image)
-                request.listener.onFlashProgress(100, "Verified. Restarting the device…")
-                hardReset(port)
-                request.listener.onFlashComplete(UsbDeviceRegistry.target(usbManager, device))
-            } catch (error: Exception) {
-                request.listener.onFlashFailed(error.message ?: error.javaClass.simpleName)
             } finally {
-                runCatching { port?.close() }
                 busy.set(false)
             }
         }
     }
+
+    private fun flashSession(
+        device: UsbDevice,
+        request: PendingFlash,
+        resumeBootloader: Boolean,
+    ): UsbDeviceTarget {
+        var port: UsbSerialPort? = null
+        var stage = "Opening the selected USB target"
+        try {
+            request.listener.onFlashProgress(0, "Entering ESP32-S3 recovery mode…")
+            val openedTarget = UsbDeviceRegistry.target(usbManager, device)
+            require(request.target.samePhysicalDevice(openedTarget)) {
+                "Android opened a different USB target"
+            }
+            val driver = UsbDeviceRegistry.driverForNative(device)
+            val connection = usbManager.openDevice(device)
+                ?: throw IOException("Android could not open the USB target")
+            port = driver.ports.firstOrNull() ?: error("The USB target has no serial port")
+            port.open(connection)
+            port.setParameters(115_200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE)
+            clearInput(port, purgeOutput = true)
+            if (resumeBootloader) {
+                // The native USB endpoint commonly disappears at the exact moment the first
+                // reset enters ROM download mode. Once Android restores the endpoint, resetting
+                // it again can cause an endless disconnect cycle, so synchronize first.
+                stage = "Resuming the ESP32-S3 recovery session"
+                request.listener.onFlashProgress(
+                    0,
+                    "Board reconnected. Resuming ROM recovery without another reset…",
+                )
+                try {
+                    sync(port)
+                } catch (error: Exception) {
+                    if (isRecoverableEsp32S3UsbFailure(error)) throw error
+                    stage = "Entering ESP32-S3 recovery mode"
+                    request.listener.onFlashProgress(
+                        0,
+                        "The board was not in ROM recovery. Entering recovery mode…",
+                    )
+                    enterBootloader(port)
+                    stage = "Synchronizing with the ESP32-S3 ROM"
+                    sync(port)
+                }
+            } else {
+                stage = "Entering ESP32-S3 recovery mode"
+                enterBootloader(port)
+                stage = "Synchronizing with the ESP32-S3 ROM"
+                sync(port)
+            }
+            stage = "Reading the ESP32-S3 security state"
+            val security = command(
+                port,
+                GET_SECURITY_INFO,
+                byteArrayOf(),
+                responseBytes = 20,
+                timeoutMs = 3_000,
+            )
+            val securityInfo = parseEsp32S3SecurityInfo(security.data)
+            require(securityInfo.chipId == ESP32_S3_CHIP_ID) {
+                "Attached chip is not an ESP32-S3"
+            }
+            require(securityInfo.flags and 0x1L == 0L) {
+                "Secure Boot is enabled; unsigned recovery is blocked"
+            }
+            require(securityInfo.flags and 0x4L == 0L) {
+                "Secure Download Mode is enabled; recovery is blocked"
+            }
+            require(Integer.bitCount(securityInfo.flashCryptCount) % 2 == 0) {
+                "Flash encryption is enabled; plaintext recovery is blocked"
+            }
+            request.listener.onFlashProgress(0, "Preparing a stable recovery session…")
+            stage = "Preparing the ESP32-S3 flash"
+            disableUsbWatchdogs(port)
+            command(port, SPI_ATTACH, ByteArray(8), timeoutMs = 3_000)
+            command(
+                port,
+                SPI_SET_PARAMS,
+                le32(0, FLASH_BYTES, 64 * 1024, 4 * 1024, 256, 0xffff),
+                timeoutMs = 3_000,
+            )
+            stage = "Erasing and writing the firmware image"
+            writeImage(port, request.image, request.listener)
+            stage = "Verifying the firmware image"
+            verifyImage(port, request.image)
+            request.listener.onFlashProgress(100, "Verified. Restarting the device…")
+            stage = "Restarting the flashed device"
+            hardReset(port)
+            return openedTarget
+        } catch (error: Exception) {
+            throw FlashAttemptFailure(stage, error)
+        } finally {
+            runCatching { port?.close() }
+        }
+    }
+
+    private fun waitForReattachedDevice(request: PendingFlash): UsbDevice? {
+        val deadline = System.nanoTime() + RECONNECT_TIMEOUT_MS * 1_000_000L
+        var permissionRequested = false
+        while (!Thread.currentThread().isInterrupted && System.nanoTime() < deadline) {
+            val device = UsbDeviceRegistry.nativeDeviceFor(usbManager, request.target)
+            if (device != null) {
+                if (usbManager.hasPermission(device) && canOpen(device)) {
+                    Log.i(TAG, "Recovered openable USB endpoint for ${request.target.displayLabel()}")
+                    return device
+                }
+                if (!usbManager.hasPermission(device) && !permissionRequested) {
+                    permissionRequested = true
+                    usbManager.requestPermission(device, permissionIntent())
+                    request.listener.onFlashProgress(
+                        0,
+                        "Board reconnected. Waiting for USB permission to resume…",
+                    )
+                }
+            }
+            Thread.sleep(RECONNECT_POLL_MS)
+        }
+        return null
+    }
+
+    /** UsbManager briefly retains a detached device; opening it distinguishes that stale entry. */
+    private fun canOpen(device: UsbDevice): Boolean {
+        val connection = runCatching { usbManager.openDevice(device) }.getOrNull() ?: return false
+        connection.close()
+        return true
+    }
+
+    private fun permissionIntent(): PendingIntent = PendingIntent.getBroadcast(
+        appContext,
+        9001,
+        Intent(ACTION_USB_PERMISSION).setPackage(appContext.packageName),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
 
     private fun writeImage(port: UsbSerialPort, image: File, listener: Listener) {
         val imageSize = image.length().toInt()
@@ -208,6 +384,7 @@ class Esp32S3BootloaderFlasher(context: Context) {
                         lastError = null
                         break
                     } catch (error: Exception) {
+                        if (isRecoverableEsp32S3UsbFailure(error)) throw error
                         lastError = error
                     }
                 }
@@ -239,16 +416,32 @@ class Esp32S3BootloaderFlasher(context: Context) {
         repeat(7) {
             try {
                 command(port, SYNC, payload, timeoutMs = 1_000)
-                // The ROM sends seven extra SYNC responses. A purge is safe before the next request.
+                // The ROM sends seven extra SYNC responses. CDC ACM does not implement the
+                // library's hardware-purge API, so drain it through normal reads when necessary.
                 Thread.sleep(100)
-                port.purgeHwBuffers(false, true)
+                clearInput(port, purgeOutput = false)
                 return
             } catch (error: Exception) {
+                if (isRecoverableEsp32S3UsbFailure(error)) throw error
                 lastError = error
-                enterBootloader(port)
             }
         }
         throw IllegalStateException("Could not synchronize with ESP32-S3 ROM", lastError)
+    }
+
+    private fun clearInput(port: UsbSerialPort, purgeOutput: Boolean) {
+        if (runCatching { port.purgeHwBuffers(purgeOutput, true) }.isSuccess) return
+
+        val buffer = ByteArray(256)
+        var quietDeadline = System.nanoTime() + 100_000_000L
+        while (System.nanoTime() < quietDeadline) {
+            val count = try {
+                port.read(buffer, 20)
+            } catch (_: Exception) {
+                return
+            }
+            if (count > 0) quietDeadline = System.nanoTime() + 50_000_000L
+        }
     }
 
     /** Native USB does not feed these ROM watchdogs while a multi-megabyte image is written. */
@@ -310,11 +503,9 @@ class Esp32S3BootloaderFlasher(context: Context) {
         var escaped = false
         while (System.nanoTime() < deadline) {
             val remainingMs = ((deadline - System.nanoTime()) / 1_000_000L).coerceIn(1, 250).toInt()
-            val count = try {
-                port.read(buffer, remainingMs)
-            } catch (error: java.io.IOException) {
-                if (System.nanoTime() < deadline) continue else throw error
-            }
+            // This driver reports an ordinary read timeout as zero bytes. An IOException means
+            // Android's USB endpoint is no longer usable and must reach the reconnect loop now.
+            val count = port.read(buffer, remainingMs)
             for (index in 0 until count) {
                 val value = buffer[index].toInt() and 0xff
                 if (value == 0xc0) {
