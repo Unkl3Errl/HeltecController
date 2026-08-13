@@ -11,11 +11,11 @@ import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import com.hoho.android.usbserial.driver.CdcAcmSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
-import com.hoho.android.usbserial.driver.UsbSerialProber
 import com.hoho.android.usbserial.util.SerialInputOutputManager
+import com.unkl3errl.helteccontroller.usb.UsbDeviceRegistry
+import com.unkl3errl.helteccontroller.usb.UsbDeviceTarget
 import java.util.concurrent.Executors
 
 class UsbFirmwareDetector(
@@ -31,8 +31,6 @@ class UsbFirmwareDetector(
     companion object {
         private const val ACTION_USB_PERMISSION =
             "com.unkl3errl.helteccontroller.DETECT_USB_PERMISSION"
-        private const val ESPRESSIF_VID = 0x303A
-        private const val ESP32_USB_JTAG_PID = 0x1001
         private const val PROBE_TIMEOUT_MS = 12_000L
         private const val MAX_EVIDENCE_CHARS = 16_384
     }
@@ -46,6 +44,7 @@ class UsbFirmwareDetector(
     private var ioManager: SerialInputOutputManager? = null
     private var probing = false
     private var candidateKind = FirmwareKind.UNKNOWN
+    private var currentTarget: UsbDeviceTarget? = null
 
     private val probeTimeout = Runnable {
         if (!probing) return@Runnable
@@ -67,7 +66,8 @@ class UsbFirmwareDetector(
             val device = intent.usbDevice()
             if (
                 intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) &&
-                driver != null && device != null
+                driver != null && device != null &&
+                driver.device.deviceId == device.deviceId
             ) open(driver)
             else listener.onUsbDetectionUnknown("USB permission was not granted")
         }
@@ -75,18 +75,21 @@ class UsbFirmwareDetector(
 
     init { registerReceiver() }
 
-    fun hasCandidate(): Boolean = findDriver() != null
+    fun targets(): List<UsbDeviceTarget> = UsbDeviceRegistry.serialTargets(usbManager)
 
-    fun detect() {
+    fun hasCandidate(): Boolean = targets().isNotEmpty()
+
+    fun detect(target: UsbDeviceTarget) {
         if (probing) {
             listener.onUsbDetectionStatus("USB firmware detection is already running…")
             return
         }
-        val driver = findDriver()
+        val driver = UsbDeviceRegistry.driverFor(usbManager, target)
         if (driver == null) {
-            listener.onUsbDetectionUnknown("No compatible USB serial board is attached")
+            listener.onUsbDetectionUnknown("The selected USB board is no longer attached")
             return
         }
+        currentTarget = target
         if (!usbManager.hasPermission(driver.device)) {
             pendingDriver = driver
             val permissionIntent = PendingIntent.getBroadcast(
@@ -161,6 +164,7 @@ class UsbFirmwareDetector(
             selected.setParameters(115_200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE)
             runCatching { selected.setDTR(true) }
             port = selected
+            currentTarget = UsbDeviceRegistry.target(usbManager, driver.device)
             evidence.clear()
             candidateKind = FirmwareKind.UNKNOWN
             probing = true
@@ -217,6 +221,7 @@ class UsbFirmwareDetector(
                 evidence = line,
                 version = FirmwareIdentity.version(kind, response),
                 commit = FirmwareIdentity.commit(kind, response),
+                usbTarget = currentTarget,
             ),
         )
     }
@@ -226,18 +231,6 @@ class UsbFirmwareDetector(
         ioManager = null
         runCatching { port?.close() }
         port = null
-    }
-
-    private fun findDriver(): UsbSerialDriver? {
-        val detected = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
-        detected.firstOrNull {
-            it.device.vendorId == ESPRESSIF_VID && it.device.productId == ESP32_USB_JTAG_PID
-        }?.let { return it }
-        detected.firstOrNull()?.let { return it }
-        val native = usbManager.deviceList.values.firstOrNull {
-            it.vendorId == ESPRESSIF_VID && it.productId == ESP32_USB_JTAG_PID
-        }
-        return native?.let(::CdcAcmSerialDriver)
     }
 
     @Suppress("DEPRECATION")

@@ -18,7 +18,7 @@ Each application keeps its applicable transport controls visible: Bruce has
 **Connect BruceNet** and **Reconnect USB**, GhostESP has **Connect GhostNet**
 and **Reconnect USB**, and Marauder has **Reconnect USB**.
 
-Each firmware tab also contains a recovery/update card. Version 0.9.1 ships a
+Each firmware tab also contains a recovery/update card. The app ships a
 complete offset-0 bootable image for all three projects, verifies the catalog
 signature and image SHA-256 values, and retains the verified images in private
 Android app files. The flash action works from any currently installed firmware
@@ -26,6 +26,21 @@ or an empty flash, provided the target enumerates through the ESP32-S3 native
 USB recovery interface. It verifies the target chip and ROM security state,
 writes without a full-chip erase, checks the flashed MD5 on the device, and then
 restarts and redetects the firmware.
+
+Version 0.10.0 adds powered USB-hub operation. When more than one serial board
+is attached, Android shows every compatible physical target and the app requires
+an explicit choice. A read-only firmware probe binds the verified device to its
+Bruce, GhostESP, or Marauder tab; each family then owns a separate persistent
+serial session, so all three wired connections can remain active together.
+Labels include the USB product, serial number when Android exposes one, and
+VID:PID. Without a serial number, Android's current USB path/device ID is shown.
+
+Flashing also presents the complete ESP32-S3 target list and repeats the exact
+selected identity in the destructive-action confirmation. Only that target's
+live serial session is released; other hub-connected boards continue running.
+After the write and on-device MD5 verification, the app redetects the same
+physical USB target. Use a powered USB-C OTG hub with Power Delivery pass-through
+because several radio boards can exceed a phone's source-current budget.
 
 At launch the app checks the signed catalog at
 `Unkl3Errl/Heltec-Pentest-Firmware`. New images are downloaded only from an
@@ -46,7 +61,7 @@ the read-only `info`, `help`, and `version` commands. It recognizes:
 - GhostESP from its Revival version banner, command-category heading, or
   `ghost>` prompt.
 
-The detector closes the serial port before enabling the matching controller, so
+The detector closes the selected serial port before enabling the matching controller, so
 the selected module can claim the port normally. Empty, unrelated, or
 conflicting output leaves the app in **Unknown** state. Detaching a
 USB-identified board retains its verified screen and session. GhostESP and
@@ -98,8 +113,8 @@ before the remaining onboard reserve is consumed.
 
 The Bruce, GhostESP, and Marauder tabs are always available. Each firmware view
 keeps its own scroll position, and its controller remains active while another
-tab is visible. One attached USB board and one Android local-only Wi-Fi session
-can run together. Switching between BruceNet and GhostNet replaces the current
+tab is visible. Up to one verified USB board per firmware family and one Android
+local-only Wi-Fi session can run together. Switching between BruceNet and GhostNet replaces the current
 Wi-Fi access-point request because Android can associate with only one of those
 local APs at a time. Selecting a tab never disconnects either transport.
 
@@ -115,7 +130,7 @@ branding at `http://192.168.4.1`. Marauder detection remains USB-only.
 
 - Android 10 (API 29) or newer.
 - A phone with USB host support and a data-capable USB-C OTG connection for USB
-  detection and control.
+  detection and control. Use a powered USB-C OTG hub for simultaneous boards.
 - Bruce WebUI mode for BruceNet operation.
 - GhostESP's GhostNet access point for network operation.
 - The customized Marauder firmware for its USB controller.
@@ -242,7 +257,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.9.1`, code 27.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.10.0`, code 28.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password

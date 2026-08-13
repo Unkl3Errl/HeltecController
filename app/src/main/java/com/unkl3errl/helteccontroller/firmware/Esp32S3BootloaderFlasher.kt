@@ -9,10 +9,9 @@ import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
-import com.hoho.android.usbserial.driver.CdcAcmSerialDriver
-import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
-import com.hoho.android.usbserial.driver.UsbSerialProber
+import com.unkl3errl.helteccontroller.usb.UsbDeviceRegistry
+import com.unkl3errl.helteccontroller.usb.UsbDeviceTarget
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -25,15 +24,13 @@ import kotlin.math.ceil
 class Esp32S3BootloaderFlasher(context: Context) {
     interface Listener {
         fun onFlashProgress(percent: Int, message: String)
-        fun onFlashComplete()
+        fun onFlashComplete(target: UsbDeviceTarget)
         fun onFlashFailed(message: String)
     }
 
     companion object {
         private const val ACTION_USB_PERMISSION =
             "com.unkl3errl.helteccontroller.FLASH_USB_PERMISSION"
-        private const val ESPRESSIF_VID = 0x303A
-        private const val ESP32_USB_JTAG_PID = 0x1001
         private const val FLASH_BEGIN = 0x02
         private const val FLASH_DATA = 0x03
         private const val SYNC = 0x08
@@ -62,7 +59,11 @@ class Esp32S3BootloaderFlasher(context: Context) {
     private val busy = AtomicBoolean(false)
     private var pending: PendingFlash? = null
 
-    private data class PendingFlash(val image: File, val listener: Listener)
+    private data class PendingFlash(
+        val target: UsbDeviceTarget,
+        val image: File,
+        val listener: Listener,
+    )
     private data class Reply(val value: Long, val data: ByteArray)
 
     private val permissionReceiver = object : BroadcastReceiver() {
@@ -70,9 +71,12 @@ class Esp32S3BootloaderFlasher(context: Context) {
             if (intent.action != ACTION_USB_PERMISSION) return
             val request = pending.also { pending = null } ?: return
             val device = intent.usbDevice()
-            if (!intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) || device == null) {
+            if (
+                !intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) ||
+                device == null || !request.target.matches(device)
+            ) {
                 busy.set(false)
-                request.listener.onFlashFailed("USB permission was not granted")
+                request.listener.onFlashFailed("USB permission was not granted for the selected target")
                 return
             }
             begin(device, request)
@@ -81,9 +85,9 @@ class Esp32S3BootloaderFlasher(context: Context) {
 
     init { registerPermissionReceiver() }
 
-    fun hasNativeTarget(): Boolean = nativeDevice() != null
+    fun targets(): List<UsbDeviceTarget> = UsbDeviceRegistry.nativeEsp32S3Targets(usbManager)
 
-    fun flash(image: File, listener: Listener) {
+    fun flash(target: UsbDeviceTarget, image: File, listener: Listener) {
         if (!busy.compareAndSet(false, true)) {
             listener.onFlashFailed("Another firmware flash is already running")
             return
@@ -93,13 +97,13 @@ class Esp32S3BootloaderFlasher(context: Context) {
             listener.onFlashFailed("The retained firmware image is invalid")
             return
         }
-        val device = nativeDevice()
+        val device = UsbDeviceRegistry.nativeDeviceFor(usbManager, target)
         if (device == null) {
             busy.set(false)
-            listener.onFlashFailed("No native ESP32-S3 USB target is attached")
+            listener.onFlashFailed("The selected ESP32-S3 USB target is no longer attached")
             return
         }
-        val request = PendingFlash(image, listener)
+        val request = PendingFlash(target, image, listener)
         if (usbManager.hasPermission(device)) begin(device, request)
         else {
             pending = request
@@ -125,7 +129,8 @@ class Esp32S3BootloaderFlasher(context: Context) {
             var port: UsbSerialPort? = null
             try {
                 request.listener.onFlashProgress(0, "Entering ESP32-S3 recovery mode…")
-                val driver = driverFor(device)
+                require(request.target.matches(device)) { "Android opened a different USB target" }
+                val driver = UsbDeviceRegistry.driverForNative(device)
                 val connection = usbManager.openDevice(device)
                     ?: error("Android could not open the USB target")
                 port = driver.ports.firstOrNull() ?: error("The USB target has no serial port")
@@ -164,7 +169,7 @@ class Esp32S3BootloaderFlasher(context: Context) {
                 verifyImage(port, request.image)
                 request.listener.onFlashProgress(100, "Verified. Restarting the device…")
                 hardReset(port)
-                request.listener.onFlashComplete()
+                request.listener.onFlashComplete(UsbDeviceRegistry.target(usbManager, device))
             } catch (error: Exception) {
                 request.listener.onFlashFailed(error.message ?: error.javaClass.simpleName)
             } finally {
@@ -349,13 +354,6 @@ class Esp32S3BootloaderFlasher(context: Context) {
         port.setRTS(false)
         Thread.sleep(200)
     }
-
-    private fun nativeDevice(): UsbDevice? = usbManager.deviceList.values.firstOrNull {
-        it.vendorId == ESPRESSIF_VID && it.productId == ESP32_USB_JTAG_PID
-    }
-
-    private fun driverFor(device: UsbDevice): UsbSerialDriver =
-        UsbSerialProber.getDefaultProber().probeDevice(device) ?: CdcAcmSerialDriver(device)
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun registerPermissionReceiver() {

@@ -44,7 +44,7 @@ class DeviceConnectionService : Service() {
 
     @SuppressLint("WakelockTimeout")
     private fun updateWakeLock() {
-        val usbConnected = PersistentDeviceConnections.activeUsbKind() != null
+        val usbConnected = PersistentDeviceConnections.activeUsbKinds().isNotEmpty()
         if (usbConnected && !transferWakeLock.isHeld) transferWakeLock.acquire()
         else if (!usbConnected && transferWakeLock.isHeld) transferWakeLock.release()
     }
