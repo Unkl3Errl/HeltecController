@@ -3,12 +3,10 @@ set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
-catalog="$project_dir/../firmware-catalog.json"
-catalog_signature="$project_dir/../firmware-catalog.sig"
+catalog="$project_dir/firmware-catalog.json"
+catalog_signature="$project_dir/firmware-catalog.sig"
 bundled_catalog="$project_dir/app/src/main/assets/firmware/catalog.json"
 bundled_signature="$project_dir/app/src/main/assets/firmware/catalog.sig"
-public_catalog="$project_dir/firmware-catalog.json"
-public_signature="$project_dir/firmware-catalog.sig"
 android_sdk=${ANDROID_HOME:-"$HOME/Library/Android/sdk"}
 build_tools_version=$(find "$android_sdk/build-tools" -mindepth 1 -maxdepth 1 -type d \
     -exec basename {} \; | sort | tail -n 1)
@@ -19,8 +17,6 @@ expected_certificate="372baeb4329b91789654b372cb9fb0fe954739f1582849a3592347a723
 "$script_dir/sign-firmware-catalog-macos.sh" "$catalog" "$catalog_signature"
 install -m 0644 "$catalog" "$bundled_catalog"
 install -m 0644 "$catalog_signature" "$bundled_signature"
-install -m 0644 "$catalog" "$public_catalog"
-install -m 0644 "$catalog_signature" "$public_signature"
 
 "$script_dir/build-release-macos.sh" testDebugUnitTest lintDebug assembleRelease
 
@@ -43,10 +39,19 @@ dist_dir="$project_dir/dist"
 release_apk="$dist_dir/HeltecController-$version_name.apk"
 mkdir -p "$dist_dir"
 install -m 0644 "$source_apk" "$release_apk"
+
+for bundled_firmware in "$project_dir"/app/src/main/assets/firmware/*.bin; do
+    install -m 0644 "$bundled_firmware" "$dist_dir/$(basename "$bundled_firmware")"
+done
+
 (
     cd "$dist_dir"
     shasum -a 256 "$(basename "$release_apk")" > "$(basename "$release_apk").sha256"
+    for firmware_image in *.bin; do
+        shasum -a 256 "$firmware_image" > "$firmware_image.sha256"
+    done
 )
 
 echo "Packaged signed release: $release_apk"
 echo "Checksum: $release_apk.sha256"
+echo "Packaged firmware images and checksums in: $dist_dir"

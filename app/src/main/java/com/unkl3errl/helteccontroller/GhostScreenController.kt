@@ -2,7 +2,10 @@ package com.unkl3errl.helteccontroller
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Intent
+import android.app.Dialog
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
 import android.os.Handler
@@ -10,9 +13,15 @@ import android.os.Looper
 import android.text.method.ScrollingMovementMethod
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import android.view.Window
 import android.view.inputmethod.EditorInfo
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import com.unkl3errl.helteccontroller.ghost.GhostApiClient
@@ -57,10 +66,13 @@ class GhostScreenController(
     private val persistRunnable = Runnable(::writeConsoleSnapshot)
     private val destroyed = AtomicBoolean(false)
     private val serial = GhostUsbSerial(activity, this)
+    private val connectivityManager =
+        activity.getSystemService(Activity.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     @Volatile
     private var activeNetwork: Network? = null
     private var consoleFollowing = true
+    private var webUiDialog: Dialog? = null
 
     init {
         console.text = consoleBuffer.toString()
@@ -199,6 +211,8 @@ class GhostScreenController(
     fun destroy() {
         if (!destroyed.compareAndSet(false, true)) return
         activeNetwork = null
+        webUiDialog?.dismiss()
+        webUiDialog = null
         persistHandler.removeCallbacks(persistRunnable)
         writeConsoleSnapshot()
         executor.shutdownNow()
@@ -319,12 +333,126 @@ class GhostScreenController(
         appendConsole("[http error] GET $path · ${error.message ?: error.javaClass.simpleName}\n")
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private fun openWebUi() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(GhostApiClient.DEFAULT_BASE_URL))
-        runCatching { activity.startActivity(intent) }
-            .onFailure {
-                Toast.makeText(activity, "No browser is available to open the GhostESP Web UI", Toast.LENGTH_LONG).show()
+        webUiDialog?.dismiss()
+        val network = activeNetwork
+        if (network == null) {
+            Toast.makeText(activity, "Join GhostNet before opening the Web UI", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (!connectivityManager.bindProcessToNetwork(network)) {
+            Toast.makeText(
+                activity,
+                "Android could not bind the Web UI to GhostNet",
+                Toast.LENGTH_LONG,
+            ).show()
+            return
+        }
+
+        val webUiUrl = GhostApiClient.DEFAULT_BASE_URL
+        val baseUri = Uri.parse(webUiUrl)
+        val webView = runCatching {
+            WebView(activity).apply {
+                setBackgroundColor(Color.rgb(7, 16, 20))
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.allowFileAccess = false
+                settings.allowContentAccess = false
+                settings.builtInZoomControls = true
+                settings.displayZoomControls = false
+                webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView,
+                        request: WebResourceRequest,
+                    ): Boolean {
+                        val target = request.url
+                        val local = target.scheme == baseUri.scheme &&
+                            target.host == baseUri.host &&
+                            target.port == baseUri.port
+                        if (!local) {
+                            Toast.makeText(
+                                activity,
+                                "Blocked navigation outside the GhostESP Web UI",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        }
+                        return !local
+                    }
+
+                    override fun onPageFinished(view: WebView, url: String) {
+                        networkStatus.text = "GhostNet ready · Web UI loaded"
+                        setGlobalStatus("GHOSTNET")
+                    }
+                }
+                loadUrl(webUiUrl)
             }
+        }.getOrElse { error ->
+            connectivityManager.bindProcessToNetwork(null)
+            Toast.makeText(
+                activity,
+                "Could not open the embedded Web UI: " +
+                    (error.message ?: error.javaClass.simpleName),
+                Toast.LENGTH_LONG,
+            ).show()
+            return
+        }
+
+        val dialog = Dialog(activity).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+        }
+        val title = TextView(activity).apply {
+            text = "GhostESP Web UI · local device"
+            textSize = 20f
+            setTextColor(activity.getColor(R.color.text))
+            setPadding(24, 20, 24, 20)
+        }
+        val close = Button(activity).apply { text = "CLOSE" }
+        val browser = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(activity.getColor(R.color.bg))
+            addView(
+                title,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+            addView(
+                webView,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f,
+                ),
+            )
+            addView(
+                close,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+        }
+        dialog.setContentView(browser)
+        dialog.setCanceledOnTouchOutside(false)
+        close.setOnClickListener { dialog.dismiss() }
+        webUiDialog = dialog
+        dialog.setOnDismissListener {
+            webView.stopLoading()
+            webView.destroy()
+            connectivityManager.bindProcessToNetwork(null)
+            if (webUiDialog === dialog) webUiDialog = null
+        }
+        dialog.show()
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(activity.getColor(R.color.bg)))
+            setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+        }
     }
 
     private fun exportConsole() {
