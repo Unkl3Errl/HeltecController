@@ -18,7 +18,7 @@ Each application keeps its applicable transport controls visible: Bruce has
 **Connect BruceNet** and **Reconnect USB**, GhostESP has **Connect GhostNet**
 and **Reconnect USB**, and Marauder has **Reconnect USB**.
 
-Each firmware tab also contains a recovery/update card. Version 0.9.0 ships a
+Each firmware tab also contains a recovery/update card. Version 0.9.1 ships a
 complete offset-0 bootable image for all three projects, verifies the catalog
 signature and image SHA-256 values, and retains the verified images in private
 Android app files. The flash action works from any currently installed firmware
@@ -242,7 +242,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.9.0`, code 26.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.9.1`, code 27.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password
