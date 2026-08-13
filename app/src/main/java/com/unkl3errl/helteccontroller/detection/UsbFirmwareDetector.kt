@@ -45,6 +45,7 @@ class UsbFirmwareDetector(
     private var port: UsbSerialPort? = null
     private var ioManager: SerialInputOutputManager? = null
     private var probing = false
+    private var candidateKind = FirmwareKind.UNKNOWN
 
     private val probeTimeout = Runnable {
         if (!probing) return@Runnable
@@ -122,19 +123,10 @@ class UsbFirmwareDetector(
                 evidence.delete(0, evidence.length - MAX_EVIDENCE_CHARS)
             }
             val kind = FirmwareIdentity.classifyUsb(evidence.toString())
-            if (kind != FirmwareKind.UNKNOWN) {
-                val line = evidence.lineSequence().firstOrNull { candidate ->
-                    FirmwareIdentity.classifyUsb(candidate) == kind
-                }?.trim()?.take(120) ?: kind.name
-                mainHandler.post {
-                    if (!probing) return@post
-                    probing = false
-                    mainHandler.removeCallbacksAndMessages(null)
-                    closePort()
-                    listener.onUsbFirmwareDetected(
-                        FirmwareDetection(kind, DetectionSource.USB, line),
-                    )
-                }
+            if (kind != FirmwareKind.UNKNOWN && candidateKind == FirmwareKind.UNKNOWN) {
+                candidateKind = kind
+                scheduleWrite("version", 0L)
+                mainHandler.postDelayed({ finishDetected(kind) }, 500L)
             }
         }
     }
@@ -170,6 +162,7 @@ class UsbFirmwareDetector(
             runCatching { selected.setDTR(true) }
             port = selected
             evidence.clear()
+            candidateKind = FirmwareKind.UNKNOWN
             probing = true
             ioManager = SerialInputOutputManager(selected, this).also { it.start() }
             listener.onUsbDetectionStatus("Probing attached firmware with read-only commands…")
@@ -206,6 +199,26 @@ class UsbFirmwareDetector(
         mainHandler.removeCallbacksAndMessages(null)
         closePort()
         listener.onUsbDetectionUnknown(message)
+    }
+
+    private fun finishDetected(kind: FirmwareKind) {
+        if (!probing || candidateKind != kind) return
+        val response = synchronized(evidence) { evidence.toString() }
+        val line = response.lineSequence().firstOrNull { candidate ->
+            FirmwareIdentity.classifyUsb(candidate) == kind
+        }?.trim()?.take(120) ?: kind.name
+        probing = false
+        mainHandler.removeCallbacksAndMessages(null)
+        closePort()
+        listener.onUsbFirmwareDetected(
+            FirmwareDetection(
+                kind = kind,
+                source = DetectionSource.USB,
+                evidence = line,
+                version = FirmwareIdentity.version(kind, response),
+                commit = FirmwareIdentity.commit(kind, response),
+            ),
+        )
     }
 
     private fun closePort() {

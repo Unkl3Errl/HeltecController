@@ -3,6 +3,7 @@ package com.unkl3errl.helteccontroller
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -22,6 +23,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.PopupMenu
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.unkl3errl.helteccontroller.bruce.BruceApiClient
@@ -29,11 +31,17 @@ import com.unkl3errl.helteccontroller.bruce.BruceNetworkManager
 import com.unkl3errl.helteccontroller.bruce.PhoneWifiObservation
 import com.unkl3errl.helteccontroller.connection.PersistentDeviceConnections
 import com.unkl3errl.helteccontroller.connection.PersistentUsbKind
+import com.unkl3errl.helteccontroller.connection.AndroidStorageRouting
 import com.unkl3errl.helteccontroller.detection.DetectionSource
 import com.unkl3errl.helteccontroller.detection.FirmwareDetection
 import com.unkl3errl.helteccontroller.detection.FirmwareIdentity
 import com.unkl3errl.helteccontroller.detection.FirmwareKind
 import com.unkl3errl.helteccontroller.detection.UsbFirmwareDetector
+import com.unkl3errl.helteccontroller.firmware.Esp32S3BootloaderFlasher
+import com.unkl3errl.helteccontroller.firmware.FirmwareCatalog
+import com.unkl3errl.helteccontroller.firmware.FirmwareImageRepository
+import com.unkl3errl.helteccontroller.firmware.FirmwareRelease
+import com.unkl3errl.helteccontroller.firmware.FirmwareVersion
 import com.unkl3errl.helteccontroller.ghost.GhostApiClient
 import java.io.File
 import java.util.concurrent.Executors
@@ -48,8 +56,10 @@ class MainActivity :
         private const val BRUCE_EXPORT_REQUEST = 2002
         private const val PHONE_GPS_PERMISSION_REQUEST = 2003
         private const val PHONE_WIFI_PERMISSION_REQUEST = 2004
+        private const val SESSION_NOTIFICATION_PERMISSION_REQUEST = 2005
         private const val MARAUDER_EXPORT_REQUEST = 3001
         private const val GHOST_EXPORT_REQUEST = 4001
+        private const val ANDROID_STORAGE_TREE_REQUEST = 4002
         private const val STATE_BRUCE_EXPORT_NAME = "pendingBruceExportName"
         private const val STATE_BRUCE_EXPORT_PATH = "pendingBruceExportPath"
         private const val STATE_BRUCE_EXPORT_DEVICE = "pendingBruceExportDevice"
@@ -66,9 +76,14 @@ class MainActivity :
         private const val SESSION_PREFS = "persistent_device_session"
         private const val PREF_FIRMWARE_KIND = "firmware_kind"
         private const val PREF_DETECTION_SOURCE = "detection_source"
+        private const val PREF_FIRMWARE_VERSION = "firmware_version"
+        private const val PREF_FIRMWARE_COMMIT = "firmware_commit"
         private const val MENU_DETECT_USB = 5001
         private const val MENU_CONNECT_BRUCENET = 5002
         private const val MENU_CONNECT_GHOSTNET = 5003
+        private const val MENU_CHOOSE_ANDROID_STORAGE = 5004
+        private const val MENU_SYNC_ANDROID_STORAGE = 5005
+        private const val RELEASE_NOTICE_PREFS = "firmware_release_notices"
     }
 
     private lateinit var globalStatus: TextView
@@ -88,6 +103,14 @@ class MainActivity :
     private lateinit var usbDetector: UsbFirmwareDetector
     private lateinit var phoneLocationManager: LocationManager
     private lateinit var phoneWifiScanner: AndroidWifiFieldScanner
+    private lateinit var firmwareRepository: FirmwareImageRepository
+    private lateinit var bootloaderFlasher: Esp32S3BootloaderFlasher
+    private lateinit var bruceFirmwareStatus: TextView
+    private lateinit var ghostFirmwareStatus: TextView
+    private lateinit var marauderFirmwareStatus: TextView
+    private lateinit var flashBruceFirmware: Button
+    private lateinit var flashGhostFirmware: Button
+    private lateinit var flashMarauderFirmware: Button
 
     private val client = BruceApiClient()
     private val ghostClient = GhostApiClient()
@@ -106,6 +129,10 @@ class MainActivity :
     private var phoneGpsRequested = false
     private var phoneWifiRequested = false
     private var usbTransportDetached = false
+    private var selectedScreen = FirmwareKind.BRUCE
+    private var requestedNetworkKind: FirmwareKind? = null
+    private var activeNetworkKind: FirmwareKind? = null
+    private var flashingKind: FirmwareKind? = null
 
     @Suppress("DEPRECATION")
     private val controllerVersionName: String by lazy {
@@ -145,11 +172,20 @@ class MainActivity :
         phoneLocationManager = getSystemService(LocationManager::class.java)
         phoneWifiScanner = AndroidWifiFieldScanner(this, this)
         registerUsbDetachReceiver()
+        requestSessionNotificationPermission()
 
         val inflater = LayoutInflater.from(this)
         bruceView = inflater.inflate(R.layout.screen_bruce, container, false)
         ghostView = inflater.inflate(R.layout.screen_ghost, container, false)
         marauderView = inflater.inflate(R.layout.screen_marauder, container, false)
+        bruceFirmwareStatus = bruceView.findViewById(R.id.bruceFirmwareImageStatus)
+        ghostFirmwareStatus = ghostView.findViewById(R.id.ghostFirmwareImageStatus)
+        marauderFirmwareStatus = marauderView.findViewById(R.id.marauderFirmwareImageStatus)
+        flashBruceFirmware = bruceView.findViewById(R.id.flashBruceFirmware)
+        flashGhostFirmware = ghostView.findViewById(R.id.flashGhostFirmware)
+        flashMarauderFirmware = marauderView.findViewById(R.id.flashMarauderFirmware)
+        firmwareRepository = FirmwareImageRepository(this)
+        bootloaderFlasher = Esp32S3BootloaderFlasher(this)
         bruceController = BruceScreenController(
             activity = this,
             root = bruceView,
@@ -177,25 +213,29 @@ class MainActivity :
         networkManager.attach(this)
 
         globalStatus.setOnClickListener { showConnectionMenu() }
-        tabBruce.setOnClickListener {
-            if (detectedFirmware?.kind == FirmwareKind.BRUCE) showScreen(bruceView, FirmwareKind.BRUCE)
-        }
-        tabMarauder.setOnClickListener {
-            if (detectedFirmware?.kind == FirmwareKind.MARAUDER) {
-                showScreen(marauderView, FirmwareKind.MARAUDER)
-            }
-        }
-        tabGhost.setOnClickListener {
-            if (detectedFirmware?.kind == FirmwareKind.GHOSTESP) {
-                showScreen(ghostView, FirmwareKind.GHOSTESP)
-            }
-        }
+        tabBruce.setOnClickListener { showScreen(bruceView, FirmwareKind.BRUCE) }
+        tabMarauder.setOnClickListener { showScreen(marauderView, FirmwareKind.MARAUDER) }
+        tabGhost.setOnClickListener { showScreen(ghostView, FirmwareKind.GHOSTESP) }
+        flashBruceFirmware.setOnClickListener { confirmFirmwareFlash(FirmwareKind.BRUCE) }
+        flashGhostFirmware.setOnClickListener { confirmFirmwareFlash(FirmwareKind.GHOSTESP) }
+        flashMarauderFirmware.setOnClickListener { confirmFirmwareFlash(FirmwareKind.MARAUDER) }
 
         clearDetection(
-            "Automatic USB detection is active. Tap the status badge to reconnect USB, " +
-                "BruceNet, or GhostNet.",
+            "All firmware screens are available. Automatic USB detection is active; " +
+                "USB and local Wi-Fi connections can remain active while you switch screens.",
         )
         container.post(::restorePersistentConnectionOrDetect)
+        firmwareRepository.initialize(object : FirmwareImageRepository.Listener {
+            override fun onCatalogChanged(catalog: FirmwareCatalog) = runOnUiThread {
+                updateFirmwareCards()
+                showReleaseNotice(selectedScreen)
+                notifyIfFirmwareUpdateExists()
+            }
+
+            override fun onCatalogStatus(message: String) = runOnUiThread {
+                updateFirmwareCards()
+            }
+        })
     }
 
     private fun applySystemBarInsets() {
@@ -224,6 +264,7 @@ class MainActivity :
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.action == android.hardware.usb.UsbManager.ACTION_USB_DEVICE_ATTACHED) {
+            updateFirmwareCards()
             startUsbDetection()
         }
     }
@@ -236,6 +277,8 @@ class MainActivity :
         if (::marauderController.isInitialized) marauderController.destroy()
         if (::networkManager.isInitialized) networkManager.detach(this)
         if (::usbDetector.isInitialized) usbDetector.destroy()
+        if (::firmwareRepository.isInitialized) firmwareRepository.close()
+        if (::bootloaderFlasher.isInitialized) bootloaderFlasher.close()
         runCatching { unregisterReceiver(usbDetachReceiver) }
         detectorExecutor.shutdownNow()
         if (isFinishing) {
@@ -263,6 +306,7 @@ class MainActivity :
             BRUCE_EXPORT_REQUEST -> finishBruceExport(resultCode, data?.data)
             MARAUDER_EXPORT_REQUEST -> finishMarauderExport(resultCode, data?.data)
             GHOST_EXPORT_REQUEST -> finishGhostExport(resultCode, data?.data)
+            ANDROID_STORAGE_TREE_REQUEST -> finishAndroidStorageSelection(resultCode, data)
         }
     }
 
@@ -272,6 +316,7 @@ class MainActivity :
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == SESSION_NOTIFICATION_PERMISSION_REQUEST) return
         if (requestCode == PHONE_GPS_PERMISSION_REQUEST) {
             val granted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED
@@ -303,15 +348,19 @@ class MainActivity :
         } else grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
 
         if (granted && request != null) {
-            networkManager.request(request.first, request.second)
+            beginWifiRequest(request.first, request.second)
         } else if (pendingGhostNetDetection) {
             pendingGhostNetDetection = false
+            requestedNetworkKind = null
             onUsbDetectionUnknown("Nearby Wi-Fi permission was denied")
         } else if (pendingBruceNetDetection) {
             pendingBruceNetDetection = false
+            requestedNetworkKind = null
             onUsbDetectionUnknown("Nearby Wi-Fi permission was denied")
         } else {
-            when (detectedFirmware?.kind) {
+            val target = requestedNetworkKind ?: selectedScreen
+            requestedNetworkKind = null
+            when (target) {
                 FirmwareKind.GHOSTESP ->
                     ghostController.onNetworkError("Nearby Wi-Fi permission was denied")
                 FirmwareKind.BRUCE ->
@@ -321,9 +370,35 @@ class MainActivity :
         }
     }
 
+    private fun requestSessionNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                SESSION_NOTIFICATION_PERMISSION_REQUEST,
+            )
+        }
+    }
+
     override fun onBruceNetworkAvailable(network: Network) {
-        client.network = network
-        ghostClient.network = network
+        val networkKind = requestedNetworkKind
+            ?: networkKindForSsid(networkManager.requestedSsid)
+            ?: activeNetworkKind
+            ?: detectedFirmware?.kind
+        client.network = network.takeIf { networkKind == FirmwareKind.BRUCE }
+        ghostClient.network = network.takeIf { networkKind == FirmwareKind.GHOSTESP }
+        requestedNetworkKind = null
+        val replacedKind = activeNetworkKind?.takeIf { it != networkKind }
+        activeNetworkKind = networkKind
+        if (replacedKind != null) runOnUiThread {
+            when (replacedKind) {
+                FirmwareKind.BRUCE -> bruceController.onNetworkLost()
+                FirmwareKind.GHOSTESP -> ghostController.onNetworkLost()
+                else -> Unit
+            }
+        }
         if (pendingGhostNetDetection) {
             probeGhostNet()
             return
@@ -333,9 +408,9 @@ class MainActivity :
             return
         }
         runOnUiThread {
-            when (detectedFirmware?.kind) {
+            when (networkKind) {
                 FirmwareKind.GHOSTESP -> {
-                    if (usbTransportDetached) {
+                    if (usbTransportDetached && detectedFirmware?.kind == FirmwareKind.GHOSTESP) {
                         detectedFirmware = detectedFirmware?.copy(
                             source = DetectionSource.GHOSTNET,
                             evidence = "USB detached · continuing through GhostNet",
@@ -346,7 +421,7 @@ class MainActivity :
                     ghostController.onNetworkAvailable(network)
                 }
                 FirmwareKind.BRUCE -> {
-                    if (usbTransportDetached) {
+                    if (usbTransportDetached && detectedFirmware?.kind == FirmwareKind.BRUCE) {
                         detectedFirmware = detectedFirmware?.copy(
                             source = DetectionSource.BRUCENET,
                             evidence = "USB detached · continuing through BruceNet",
@@ -364,37 +439,45 @@ class MainActivity :
     override fun onBruceNetworkLost() {
         client.network = null
         ghostClient.network = null
+        val lostKind = activeNetworkKind
+            ?: networkKindForSsid(networkManager.requestedSsid)
+            ?: requestedNetworkKind
+        activeNetworkKind = null
+        requestedNetworkKind = null
         runOnUiThread {
-            when {
-                detectedFirmware?.source == DetectionSource.GHOSTNET -> {
+            when (lostKind) {
+                FirmwareKind.GHOSTESP -> {
                     detectionStatus.text =
-                        "GhostNet disconnected. GhostESP remains available standalone; " +
-                            "reconnect GhostNet or attach USB to resume control."
+                        "GhostNet disconnected. Any USB connection remains active; " +
+                            "reconnect GhostNet to resume over-the-air control."
                     ghostController.onNetworkLost()
                 }
-                detectedFirmware?.source == DetectionSource.BRUCENET -> {
+                FirmwareKind.BRUCE -> {
                     detectionStatus.text =
-                        "BruceNet disconnected. Bruce remains available standalone; " +
-                            "reconnect BruceNet or attach USB to resume control."
+                        "BruceNet disconnected. Any USB connection remains active; " +
+                            "reconnect BruceNet to resume over-the-air control."
                     bruceController.onNetworkLost()
-                    setGlobalStatus("BRUCE OFFLINE")
                 }
-                detectedFirmware?.kind == FirmwareKind.GHOSTESP -> ghostController.onNetworkLost()
-                detectedFirmware?.kind == FirmwareKind.BRUCE -> bruceController.onNetworkLost()
+                else -> Unit
             }
         }
     }
 
     override fun onBruceNetworkError(message: String) = runOnUiThread {
-        if (pendingGhostNetDetection || pendingBruceNetDetection || detectedFirmware == null) {
+        val target = requestedNetworkKind
+            ?: activeNetworkKind
+            ?: networkKindForSsid(networkManager.requestedSsid)
+            ?: selectedScreen
+        requestedNetworkKind = null
+        if (pendingGhostNetDetection || pendingBruceNetDetection) {
             pendingGhostNetDetection = false
             pendingBruceNetDetection = false
             detectionStatus.text = message
             setControllerSubtitle("DETECT ERROR")
             setGlobalStatus("DETECT ERROR")
-        } else if (detectedFirmware?.kind == FirmwareKind.GHOSTESP) {
+        } else if (target == FirmwareKind.GHOSTESP) {
             ghostController.onNetworkError(message)
-        } else if (detectedFirmware?.kind == FirmwareKind.BRUCE) {
+        } else if (target == FirmwareKind.BRUCE) {
             bruceController.onNetworkError(message)
         }
     }
@@ -431,7 +514,7 @@ class MainActivity :
         clearDetection("Requesting the default BruceNet local Wi-Fi link…")
         pendingBruceNetDetection = true
         pendingGhostNetDetection = false
-        requestWifi(DEFAULT_BRUCENET_SSID, DEFAULT_BRUCENET_PASSWORD)
+        requestWifi(DEFAULT_BRUCENET_SSID, DEFAULT_BRUCENET_PASSWORD, FirmwareKind.BRUCE)
     }
 
     private fun startGhostNetDetection() {
@@ -439,7 +522,7 @@ class MainActivity :
         clearDetection("Requesting the default GhostNet local Wi-Fi link…")
         pendingBruceNetDetection = false
         pendingGhostNetDetection = true
-        requestWifi(DEFAULT_GHOSTNET_SSID, DEFAULT_GHOSTNET_PASSWORD)
+        requestWifi(DEFAULT_GHOSTNET_SSID, DEFAULT_GHOSTNET_PASSWORD, FirmwareKind.GHOSTESP)
     }
 
     private fun probeBruceNet() {
@@ -520,6 +603,8 @@ class MainActivity :
         getSharedPreferences(SESSION_PREFS, MODE_PRIVATE).edit()
             .putString(PREF_FIRMWARE_KIND, detection.kind.name)
             .putString(PREF_DETECTION_SOURCE, detection.source.name)
+            .putString(PREF_FIRMWARE_VERSION, detection.version)
+            .putString(PREF_FIRMWARE_COMMIT, detection.commit)
             .apply()
         val source = when (detection.source) {
             DetectionSource.USB -> "USB"
@@ -528,17 +613,23 @@ class MainActivity :
             DetectionSource.MANUAL -> "manual override"
         }
         detectionStatus.text =
-            "Verified ${detection.kind.displayName} via $source · ${detection.evidence}"
+            "Verified ${detection.kind.displayName}" +
+                detection.version?.let { " $it" }.orEmpty() +
+                " via $source · ${detection.evidence}"
         setControllerSubtitle(detection.kind.displayName.uppercase())
         setGlobalStatus("${detection.kind.displayName.uppercase()} READY")
-        tabBruce.isEnabled = detection.kind == FirmwareKind.BRUCE
-        tabGhost.isEnabled = detection.kind == FirmwareKind.GHOSTESP
-        tabMarauder.isEnabled = detection.kind == FirmwareKind.MARAUDER
+        tabBruce.isEnabled = true
+        tabGhost.isEnabled = true
+        tabMarauder.isEnabled = true
+        updateFirmwareCards()
+        notifyIfFirmwareUpdateExists()
         when (detection.kind) {
             FirmwareKind.BRUCE -> {
                 showScreen(bruceView, FirmwareKind.BRUCE)
                 if (detection.source == DetectionSource.USB) bruceController.onUsbDetected()
-                if (client.network != null) bruceController.onNetworkAvailable()
+                if (client.network != null && activeNetworkKind == FirmwareKind.BRUCE) {
+                    bruceController.onNetworkAvailable()
+                }
             }
             FirmwareKind.MARAUDER -> {
                 showScreen(marauderView, FirmwareKind.MARAUDER)
@@ -547,7 +638,9 @@ class MainActivity :
             FirmwareKind.GHOSTESP -> {
                 showScreen(ghostView, FirmwareKind.GHOSTESP)
                 if (detection.source == DetectionSource.USB) ghostController.connectUsb()
-                ghostClient.network?.let(ghostController::onNetworkAvailable)
+                if (activeNetworkKind == FirmwareKind.GHOSTESP) {
+                    ghostClient.network?.let(ghostController::onNetworkAvailable)
+                }
             }
             FirmwareKind.UNKNOWN -> clearDetection("The firmware signature is unknown.")
         }
@@ -556,16 +649,15 @@ class MainActivity :
     private fun clearDetection(message: String) {
         usbTransportDetached = false
         detectedFirmware = null
-        stopPhoneGps()
-        stopPhoneWifi()
         detectionStatus.text = message
         setControllerSubtitle("DETECTING")
-        tabBruce.isEnabled = false
-        tabGhost.isEnabled = false
-        tabMarauder.isEnabled = false
-        setTabAppearance(FirmwareKind.UNKNOWN)
-        container.removeAllViews()
+        tabBruce.isEnabled = true
+        tabGhost.isEnabled = true
+        tabMarauder.isEnabled = true
+        if (container.childCount == 0) showScreen(bruceView, FirmwareKind.BRUCE)
+        else setTabAppearance(selectedScreen)
         setGlobalStatus("UNKNOWN")
+        updateFirmwareCards()
     }
 
     private fun retainDetectedFirmwareAfterUsbDetach() {
@@ -574,7 +666,7 @@ class MainActivity :
         when (detection.kind) {
             FirmwareKind.GHOSTESP -> {
                 val network = ghostClient.network
-                if (network != null) {
+                if (network != null && activeNetworkKind == FirmwareKind.GHOSTESP) {
                     detectedFirmware = detection.copy(
                         source = DetectionSource.GHOSTNET,
                         evidence = "USB detached · continuing through GhostNet",
@@ -597,7 +689,7 @@ class MainActivity :
                 setGlobalStatus("MARAUDER OFFLINE")
             }
             FirmwareKind.BRUCE -> {
-                if (client.network != null) {
+                if (client.network != null && activeNetworkKind == FirmwareKind.BRUCE) {
                     detectedFirmware = detection.copy(
                         source = DetectionSource.BRUCENET,
                         evidence = "USB detached · continuing through BruceNet",
@@ -640,8 +732,9 @@ class MainActivity :
                 expectedSsid != null &&
                 networkManager.requestedSsid == expectedSsid
             ) {
-                client.network = network
-                ghostClient.network = network
+                activeNetworkKind = storedKind
+                client.network = network.takeIf { storedKind == FirmwareKind.BRUCE }
+                ghostClient.network = network.takeIf { storedKind == FirmwareKind.GHOSTESP }
                 val restoredSource = if (storedKind == FirmwareKind.GHOSTESP) {
                     DetectionSource.GHOSTNET
                 } else {
@@ -667,11 +760,14 @@ class MainActivity :
             PersistentUsbKind.GHOSTESP -> FirmwareKind.GHOSTESP
             PersistentUsbKind.MARAUDER -> FirmwareKind.MARAUDER
         }
+        val preferences = getSharedPreferences(SESSION_PREFS, MODE_PRIVATE)
         applyDetection(
             FirmwareDetection(
                 firmwareKind,
                 DetectionSource.USB,
                 "resumed existing background USB session without reopening it",
+                preferences.getString(PREF_FIRMWARE_VERSION, null),
+                preferences.getString(PREF_FIRMWARE_COMMIT, null),
             ),
         )
     }
@@ -681,10 +777,13 @@ class MainActivity :
     }
 
     private fun showScreen(view: View, selected: FirmwareKind) {
-        if (detectedFirmware?.kind != selected) return
-        container.removeAllViews()
-        container.addView(view)
+        selectedScreen = selected
+        if (container.childCount != 1 || container.getChildAt(0) !== view) {
+            container.removeAllViews()
+            container.addView(view)
+        }
         setTabAppearance(selected)
+        showReleaseNotice(selected)
     }
 
     private fun setTabAppearance(selected: FirmwareKind) {
@@ -717,19 +816,159 @@ class MainActivity :
         )
     }
 
+    private fun updateFirmwareCards() {
+        if (!::firmwareRepository.isInitialized || !::bootloaderFlasher.isInitialized) return
+        val releases = firmwareRepository.catalog?.releases.orEmpty()
+        updateFirmwareCard(
+            FirmwareKind.BRUCE,
+            releases[FirmwareKind.BRUCE],
+            bruceFirmwareStatus,
+            flashBruceFirmware,
+        )
+        updateFirmwareCard(
+            FirmwareKind.GHOSTESP,
+            releases[FirmwareKind.GHOSTESP],
+            ghostFirmwareStatus,
+            flashGhostFirmware,
+        )
+        updateFirmwareCard(
+            FirmwareKind.MARAUDER,
+            releases[FirmwareKind.MARAUDER],
+            marauderFirmwareStatus,
+            flashMarauderFirmware,
+        )
+    }
+
+    private fun updateFirmwareCard(
+        kind: FirmwareKind,
+        release: FirmwareRelease?,
+        status: TextView,
+        button: Button,
+    ) {
+        if (release == null) {
+            status.text = "Preparing the verified offline bootable image…"
+            button.text = "PREPARING ${kind.displayName.uppercase()} IMAGE"
+            button.isEnabled = false
+            return
+        }
+        val imageReady = firmwareRepository.imageFile(kind) != null
+        status.text = if (imageReady) {
+            "Newest ${release.version} · ${release.releasedAt} · Complete bootable image retained in app files."
+        } else {
+            "Newest ${release.version} · image download or verification is still pending."
+        }
+        val detection = detectedFirmware
+        val exactCurrent = detection?.kind == kind &&
+            FirmwareVersion.matches(detection.version, release.version)
+        val updateAvailable = detection?.kind == kind &&
+            FirmwareVersion.isOlder(detection.version, release.version) == true
+        button.text = when {
+            flashingKind == kind -> "FLASHING ${kind.displayName.uppercase()}…"
+            exactCurrent -> "CURRENT DEVICE FIRMWARE"
+            updateAvailable -> "UPDATE TO ${release.version.uppercase()}"
+            else -> "FLASH ${kind.displayName.uppercase()} TO CONNECTED DEVICE"
+        }
+        button.isEnabled = flashingKind == null && imageReady &&
+            bootloaderFlasher.hasNativeTarget() && !exactCurrent
+    }
+
+    private fun showReleaseNotice(kind: FirmwareKind) {
+        if (kind == FirmwareKind.UNKNOWN || !::firmwareRepository.isInitialized) return
+        val release = firmwareRepository.catalog?.releases?.get(kind) ?: return
+        val key = "seen_${kind.name}_${release.version}"
+        val preferences = getSharedPreferences(RELEASE_NOTICE_PREFS, MODE_PRIVATE)
+        if (preferences.getBoolean(key, false)) return
+        preferences.edit().putBoolean(key, true).apply()
+        Toast.makeText(
+            this,
+            "${release.displayName} ${release.version} · ${release.releasedAt}\n${release.summary}",
+            Toast.LENGTH_LONG,
+        ).show()
+    }
+
+    private fun notifyIfFirmwareUpdateExists() {
+        val detection = detectedFirmware ?: return
+        val release = firmwareRepository.catalog?.releases?.get(detection.kind) ?: return
+        if (FirmwareVersion.isOlder(detection.version, release.version) != true) return
+        val key = "update_${detection.kind.name}_${detection.version}_${release.version}"
+        val preferences = getSharedPreferences(RELEASE_NOTICE_PREFS, MODE_PRIVATE)
+        if (preferences.getBoolean(key, false)) return
+        preferences.edit().putBoolean(key, true).apply()
+        Toast.makeText(
+            this,
+            "${release.displayName} ${release.version} is available for this device.",
+            Toast.LENGTH_LONG,
+        ).show()
+    }
+
+    private fun confirmFirmwareFlash(kind: FirmwareKind) {
+        val release = firmwareRepository.catalog?.releases?.get(kind) ?: return
+        val image = firmwareRepository.imageFile(kind)
+        if (image == null) {
+            Toast.makeText(this, "The verified firmware image is not ready", Toast.LENGTH_LONG).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Flash ${release.displayName} ${release.version}?")
+            .setMessage(
+                "Target: Heltec WiFi LoRa 32 V4 (ESP32-S3, 16 MB) only.\n\n" +
+                    "This replaces the bootloader, partition table, and application. It does not " +
+                    "erase the entire chip, but changing firmware can make unsynced device storage " +
+                    "inaccessible. Keep both devices powered and connected until verification finishes.",
+            )
+            .setNegativeButton("CANCEL", null)
+            .setPositiveButton("FLASH") { _, _ -> beginFirmwareFlash(kind, release, image) }
+            .show()
+    }
+
+    private fun beginFirmwareFlash(kind: FirmwareKind, release: FirmwareRelease, image: File) {
+        usbDetector.cancel()
+        PersistentDeviceConnections.disconnectAllUsb()
+        flashingKind = kind
+        detectedFirmware = null
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        updateFirmwareCards()
+        setGlobalStatus("FLASHING ${release.displayName.uppercase()}")
+        detectionStatus.text = "Preparing ${release.displayName} ${release.version} recovery image…"
+        bootloaderFlasher.flash(image, object : Esp32S3BootloaderFlasher.Listener {
+            override fun onFlashProgress(percent: Int, message: String) = runOnUiThread {
+                detectionStatus.text = message
+                setGlobalStatus("FLASH $percent%")
+            }
+
+            override fun onFlashComplete() = runOnUiThread {
+                flashingKind = null
+                window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                detectionStatus.text = "${release.displayName} ${release.version} flashed and verified. Reconnecting…"
+                setGlobalStatus("FLASH VERIFIED")
+                updateFirmwareCards()
+                container.postDelayed(::startUsbDetection, 1_500L)
+            }
+
+            override fun onFlashFailed(message: String) = runOnUiThread {
+                flashingKind = null
+                window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                detectionStatus.text = "Flash stopped safely: $message"
+                setGlobalStatus("FLASH FAILED")
+                updateFirmwareCards()
+            }
+        })
+    }
+
     private fun requestBruceWifi(ssid: String, password: String) {
         pendingBruceNetDetection = false
         pendingGhostNetDetection = false
-        requestWifi(ssid, password)
+        requestWifi(ssid, password, FirmwareKind.BRUCE)
     }
 
     private fun requestGhostNet() {
         pendingBruceNetDetection = false
         pendingGhostNetDetection = false
-        requestWifi(DEFAULT_GHOSTNET_SSID, DEFAULT_GHOSTNET_PASSWORD)
+        requestWifi(DEFAULT_GHOSTNET_SSID, DEFAULT_GHOSTNET_PASSWORD, FirmwareKind.GHOSTESP)
     }
 
-    private fun requestWifi(ssid: String, password: String) {
+    private fun requestWifi(ssid: String, password: String, kind: FirmwareKind) {
+        requestedNetworkKind = kind
         val permissions = when {
             Build.VERSION.SDK_INT >= 33 -> arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES)
             Build.VERSION.SDK_INT >= 31 -> arrayOf(
@@ -739,11 +978,28 @@ class MainActivity :
             else -> arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         }
         if (permissions.all { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) {
-            networkManager.request(ssid, password)
+            beginWifiRequest(ssid, password)
         } else {
             pendingWifi = ssid to password
             requestPermissions(permissions, WIFI_PERMISSION_REQUEST)
         }
+    }
+
+    private fun beginWifiRequest(ssid: String, password: String) {
+        val replacing = activeNetworkKind?.takeIf { it != requestedNetworkKind }
+        activeNetworkKind = null
+        when (replacing) {
+            FirmwareKind.BRUCE -> bruceController.onNetworkLost()
+            FirmwareKind.GHOSTESP -> ghostController.onNetworkLost()
+            else -> Unit
+        }
+        networkManager.request(ssid, password)
+    }
+
+    private fun networkKindForSsid(ssid: String?): FirmwareKind? = when (ssid) {
+        DEFAULT_BRUCENET_SSID -> FirmwareKind.BRUCE
+        DEFAULT_GHOSTNET_SSID -> FirmwareKind.GHOSTESP
+        else -> null
     }
 
     private fun requestPhoneGps(enabled: Boolean) {
@@ -763,7 +1019,7 @@ class MainActivity :
 
     @SuppressLint("MissingPermission")
     private fun startPhoneGps() {
-        if (!phoneGpsRequested || detectedFirmware?.kind != FirmwareKind.BRUCE) return
+        if (!phoneGpsRequested) return
         val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
             .filter { runCatching { phoneLocationManager.isProviderEnabled(it) }.getOrDefault(false) }
         if (providers.isEmpty()) {
@@ -817,7 +1073,7 @@ class MainActivity :
     }.toTypedArray()
 
     private fun startPhoneWifi() {
-        if (!phoneWifiRequested || detectedFirmware?.kind != FirmwareKind.BRUCE) return
+        if (!phoneWifiRequested) return
         phoneWifiScanner.start()
     }
 
@@ -1031,16 +1287,85 @@ class MainActivity :
             menu.add(0, MENU_DETECT_USB, 0, "USB Detect")
             menu.add(0, MENU_CONNECT_BRUCENET, 1, "Connect BruceNet")
             menu.add(0, MENU_CONNECT_GHOSTNET, 2, "Connect GhostNet")
+            menu.add(0, MENU_CHOOSE_ANDROID_STORAGE, 3, "Choose Android storage")
+            menu.add(0, MENU_SYNC_ANDROID_STORAGE, 4, "Sync Android storage now")
             setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     MENU_DETECT_USB -> startUsbDetection()
                     MENU_CONNECT_BRUCENET -> startBruceNetDetection()
                     MENU_CONNECT_GHOSTNET -> startGhostNetDetection()
+                    MENU_CHOOSE_ANDROID_STORAGE -> chooseAndroidStorage()
+                    MENU_SYNC_ANDROID_STORAGE -> syncAndroidStorage()
                     else -> return@setOnMenuItemClickListener false
                 }
                 true
             }
             show()
+        }
+    }
+
+    private fun chooseAndroidStorage() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PREFIX_URI_PERMISSION,
+            )
+            AndroidStorageRouting.selectedRoot(this@MainActivity)?.let {
+                putExtra("android.provider.extra.INITIAL_URI", it)
+            }
+        }
+        runCatching { startActivityForResult(intent, ANDROID_STORAGE_TREE_REQUEST) }
+            .onFailure {
+                Toast.makeText(this, "No Android folder provider is available", Toast.LENGTH_LONG)
+                    .show()
+            }
+    }
+
+    @SuppressLint("WrongConstant")
+    private fun finishAndroidStorageSelection(resultCode: Int, data: Intent?) {
+        val uri = data?.data
+        if (resultCode != RESULT_OK || uri == null) return
+        val permissions = data.flags and
+            (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        runCatching {
+            contentResolver.takePersistableUriPermission(uri, permissions)
+            AndroidStorageRouting.selectRoot(this, uri)
+        }.onSuccess {
+            Toast.makeText(this, "Android storage selected; continuous sync is active", Toast.LENGTH_LONG)
+                .show()
+            syncAndroidStorage()
+        }.onFailure { error ->
+            Toast.makeText(
+                this,
+                "Could not retain access to that folder: ${error.message}",
+                Toast.LENGTH_LONG,
+            ).show()
+        }
+    }
+
+    private fun syncAndroidStorage() {
+        val kind = PersistentDeviceConnections.activeUsbKind() ?: when (detectedFirmware?.kind) {
+            FirmwareKind.BRUCE -> PersistentUsbKind.BRUCE
+            FirmwareKind.GHOSTESP -> PersistentUsbKind.GHOSTESP
+            FirmwareKind.MARAUDER -> PersistentUsbKind.MARAUDER
+            FirmwareKind.UNKNOWN, null -> null
+        }
+        if (kind == null) {
+            Toast.makeText(this, "Connect a firmware over USB first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (AndroidStorageRouting.selectedRoot(this) == null) {
+            chooseAndroidStorage()
+            return
+        }
+        setGlobalStatus("STORAGE SYNC")
+        AndroidStorageRouting.syncNow(this, kind) { message ->
+            runOnUiThread {
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                setGlobalStatus(if (PersistentDeviceConnections.activeUsbKind() != null) "USB READY" else "READY")
+            }
         }
     }
 

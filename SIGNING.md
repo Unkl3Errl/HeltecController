@@ -1,14 +1,23 @@
 # Android release signing identity
 
-Direct-distribution releases of `com.unkl3errl.helteccontroller` use the
-existing permanent identity:
+Direct-distribution releases of `com.unkl3errl.helteccontroller` version 0.8.2
+and later use this permanent identity:
 
 | Field | Value |
 | --- | --- |
-| Alias | `heltec-controller` |
+| Alias | `helteccontroller` |
 | Store format | PKCS#12 |
-| Certificate subject | `CN=HeltecController, O=Unkl3Errl` |
-| Certificate SHA-256 | `15:17:B9:22:56:7D:55:7E:9E:71:B5:4A:14:1C:48:56:27:FD:27:50:CF:BC:F8:D1:40:75:C6:D0:AF:37:7C:A4` |
+| Certificate subject | `CN=HeltecController v2, O=Unkl3Errl` |
+| Certificate SHA-256 | `37:2B:AE:B4:32:9B:91:78:96:54:B3:72:CB:9F:B0:FE:95:47:39:F1:58:28:49:A3:59:23:47:A7:23:2F:DF:B8` |
+
+The provisioned macOS machine stores the keystore at
+`~/Library/Application Support/HeltecController/signing/heltec-controller-release-v2.p12`
+and its password in Login Keychain under `HeltecController Release Signing v2`.
+Run `./scripts/build-release-macos.sh` there to test and create the signed APK.
+
+Version 0.8.1 used a different certificate whose private key was unavailable.
+Android therefore required one uninstall/reinstall to establish this v2 update
+line. Do not rotate or recreate the v2 key for future versions.
 
 Keep the keystore and passwords outside Git. The build reads them only from
 `HELTEC_RELEASE_STORE_FILE`, `HELTEC_RELEASE_STORE_PASSWORD`,

@@ -1,16 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/marauderScreenScroll"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingLeft="14dp"
-    android:paddingTop="10dp"
-    android:paddingRight="14dp"
-    android:paddingBottom="24dp">
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:overScrollMode="ifContentScrolls"
+    android:scrollbarStyle="insideOverlay"
+    android:scrollbars="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="14dp"
+        android:paddingTop="10dp"
+        android:paddingRight="14dp"
+        android:paddingBottom="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MARAUDER FIRMWARE IMAGE" />
+
+            <TextView
+                android:id="@+id/marauderFirmwareImageStatus"
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="Preparing the offline bootable image…" />
+
+            <Button
+                android:id="@+id/flashMarauderFirmware"
+                style="@style/ActionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:text="PREPARING MARAUDER IMAGE" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:background="@drawable/card_bg"
             android:orientation="vertical"
             android:padding="16dp">
@@ -145,10 +186,10 @@
                 android:layout_marginBottom="6dp"
                 android:orientation="horizontal">
 
-                <Button android:id="@+id/consolePageUp" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_marginRight="2dp" android:layout_weight="1" android:minHeight="0dp" android:text="UP" />
-                <Button android:id="@+id/consolePageDown" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_marginLeft="2dp" android:layout_marginRight="2dp" android:layout_weight="1" android:minHeight="0dp" android:text="DOWN" />
-                <Button android:id="@+id/consoleLive" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_marginLeft="2dp" android:layout_marginRight="2dp" android:layout_weight="1" android:minHeight="0dp" android:text="LIVE ON" />
-                <Button android:id="@+id/consoleClear" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_marginLeft="2dp" android:layout_weight="1" android:minHeight="0dp" android:text="CLEAR" />
+                <Button android:id="@+id/consolePageUp" style="@style/ConsoleControlButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_marginRight="2dp" android:layout_weight="1" android:minHeight="0dp" android:text="UP" />
+                <Button android:id="@+id/consolePageDown" style="@style/ConsoleControlButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_marginLeft="2dp" android:layout_marginRight="2dp" android:layout_weight="1" android:minHeight="0dp" android:text="DOWN" />
+                <Button android:id="@+id/consoleLive" style="@style/ConsoleControlButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_marginLeft="2dp" android:layout_marginRight="2dp" android:layout_weight="1" android:minHeight="0dp" android:text="LIVE ON" />
+                <Button android:id="@+id/consoleClear" style="@style/ConsoleControlButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_marginLeft="2dp" android:layout_weight="1" android:minHeight="0dp" android:text="CLEAR" />
             </LinearLayout>
 
             <TextView
@@ -160,22 +201,9 @@
 
             <TextView
                 android:id="@+id/marauderConsole"
-                android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:background="@drawable/input_bg"
-                android:fadeScrollbars="false"
-                android:fontFamily="monospace"
-                android:gravity="bottom"
-                android:lineSpacingExtra="4dp"
-                android:lineSpacingMultiplier="1.05"
-                android:overScrollMode="always"
-                android:padding="12dp"
-                android:scrollbarStyle="insideInset"
-                android:scrollbars="vertical"
+                style="@style/ConsoleText"
                 android:text="Connect to begin.\n"
-                android:textColor="@color/teal"
-                android:textIsSelectable="true"
-                android:textSize="13sp" />
+                />
 
             <EditText
                 android:id="@+id/marauderCommand"
@@ -230,4 +258,5 @@
             android:layout_marginTop="12dp"
             android:gravity="center"
             android:text="Operate only on systems and radio spectrum you own or are authorized to test." />
-</LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

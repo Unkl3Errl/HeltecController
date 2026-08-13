@@ -1,16 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bruceScreenScroll"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingLeft="14dp"
-    android:paddingTop="10dp"
-    android:paddingRight="14dp"
-    android:paddingBottom="24dp">
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:overScrollMode="ifContentScrolls"
+    android:scrollbarStyle="insideOverlay"
+    android:scrollbars="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="14dp"
+        android:paddingTop="10dp"
+        android:paddingRight="14dp"
+        android:paddingBottom="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BRUCE FIRMWARE IMAGE" />
+
+            <TextView
+                android:id="@+id/bruceFirmwareImageStatus"
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="Preparing the offline bootable image…" />
+
+            <Button
+                android:id="@+id/flashBruceFirmware"
+                style="@style/ActionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:text="PREPARING BRUCE IMAGE" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:background="@drawable/card_bg"
             android:orientation="vertical"
             android:padding="16dp">
@@ -230,37 +271,65 @@
                 android:layout_height="wrap_content"
                 android:text="READ CURRENT MENU OPTIONS" />
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/bruceUsbConsolePageUp"
+                    style="@style/ConsoleControlButton"
+                    android:layout_marginRight="2dp"
+                    android:text="UP" />
+
+                <Button
+                    android:id="@+id/bruceUsbConsolePageDown"
+                    style="@style/ConsoleControlButton"
+                    android:layout_marginLeft="2dp"
+                    android:layout_marginRight="2dp"
+                    android:text="DOWN" />
+
+                <Button
+                    android:id="@+id/bruceUsbConsoleLive"
+                    style="@style/ConsoleControlButton"
+                    android:layout_marginLeft="2dp"
+                    android:layout_marginRight="2dp"
+                    android:text="LIVE ON" />
+
+                <Button
+                    android:id="@+id/bruceUsbClear"
+                    style="@style/ConsoleControlButton"
+                    android:layout_marginLeft="2dp"
+                    android:text="CLEAR" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="Drag inside the console or use UP/DOWN to pause auto-follow. Tap LIVE to resume at the newest output." />
+
             <TextView
                 android:id="@+id/bruceUsbConsole"
-                android:layout_width="match_parent"
-                android:layout_height="180dp"
-                android:background="@drawable/input_bg"
-                android:fontFamily="monospace"
-                android:gravity="top|left"
-                android:lineSpacingExtra="4dp"
-                android:lineSpacingMultiplier="1.05"
-                android:padding="10dp"
-                android:scrollbars="vertical"
-                android:text="Connect the Bruce device to begin."
-                android:textColor="@color/text"
-                android:textIsSelectable="true"
-                android:textSize="12sp" />
+                style="@style/ConsoleText"
+                android:text="Connect the Bruce device to begin.\n" />
 
             <EditText
                 android:id="@+id/bruceUsbCommand"
                 style="@style/InputField"
                 android:layout_marginTop="8dp"
                 android:hint="Bruce serial command"
+                android:imeOptions="actionSend"
                 android:inputType="text" />
 
-            <LinearLayout
+            <Button
+                android:id="@+id/bruceUsbSend"
+                style="@style/ActionButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button android:id="@+id/bruceUsbSend" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="SEND" />
-                <Button android:id="@+id/bruceUsbClear" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="CLEAR CONSOLE" />
-            </LinearLayout>
+                android:text="SEND COMMAND" />
 
             <TextView
                 style="@style/MutedText"
@@ -438,4 +507,5 @@
             <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DEVICE POWER" />
             <Button android:id="@+id/bruceRestart" style="@style/DangerButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="RESTART" />
         </LinearLayout>
-</LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

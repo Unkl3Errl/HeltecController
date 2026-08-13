@@ -8,6 +8,8 @@ data class FirmwareDetection(
     val kind: FirmwareKind,
     val source: DetectionSource,
     val evidence: String,
+    val version: String? = null,
+    val commit: String? = null,
 )
 
 object FirmwareIdentity {
@@ -15,7 +17,7 @@ object FirmwareIdentity {
         """(?i)\baction\s*=\s*(?:[\"']/login[\"']|/login(?=\s|>))""",
     )
     private val bruceSignatures = listOf(
-        Regex("(?im)^Bruce\\s+v[^\\r\\n]*$"),
+        Regex("(?im)^Bruce\\s+v?[^\\r\\n]*$"),
         Regex("(?im)^Device:\\s*HELTEC(?:[-_ ]|$)"),
     )
     private val marauderSignatures = listOf(
@@ -24,7 +26,7 @@ object FirmwareIdentity {
         Regex("(?m)^============ Commands ============$"),
     )
     private val ghostEspSignatures = listOf(
-        Regex("(?i)GhostESP v2\\.1 \\(Revival\\)"),
+        Regex("(?i)GhostESP v[^\\r\\n]+"),
         Regex("(?i)Ghost ESP Command Categories:"),
         Regex("(?im)^\\s*ghost>\\s*$"),
     )
@@ -40,6 +42,26 @@ object FirmwareIdentity {
             ghostEsp && !bruce && !marauder -> FirmwareKind.GHOSTESP
             else -> FirmwareKind.UNKNOWN
         }
+    }
+
+    fun version(kind: FirmwareKind, text: String): String? {
+        val pattern = when (kind) {
+            FirmwareKind.BRUCE -> Regex("(?im)^Bruce\\s+v?([0-9A-Za-z][0-9A-Za-z._+-]*)")
+            FirmwareKind.GHOSTESP -> Regex("(?im)^GhostESP\\s+v?([0-9A-Za-z][0-9A-Za-z._+-]*)")
+            FirmwareKind.MARAUDER -> Regex(
+                "(?im)(?:ESP32\\s+Marauder[^\\r\\n]*[\\r\\n]+\\s*|Marauder\\s+|Version:\\s*)(v?[0-9][0-9A-Za-z._+-]*)",
+            )
+            FirmwareKind.UNKNOWN -> return null
+        }
+        return pattern.find(text)?.groupValues?.getOrNull(1)?.removePrefix("v")
+    }
+
+    fun commit(kind: FirmwareKind, text: String): String? = when (kind) {
+        FirmwareKind.BRUCE -> Regex("(?im)^([0-9a-f]{7,40}(?:-dirty)?)\\s*$")
+            .find(text)?.groupValues?.getOrNull(1)
+        FirmwareKind.GHOSTESP -> Regex("(?im)^Git:\\s+[^@\\r\\n]+@\\s*([0-9a-f]{7,40}(?:-dirty)?)")
+            .find(text)?.groupValues?.getOrNull(1)
+        else -> null
     }
 
     fun isBruceWebUi(status: Int, body: String): Boolean =

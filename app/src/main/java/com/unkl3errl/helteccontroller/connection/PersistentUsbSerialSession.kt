@@ -19,6 +19,8 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager
 import java.util.EnumMap
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 enum class PersistentUsbKind(val displayName: String) {
     BRUCE("Bruce"),
@@ -50,6 +52,7 @@ class PersistentUsbSerialSession internal constructor(
     private val appContext = context.applicationContext
     private val usbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
     private val writer = Executors.newSingleThreadExecutor()
+    private val commandLock = ReentrantLock(true)
     private val listeners = CopyOnWriteArraySet<Listener>()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val backlogLock = Any()
@@ -171,7 +174,7 @@ class PersistentUsbSerialSession internal constructor(
         }
         writer.execute {
             try {
-                activePort.write(data, 2_000)
+                commandLock.withLock { activePort.write(data, 2_000) }
             } catch (error: Exception) {
                 emitError("USB write failed: ${error.message ?: error.javaClass.simpleName}")
             }
@@ -181,6 +184,21 @@ class PersistentUsbSerialSession internal constructor(
     fun writeCommand(command: String) {
         write((command.trim() + "\r\n").toByteArray(Charsets.UTF_8))
     }
+
+    /** Holds normal UI commands while a request/response storage transaction is active. */
+    internal fun <T> withExclusiveCommands(block: ((String) -> Unit) -> T): T =
+        commandLock.withLock {
+            block { command ->
+                val activePort = port
+                if (activePort == null || !activePort.isOpen) {
+                    throw IllegalStateException("${kind.displayName} USB is disconnected")
+                }
+                activePort.write(
+                    (command.trim() + "\r\n").toByteArray(Charsets.UTF_8),
+                    2_000,
+                )
+            }
+        }
 
     fun disconnect() {
         val wasConnected = isConnected || pendingDriver != null
@@ -311,12 +329,19 @@ object PersistentDeviceConnections {
     fun usb(context: Context, kind: PersistentUsbKind): PersistentUsbSerialSession =
         synchronized(lock) {
             sessions.getOrPut(kind) {
-                PersistentUsbSerialSession(context.applicationContext, kind)
+                PersistentUsbSerialSession(context.applicationContext, kind).also { session ->
+                    AndroidStorageRouting.attach(context.applicationContext, session)
+                }
             }
         }
 
     fun activeUsbKind(): PersistentUsbKind? = synchronized(lock) {
         sessions.entries.firstOrNull { it.value.isConnected }?.key
+    }
+
+    /** Releases every serial port before the ROM bootloader takes ownership. */
+    fun disconnectAllUsb() = synchronized(lock) {
+        sessions.values.forEach(PersistentUsbSerialSession::disconnect)
     }
 
     fun setLocalNetwork(name: String?) {

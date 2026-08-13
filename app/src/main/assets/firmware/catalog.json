@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-12",
+  "board": {
+    "id": "heltec-wifi-lora-32-v4",
+    "name": "Heltec WiFi LoRa 32 V4",
+    "chip": "ESP32-S3",
+    "flashBytes": 16777216
+  },
+  "firmwares": [
+    {
+      "id": "bruce",
+      "displayName": "Bruce",
+      "version": "0.6.0",
+      "releasedAt": "2026-08-12",
+      "summary": "Complete recovery image with Android-backed rolling field-log storage and streamlined device headings.",
+      "source": {
+        "repository": "https://github.com/Unkl3Errl/HeltecFirmware",
+        "commit": "89fae45af3efd679e8538002125a597d57dcf64f"
+      },
+      "image": {
+        "asset": "bruce-0.6.0.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.9.0/bruce-0.6.0.bin",
+        "sha256": "3d13e60f61023dc79746b1495f08d6b1c66caf40db483acfb271f65944efa0a8",
+        "sizeBytes": 3125488
+      }
+    },
+    {
+      "id": "ghostesp",
+      "displayName": "GhostESP",
+      "version": "2.1.0-mobile.2",
+      "releasedAt": "2026-08-12",
+      "summary": "Complete recovery image with acknowledged Android archive handoff and non-destructive virtual-storage mounting.",
+      "source": {
+        "repository": "https://github.com/Unkl3Errl/GhostESP",
+        "commit": "f2855778046ef797b74e1ad1395b40c2fa70ac0e"
+      },
+      "image": {
+        "asset": "ghostesp-2.1.0-mobile.2.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.9.0/ghostesp-2.1.0-mobile.2.bin",
+        "sha256": "6bb540d27c41297b5f1f28b379d7e7db1ee14f116c401ef32fbf9ecedb29114f",
+        "sizeBytes": 3189152
+      }
+    },
+    {
+      "id": "marauder",
+      "displayName": "Marauder",
+      "version": "1.14.1-mobile.3",
+      "releasedAt": "2026-08-12",
+      "summary": "Complete recovery image with Android-routed capture storage, guarded controls, and device-local navigation.",
+      "source": {
+        "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
+        "commit": "e381df8979dd94a1ca6527418e7c3d466378f1fd"
+      },
+      "image": {
+        "asset": "marauder-1.14.1-mobile.3.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.9.0/marauder-1.14.1-mobile.3.bin",
+        "sha256": "4ed302f8dfe3f579b346ffefdd4187533aacf730690f74e6ff2baef47c1f8ead",
+        "sizeBytes": 1276528
+      }
+    }
+  ]
+}

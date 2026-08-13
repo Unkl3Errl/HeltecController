@@ -1,4 +1,4 @@
-# Heltec Firmware Controller for Android
+# Firmware Controller for Android
 
 This is the single Android companion for the independent Heltec WiFi LoRa 32 V4
 firmware builds in this workspace:
@@ -9,13 +9,31 @@ firmware builds in this workspace:
   [`heltec-v4-full`](https://github.com/Unkl3Errl/ESP32Marauder/tree/heltec-v4-full)
   branch
 
-The app locks all three firmware tabs until it identifies the connected
-firmware, then reveals the matching controller. It does not merge firmware
-images or assume that the common Espressif USB ID identifies a project.
+All three firmware tabs remain available while the app identifies connected
+hardware. Detection opens the matching controller automatically, but it does
+not merge firmware images or assume that the common Espressif USB ID identifies
+a project.
 
 Each application keeps its applicable transport controls visible: Bruce has
 **Connect BruceNet** and **Reconnect USB**, GhostESP has **Connect GhostNet**
 and **Reconnect USB**, and Marauder has **Reconnect USB**.
+
+Each firmware tab also contains a recovery/update card. Version 0.9.0 ships a
+complete offset-0 bootable image for all three projects, verifies the catalog
+signature and image SHA-256 values, and retains the verified images in private
+Android app files. The flash action works from any currently installed firmware
+or an empty flash, provided the target enumerates through the ESP32-S3 native
+USB recovery interface. It verifies the target chip and ROM security state,
+writes without a full-chip erase, checks the flashed MD5 on the device, and then
+restarts and redetects the firmware.
+
+At launch the app checks the signed catalog at
+`Unkl3Errl/Heltec-Pentest-Firmware`. New images are downloaded only from an
+allowlisted GitHub HTTPS host and accepted only when the signed catalog size,
+ESP32-S3 image header, and SHA-256 all match. The first visit to each tab shows
+that release's version, date, and summary once. When a connected device reports
+an older version, the tab changes to an update action and the app shows an
+update notice.
 
 ## Firmware detection
 
@@ -43,10 +61,47 @@ plus BruceNet and GhostNet recovery actions.
 Once a USB or local-device Wi-Fi session is opened, a low-priority Android
 foreground service owns it independently of the visible screen. Switching apps,
 locking the phone, or recreating the Activity therefore keeps the existing serial
-descriptor and NetworkSpecifier request alive. The ongoing **Heltec device
+descriptor and NetworkSpecifier request alive. The ongoing **Firmware device
 session** notification returns to the controller; reopening the Activity attaches
 to the live session instead of probing and reopening the device. Serial output
 received while the screen is absent is buffered and delivered when it returns.
+On Android 13 and newer, allow the notification permission when first prompted so
+that this ongoing background-session indicator remains visible.
+
+## Continuous Android storage
+
+Tap the status badge, choose **Choose Android storage**, and grant a folder from
+Android's system picker. While a customized firmware is connected by USB, the
+foreground service checks the device spool every ten seconds, continues with
+the screen locked, and archives completed files beneath `Bruce`, `GhostESP`, or
+`Marauder` in that folder.
+
+Transfers are resumable and lossless: Android writes a stable partial document,
+flushes it, verifies its byte count and CRC-32, finalizes it, verifies it again,
+and only then sends an acknowledgment containing the same size and checksum.
+The firmware recalculates both values before releasing its copy. A disconnect,
+app restart, Android write failure, checksum mismatch, or full Android volume
+therefore leaves the source segment on the board for retry.
+
+Bruce field logs use dedicated 128 KiB NDJSON segments. GhostESP PCAP and
+wardriving CSV writers and Marauder PCAP/log writers also roll at approximately
+128 KiB, making older closed segments available while collection continues.
+Active writer files, firmware configuration, scripts, themes, app assets, API
+credentials, and Bruce's dedicated field-log directory are excluded from the
+generic release path.
+
+No finite spool can guarantee unlimited capture if the phone is disconnected,
+its selected folder permission is revoked, or Android itself runs out of space.
+In those states the firmware retains unacknowledged data instead of deleting it;
+continuous operation depends on reconnecting a writable Android destination
+before the remaining onboard reserve is consumed.
+
+The Bruce, GhostESP, and Marauder tabs are always available. Each firmware view
+keeps its own scroll position, and its controller remains active while another
+tab is visible. One attached USB board and one Android local-only Wi-Fi session
+can run together. Switching between BruceNet and GhostNet replaces the current
+Wi-Fi access-point request because Android can associate with only one of those
+local APs at a time. Selecting a tab never disconnects either transport.
 
 Bruce can also be detected without USB. **Connect BruceNet** in the status menu requests the
 default local-only `BruceNet` / `brucenet` network and verifies the Bruce WebUI
@@ -126,8 +181,8 @@ After Marauder is verified, the app automatically reopens its USB port. The
 Reconnect control remains available for permission or cable recovery. The app provides:
 
 - A live 115200-baud console with reliable page and live-follow controls.
-- One continuous, cutout-safe page lets the title, connection status, tabs, and
-  selected firmware interface scroll together.
+- A fixed, cutout-safe app header and firmware tabs with an independently
+  scrolling interface below them.
 - Screen rotation reflows that page without recreating the controller or
   disconnecting an active USB serial session.
 - Read-only/help/GPS shortcuts plus user-controlled Wi-Fi and BLE discovery workflows.
@@ -187,8 +242,13 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.8.1`, code 22.
-This preserves update continuity with the permanent Heltec Controller signing
-identity. Release builds use the four `HELTEC_RELEASE_*` environment variables
-documented in [`SIGNING.md`](SIGNING.md); without all four, Gradle deliberately
-produces an unsigned release.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.9.0`, code 26.
+Release builds use the four `HELTEC_RELEASE_*` environment variables documented
+in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
+`./scripts/build-release-macos.sh` loads the project-specific signing password
+from Keychain and builds with the permanent v2 identity. Without all four
+variables, Gradle deliberately produces an unsigned release.
+
+Maintainers should use [`RELEASING.md`](RELEASING.md) and
+`./scripts/package-release-macos.sh` to run the complete release gate and create
+the signed, versioned APK plus its SHA-256 checksum for a GitHub release.
