@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-13",
+  "generatedAt": "2026-08-21",
   "board": {
     "id": "heltec-wifi-lora-32-v4",
     "name": "Heltec WiFi LoRa 32 V4",
@@ -11,12 +11,12 @@
     {
       "id": "bruce",
       "displayName": "Bruce",
-      "version": "1.16.1-mobile.1",
-      "releasedAt": "2026-08-13",
-      "summary": "Complete recovery image with resilient Android-backed storage mounting and acknowledged rolling field-log handoff.",
+      "version": "1.16.1-mobile.2",
+      "releasedAt": "2026-08-21",
+      "summary": "Complete recovery image with low-voltage boot recovery, resilient Android-backed storage, and acknowledged rolling field-log handoff.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/HeltecFirmware",
-        "commit": "252fbc736b9d53c78ffacbf544d266742331e4a7"
+        "commit": "2576f3e1615cec4e8592b4cdb813ef87e24e4c49"
       },
       "upstream": {
         "repository": "https://github.com/BruceDevices/firmware",
@@ -25,10 +25,10 @@
         "baselineCommit": "ba519c936c87b89c9c667c15b932d7faca5360d5"
       },
       "image": {
-        "asset": "bruce-1.16.1-mobile.1.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.0/bruce-1.16.1-mobile.1.bin",
-        "sha256": "48465b7fd911876e358b34f265241198acca2951d38833bcb5249700526daad0",
-        "sizeBytes": 3883760
+        "asset": "bruce-1.16.1-mobile.2.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.1/bruce-1.16.1-mobile.2.bin",
+        "sha256": "6377e6bd72005e9b829a640aef434d04bc2778f3003f065bd4050b09cab2d6de",
+        "sizeBytes": 3884048
       }
     },
     {
@@ -57,12 +57,12 @@
     {
       "id": "marauder",
       "displayName": "Marauder",
-      "version": "1.14.1-mobile.4",
-      "releasedAt": "2026-08-13",
-      "summary": "Complete recovery image with recoverable Android-backed storage mounting and acknowledged rolling capture handoff.",
+      "version": "1.14.1-mobile.5",
+      "releasedAt": "2026-08-21",
+      "summary": "Complete recovery image with low-voltage boot recovery, recoverable Android-backed storage, and acknowledged rolling capture handoff.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
-        "commit": "8ed677109305fc3ca9d3de3ce9e909b77eee28c9"
+        "commit": "f1306d18741252fcea08e9a883308e9fe785be1a"
       },
       "upstream": {
         "repository": "https://github.com/justcallmekoko/ESP32Marauder",
@@ -71,10 +71,10 @@
         "baselineCommit": "43aa8bc127f95c9ea205726bd1e059b4bacd97d9"
       },
       "image": {
-        "asset": "marauder-1.14.1-mobile.4.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.11.0/marauder-1.14.1-mobile.4.bin",
-        "sha256": "c5d50bb90baf94f67fbec7886495830af349cfa377a0873b1cb8f32fc8ca8910",
-        "sizeBytes": 1276528
+        "asset": "marauder-1.14.1-mobile.5.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.1/marauder-1.14.1-mobile.5.bin",
+        "sha256": "cb521840c2dab03e76380e5adef12acdd49228533bc44c66241a2a98868f17ea",
+        "sizeBytes": 1276896
       }
     }
   ]

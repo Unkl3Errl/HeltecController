@@ -100,7 +100,7 @@ private class StorageSpoolMirror(
     }
 
     init {
-        session.addListener(this)
+        session.addListener(this, receiveExclusiveData = true)
         executor.scheduleWithFixedDelay(
             ::runAutomaticSync,
             SYNC_INTERVAL_SECONDS,

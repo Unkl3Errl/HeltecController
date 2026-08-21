@@ -52,6 +52,7 @@ class PersistentUsbSerialSession internal constructor(
     private val writer = Executors.newSingleThreadExecutor()
     private val commandLock = ReentrantLock(true)
     private val listeners = CopyOnWriteArraySet<Listener>()
+    private val exclusiveDataListeners = CopyOnWriteArraySet<Listener>()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val backlogLock = Any()
     private val backlog = ArrayDeque<ByteArray>()
@@ -74,6 +75,9 @@ class PersistentUsbSerialSession internal constructor(
 
     @Volatile
     private var lastStatus = "${kind.displayName} USB is not connected"
+
+    @Volatile
+    private var exclusiveDataActive = false
 
     val isConnected: Boolean
         get() = port?.isOpen == true
@@ -115,8 +119,9 @@ class PersistentUsbSerialSession internal constructor(
         registerUsbReceiver()
     }
 
-    fun addListener(listener: Listener) {
+    fun addListener(listener: Listener, receiveExclusiveData: Boolean = false) {
         listeners.add(listener)
+        if (receiveExclusiveData) exclusiveDataListeners.add(listener)
         val status = lastStatus
         val connected = isConnected
         val pending = synchronized(backlogLock) {
@@ -138,6 +143,7 @@ class PersistentUsbSerialSession internal constructor(
     }
 
     fun removeListener(listener: Listener) {
+        exclusiveDataListeners.remove(listener)
         listeners.remove(listener)
     }
 
@@ -235,15 +241,20 @@ class PersistentUsbSerialSession internal constructor(
     /** Holds normal UI commands while a request/response storage transaction is active. */
     internal fun <T> withExclusiveCommands(block: ((String) -> Unit) -> T): T =
         commandLock.withLock {
-            block { command ->
-                val activePort = port
-                if (activePort == null || !activePort.isOpen) {
-                    throw IllegalStateException("${kind.displayName} USB is disconnected")
+            exclusiveDataActive = true
+            try {
+                block { command ->
+                    val activePort = port
+                    if (activePort == null || !activePort.isOpen) {
+                        throw IllegalStateException("${kind.displayName} USB is disconnected")
+                    }
+                    activePort.write(
+                        (command.trim() + "\r\n").toByteArray(Charsets.UTF_8),
+                        2_000,
+                    )
                 }
-                activePort.write(
-                    (command.trim() + "\r\n").toByteArray(Charsets.UTF_8),
-                    2_000,
-                )
+            } finally {
+                exclusiveDataActive = false
             }
         }
 
@@ -255,11 +266,18 @@ class PersistentUsbSerialSession internal constructor(
     }
 
     override fun onNewData(data: ByteArray) {
-        val snapshot = listeners.toList()
+        val snapshot = if (exclusiveDataActive) {
+            exclusiveDataListeners.toList()
+        } else {
+            listeners.toList()
+        }
         if (snapshot.isNotEmpty()) {
             snapshot.forEach { it.onData(data) }
             return
         }
+        // Storage-mirror responses are protocol traffic, not user console output. Never replay
+        // them into a screen later if the internal listener disappears during a transaction.
+        if (exclusiveDataActive) return
         synchronized(backlogLock) {
             val retained = if (data.size > MAX_BACKLOG_BYTES) {
                 data.copyOfRange(data.size - MAX_BACKLOG_BYTES, data.size)
