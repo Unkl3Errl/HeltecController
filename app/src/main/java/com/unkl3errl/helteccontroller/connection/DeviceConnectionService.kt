@@ -26,6 +26,7 @@ class DeviceConnectionService : Service() {
         ).apply { setReferenceCounted(false) }
         createChannel()
         startForeground(NOTIFICATION_ID, notification())
+        PersistentDeviceConnections.restoreBluetooth(this)
         updateWakeLock()
     }
 
@@ -44,9 +45,9 @@ class DeviceConnectionService : Service() {
 
     @SuppressLint("WakelockTimeout")
     private fun updateWakeLock() {
-        val usbConnected = PersistentDeviceConnections.activeUsbKinds().isNotEmpty()
-        if (usbConnected && !transferWakeLock.isHeld) transferWakeLock.acquire()
-        else if (!usbConnected && transferWakeLock.isHeld) transferWakeLock.release()
+        val deviceConnected = PersistentDeviceConnections.activeKinds().isNotEmpty()
+        if (deviceConnected && !transferWakeLock.isHeld) transferWakeLock.acquire()
+        else if (!deviceConnected && transferWakeLock.isHeld) transferWakeLock.release()
     }
 
     private fun createChannel() {
@@ -55,7 +56,7 @@ class DeviceConnectionService : Service() {
             "Device connection",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Keeps USB or local Wi-Fi device sessions running in the background"
+            description = "Keeps USB, Bluetooth, or local Wi-Fi device sessions running in the background"
             setShowBadge(false)
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)

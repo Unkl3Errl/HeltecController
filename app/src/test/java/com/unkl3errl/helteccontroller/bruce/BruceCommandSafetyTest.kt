@@ -8,6 +8,7 @@ class BruceCommandSafetyTest {
     fun readOnlyDiagnosticsAreSafe() {
         assertEquals(BruceCommandRisk.SAFE, BruceCommandSafety.classify("help"))
         assertEquals(BruceCommandRisk.SAFE, BruceCommandSafety.classify("storage read /config.conf"))
+        assertEquals(BruceCommandRisk.SAFE, BruceCommandSafety.classify("sd status"))
     }
 
     @Test

@@ -5,7 +5,7 @@ enum class BruceCommandRisk { SAFE, CONFIRM, ACTIVE }
 object BruceCommandSafety {
     private val safe = setOf(
         "help", "?", "halp", "uptime", "date", "free", "info", "!", "device_info",
-        "optionsjson", "loader list", "display dump", "ls", "dir", "i2c",
+        "optionsjson", "loader list", "display dump", "ls", "dir", "i2c", "sd status",
     )
     private val safePrefixes = listOf(
         "cat ", "type ", "md5 ", "crc32 ", "storage list", "storage read ",

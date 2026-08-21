@@ -76,6 +76,60 @@
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="GHOST BLE BRIDGE" />
+
+        <TextView
+            android:id="@+id/ghostBluetoothStatus"
+            style="@style/BodyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GhostESP Bluetooth is not connected" />
+
+        <TextView
+            style="@style/MutedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="10dp"
+            android:text="Uses the upstream GhostESP Bridge GATT protocol. Mobile builds connect directly; relay builds can still use a GhostLink peer. USB remains preferred when both links are active." />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/ghostBluetoothConnect"
+                style="@style/ActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="4dp"
+                android:layout_weight="1"
+                android:text="CONNECT BLUETOOTH" />
+
+            <Button
+                android:id="@+id/ghostBluetoothDisconnect"
+                style="@style/SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:layout_weight="1"
+                android:text="DISCONNECT BLUETOOTH" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/card_bg"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="USB SERIAL LINK" />
 
         <TextView

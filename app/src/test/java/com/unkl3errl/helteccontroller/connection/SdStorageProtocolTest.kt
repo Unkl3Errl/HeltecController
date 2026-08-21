@@ -9,6 +9,16 @@ import org.junit.Test
 
 class SdStorageProtocolTest {
     @Test
+    fun buildsAndroidHostCapacityCommand() {
+        assertEquals(
+            "sd host 128000000000 64000000000",
+            SdStorageProtocol.hostCapacityCommand(
+                VirtualSdCapacity(totalBytes = 128_000_000_000, freeBytes = 64_000_000_000),
+            ),
+        )
+    }
+
+    @Test
     fun archivePolicyKeepsFirmwareInputsOnDevice() {
         assertFalse(
             SdStorageProtocol.isArchiveCandidate(

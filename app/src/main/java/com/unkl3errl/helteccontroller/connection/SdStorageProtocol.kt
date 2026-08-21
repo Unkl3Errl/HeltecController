@@ -53,6 +53,14 @@ internal object SdStorageProtocol {
         return "\"$path\""
     }
 
+    fun hostCapacityCommand(capacity: VirtualSdCapacity): String {
+        require(capacity.totalBytes > 0) { "Android storage total must be positive" }
+        require(capacity.freeBytes in 0..capacity.totalBytes) {
+            "Android storage free space is invalid"
+        }
+        return "sd host ${capacity.totalBytes} ${capacity.freeBytes}"
+    }
+
     fun parseListing(lines: List<String>, parent: String): SdDirectoryListing {
         val directories = mutableListOf<String>()
         val files = mutableListOf<SdRemoteFile>()

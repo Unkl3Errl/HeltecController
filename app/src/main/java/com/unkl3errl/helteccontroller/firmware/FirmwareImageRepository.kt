@@ -9,11 +9,15 @@ import java.io.File
 import java.io.FileInputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import org.json.JSONArray
 import org.json.JSONObject
 
 class FirmwareImageRepository(context: Context) {
@@ -35,6 +39,9 @@ class FirmwareImageRepository(context: Context) {
         private const val MAX_CATALOG_BYTES = 256 * 1024
         private const val MAX_UPSTREAM_RELEASE_BYTES = 256 * 1024
         private const val MAX_IMAGE_BYTES = 4 * 1024 * 1024
+        private const val CACHED_CATALOG = "catalog.json"
+        private const val CACHED_CATALOG_SIGNATURE = "catalog.sig"
+        private const val CACHED_UPSTREAM_RELEASES = "upstream-releases.json"
         private val ALLOWED_HOSTS = setOf(
             "github.com",
             "raw.githubusercontent.com",
@@ -51,6 +58,15 @@ class FirmwareImageRepository(context: Context) {
     private val directory = File(appContext.filesDir, "firmware-images")
 
     @Volatile
+    private var listener: Listener? = null
+
+    @Volatile
+    private var initialized = false
+
+    @Volatile
+    private var lastRefreshRequestedAt = 0L
+
+    @Volatile
     var catalog: FirmwareCatalog? = null
         private set
 
@@ -63,6 +79,7 @@ class FirmwareImageRepository(context: Context) {
         private set
 
     fun initialize(listener: Listener) {
+        this.listener = listener
         executor.execute {
             runCatching {
                 directory.mkdirs()
@@ -74,8 +91,15 @@ class FirmwareImageRepository(context: Context) {
                 }
                 val bundled = FirmwareCatalogParser.parse(bundledBytes.toString(Charsets.UTF_8))
                 materializeBundled(bundled)
-                catalog = bundled
-                listener.onCatalogChanged(bundled)
+                val active = loadCachedCatalog()?.takeIf { it.isAtLeastAsNewAs(bundled) }
+                    ?: bundled
+                catalog = active
+                upstreamReleases = loadCachedUpstreamReleases(active)
+                initialized = true
+                listener.onCatalogChanged(active)
+                if (upstreamReleases.isNotEmpty()) {
+                    listener.onUpstreamReleasesChanged(upstreamReleases)
+                }
                 listener.onCatalogStatus("Offline firmware images are ready")
             }.onFailure { error ->
                 listener.onCatalogStatus(
@@ -83,8 +107,27 @@ class FirmwareImageRepository(context: Context) {
                 )
                 return@execute
             }
+            lastRefreshRequestedAt = System.currentTimeMillis()
             refreshRemote(listener)
             refreshUpstreamReleases(listener)
+        }
+    }
+
+    /** Refreshes both signed images and official source releases without restarting the app. */
+    fun refreshIfStale(maxAgeMillis: Long = 0L) {
+        val activeListener = listener ?: return
+        val now = System.currentTimeMillis()
+        synchronized(this) {
+            if (!initialized || now - lastRefreshRequestedAt < maxAgeMillis) return
+            lastRefreshRequestedAt = now
+        }
+        try {
+            executor.execute {
+                refreshRemote(activeListener)
+                refreshUpstreamReleases(activeListener)
+            }
+        } catch (_: RejectedExecutionException) {
+            // The Activity is already being destroyed.
         }
     }
 
@@ -109,6 +152,18 @@ class FirmwareImageRepository(context: Context) {
         }
     }
 
+    private fun loadCachedCatalog(): FirmwareCatalog? = runCatching {
+        val bytes = File(directory, CACHED_CATALOG).readBytes()
+        val signature = File(directory, CACHED_CATALOG_SIGNATURE).readBytes()
+        require(verifyCatalogSignature(bytes, signature)) { "Cached catalog signature mismatch" }
+        FirmwareCatalogParser.parse(bytes.toString(Charsets.UTF_8)).also { cached ->
+            cached.releases.values.forEach {
+                validateSource(it)
+                validateUpstream(it)
+            }
+        }
+    }.getOrNull()
+
     private fun refreshRemote(listener: Listener) {
         runCatching {
             val bytes = downloadBytes(REMOTE_CATALOG, MAX_CATALOG_BYTES)
@@ -127,7 +182,8 @@ class FirmwareImageRepository(context: Context) {
                 val file = storedFile(release)
                 if (!verifyFile(file, release)) downloadImage(release, file)
             }
-            File(directory, "catalog.json").writeText(text)
+            replaceAtomically(File(directory, CACHED_CATALOG), bytes)
+            replaceAtomically(File(directory, CACHED_CATALOG_SIGNATURE), signature)
             catalog = remote
             listener.onCatalogChanged(remote)
             listener.onCatalogStatus("Firmware catalog is current · ${remote.generatedAt}")
@@ -140,6 +196,7 @@ class FirmwareImageRepository(context: Context) {
     private fun refreshUpstreamReleases(listener: Listener) {
         val activeCatalog = catalog ?: return
         val refreshed = buildMap {
+            putAll(upstreamReleases)
             activeCatalog.releases.values.forEach { release ->
                 runCatching { downloadUpstreamRelease(release) }
                     .getOrNull()
@@ -148,6 +205,7 @@ class FirmwareImageRepository(context: Context) {
         }
         upstreamReleases = refreshed
         upstreamRefreshComplete = true
+        if (refreshed.isNotEmpty()) persistUpstreamReleases(refreshed)
         listener.onUpstreamReleasesChanged(refreshed)
     }
 
@@ -166,6 +224,60 @@ class FirmwareImageRepository(context: Context) {
             "Invalid upstream release date"
         }
         val releaseUrl = response.getString("html_url")
+        validateUpstreamReleaseUrl(release, releaseUrl)
+        return UpstreamRelease(
+            kind = release.kind,
+            version = version,
+            releasedAt = publishedAt.substringBefore('T'),
+            releaseUrl = releaseUrl,
+        )
+    }
+
+    private fun loadCachedUpstreamReleases(
+        activeCatalog: FirmwareCatalog,
+    ): Map<FirmwareKind, UpstreamRelease> = runCatching {
+        val root = JSONObject(File(directory, CACHED_UPSTREAM_RELEASES).readText())
+        require(root.getInt("schemaVersion") == 1) { "Unsupported upstream cache" }
+        val items = root.getJSONArray("releases")
+        buildMap {
+            for (index in 0 until items.length()) {
+                val item = items.getJSONObject(index)
+                val kind = FirmwareKind.valueOf(item.getString("kind"))
+                val source = requireNotNull(activeCatalog.releases[kind])
+                val version = requireNotNull(FirmwareVersion.stableVersion(item.getString("version")))
+                val releasedAt = item.getString("releasedAt")
+                require(releasedAt.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
+                    "Invalid cached upstream date"
+                }
+                val releaseUrl = item.getString("releaseUrl")
+                validateUpstreamReleaseUrl(source, releaseUrl)
+                put(kind, UpstreamRelease(kind, version, releasedAt, releaseUrl))
+            }
+        }
+    }.getOrDefault(emptyMap())
+
+    private fun persistUpstreamReleases(releases: Map<FirmwareKind, UpstreamRelease>) {
+        runCatching {
+            val items = JSONArray()
+            releases.values.sortedBy { it.kind.name }.forEach { release ->
+                items.put(
+                    JSONObject()
+                        .put("kind", release.kind.name)
+                        .put("version", release.version)
+                        .put("releasedAt", release.releasedAt)
+                        .put("releaseUrl", release.releaseUrl),
+                )
+            }
+            val bytes = JSONObject()
+                .put("schemaVersion", 1)
+                .put("releases", items)
+                .toString()
+                .toByteArray(Charsets.UTF_8)
+            replaceAtomically(File(directory, CACHED_UPSTREAM_RELEASES), bytes)
+        }
+    }
+
+    private fun validateUpstreamReleaseUrl(release: FirmwareRelease, releaseUrl: String) {
         val releasePage = URL(releaseUrl)
         val expectedReleasePrefix = "${URL(release.upstream.repository).path}/releases/tag/"
         require(releasePage.protocol == "https" &&
@@ -173,11 +285,16 @@ class FirmwareImageRepository(context: Context) {
             releasePage.path.startsWith(expectedReleasePrefix)) {
             "Untrusted upstream release page"
         }
-        return UpstreamRelease(
-            kind = release.kind,
-            version = version,
-            releasedAt = publishedAt.substringBefore('T'),
-            releaseUrl = releaseUrl,
+    }
+
+    private fun replaceAtomically(destination: File, bytes: ByteArray) {
+        val temporary = File(destination.parentFile, destination.name + ".partial")
+        temporary.writeBytes(bytes)
+        Files.move(
+            temporary.toPath(),
+            destination.toPath(),
+            StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING,
         )
     }
 

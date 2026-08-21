@@ -45,6 +45,7 @@ class GhostScreenController(
     private val activity: Activity,
     private val root: View,
     private val requestGhostNet: () -> Unit,
+    private val requestBluetooth: () -> Unit,
     private val requestExport: (GhostExportRequest) -> Unit,
     private val setGlobalStatus: (String) -> Unit,
 ) : GhostUsbSerial.Listener {
@@ -54,13 +55,16 @@ class GhostScreenController(
     }
 
     private val usbStatus: TextView = root.findViewById(R.id.ghostUsbStatus)
+    private val bluetoothStatus: TextView = root.findViewById(R.id.ghostBluetoothStatus)
     private val networkStatus: TextView = root.findViewById(R.id.ghostNetStatus)
     private val console: TextView = root.findViewById(R.id.ghostConsole)
     private val consoleLive: Button = root.findViewById(R.id.ghostConsoleLive)
     private val commandInput: EditText = root.findViewById(R.id.ghostCommand)
-    private val consoleFile = File(activity.filesDir, "ghost-console-latest.txt")
+    private var consoleFile = File(activity.filesDir, "ghost-console-latest.txt")
+    private var currentConnectionId = "GHOSTESP:none"
     private val consoleBuffer = StringBuilder(restoreConsole(consoleFile))
     private val consoleText = SerialConsoleText()
+    private val protocolFilter = SerialConsoleProtocolFilter()
     private val executor = Executors.newSingleThreadExecutor()
     private val persistHandler = Handler(Looper.getMainLooper())
     private val persistRunnable = Runnable(::writeConsoleSnapshot)
@@ -91,11 +95,20 @@ class GhostScreenController(
 
         root.findViewById<Button>(R.id.ghostUsbConnect).setOnClickListener(::onUsbConnectClicked)
         root.findViewById<Button>(R.id.ghostUsbDisconnect).setOnClickListener {
-            serial.disconnect()
-            if (!serial.isConnected) {
+            serial.disconnectUsb()
+            if (!serial.isUsbConnected) {
                 usbStatus.text = "GhostESP USB disconnected"
                 updateGlobalStatus()
             }
+        }
+        root.findViewById<Button>(R.id.ghostBluetoothConnect).setOnClickListener {
+            bluetoothStatus.text = "Scanning for the upstream GhostESP BLE Bridge…"
+            requestBluetooth()
+        }
+        root.findViewById<Button>(R.id.ghostBluetoothDisconnect).setOnClickListener {
+            serial.disconnectBluetooth()
+            bluetoothStatus.text = "GhostESP Bluetooth disconnected"
+            updateGlobalStatus()
         }
         root.findViewById<Button>(R.id.ghostNetConnect).setOnClickListener {
             networkStatus.text = "Waiting for Android to approve GhostNet…"
@@ -131,6 +144,7 @@ class GhostScreenController(
             persistHandler.removeCallbacks(persistRunnable)
             consoleBuffer.clear()
             consoleText.reset()
+            protocolFilter.reset()
             console.text = ""
             runCatching { consoleFile.delete() }
             setConsoleFollowing(true)
@@ -159,7 +173,13 @@ class GhostScreenController(
         onUi {
             if (destroyed.get()) return@onUi
             networkStatus.text = "GhostNet local link available · refreshing…"
-            setGlobalStatus(if (serial.isConnected) "GHOST USB" else "GHOSTNET")
+            setGlobalStatus(
+                when {
+                    serial.isUsbConnected -> "GHOST USB"
+                    serial.isBluetoothConnected -> "GHOST BLUETOOTH"
+                    else -> "GHOSTNET"
+                },
+            )
             refreshGhostNet()
         }
     }
@@ -169,6 +189,28 @@ class GhostScreenController(
         usbStatus.text = "Opening the detected GhostESP USB link…"
         setGlobalStatus("USB CONNECTING…")
         serial.connect()
+    }
+
+    fun onDeviceSelected(connectionId: String) {
+        if (currentConnectionId == connectionId || destroyed.get()) return
+        persistHandler.removeCallbacks(persistRunnable)
+        writeConsoleSnapshot()
+        currentConnectionId = connectionId
+        consoleFile = File(
+            activity.filesDir,
+            "ghost-console-${connectionId.hashCode().toUInt().toString(16)}.txt",
+        )
+        consoleBuffer.clear()
+        consoleBuffer.append(
+            restoreConsole(consoleFile).ifBlank { "Selected GhostESP device.\n" },
+        )
+        consoleText.reset()
+        protocolFilter.reset()
+        console.text = consoleBuffer.toString()
+        setConsoleFollowing(true)
+        console.post(::scrollConsoleToBottom)
+        usbStatus.text = "Selected GhostESP device · ${serial.connectionId.substringAfterLast(':')}"
+        updateGlobalStatus()
     }
 
     fun onNetworkLost() {
@@ -221,13 +263,15 @@ class GhostScreenController(
 
     override fun onSerialStatus(message: String, connected: Boolean) = onUi {
         if (destroyed.get()) return@onUi
-        usbStatus.text = message
+        if (message.contains("Bluetooth", ignoreCase = true)) bluetoothStatus.text = message
+        else usbStatus.text = message
         appendConsole("\n[link] $message\n")
         updateGlobalStatus()
     }
 
     override fun onSerialData(data: ByteArray) = onUi {
-        if (!destroyed.get()) appendConsole(data.toString(Charsets.UTF_8))
+        val visible = protocolFilter.filter(data.toString(Charsets.UTF_8))
+        if (!destroyed.get() && visible.isNotEmpty()) appendConsole(visible)
     }
 
     override fun onSerialError(message: String) = onUi {
@@ -256,14 +300,18 @@ class GhostScreenController(
     private fun sendCommand(command: String, sent: () -> Unit = {}) {
         if (serial.isConnected) {
             appendConsole("\n> $command\n")
-            serial.write((command + "\r\n").toByteArray(Charsets.UTF_8))
+            serial.writeCommand(command) {
+                if (command.trim().startsWith("sd", ignoreCase = true)) {
+                    protocolFilter.showNextStorageResponse()
+                }
+            }
             sent()
             return
         }
 
         val network = activeNetwork
         if (network == null) {
-            val message = "Connect GhostESP over USB or connect to GhostNet first"
+            val message = "Connect GhostESP over USB, Bluetooth, or GhostNet first"
             Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
             networkStatus.text = message
             return
@@ -530,10 +578,13 @@ class GhostScreenController(
         consoleLive.text = if (following) "LIVE ON" else "LIVE"
     }
 
+    fun refreshGlobalStatus() = updateGlobalStatus()
+
     private fun updateGlobalStatus() {
         setGlobalStatus(
             when {
-                serial.isConnected -> "GHOST USB"
+                serial.isUsbConnected -> "GHOST USB"
+                serial.isBluetoothConnected -> "GHOST BLUETOOTH"
                 activeNetwork != null -> "GHOSTNET"
                 else -> "IDLE"
             },
