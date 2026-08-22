@@ -146,9 +146,9 @@ Bridge GATT service. Android performs GATT discovery and subscription itself;
 the user only enables Bluetooth, grants **Nearby devices**, and selects the
 advertised board in the app. Manual pairing in Android Settings is not required.
 USB remains preferred when USB and Bluetooth belong to the selected device.
-Marauder does not currently advertise a phone-facing GATT service, so its app
-transport remains USB-only. GhostESP Bridge requires its upstream GhostLink
-bridge-board arrangement.
+The Marauder mobile image advertises its phone-facing UART GATT service for
+commands, console output, and virtual-SD synchronization. GhostESP Bridge
+requires its upstream GhostLink bridge-board arrangement.
 
 Bruce can also be detected without USB. **Connect BruceNet** in the status menu requests the
 default local-only `BruceNet` / `brucenet` network and verifies the Bruce WebUI
@@ -156,7 +156,8 @@ login signature at `http://172.0.0.1`.
 
 GhostESP can likewise be detected without USB. **Connect GhostNet** in the status menu requests the
 default local-only `GhostNet` / `GhostNet` network and verifies GhostESP
-branding at `http://192.168.4.1`. Marauder detection remains USB-only.
+branding at `http://192.168.4.1`. Marauder can be detected through its advertised
+Bluetooth UART service; it does not expose a device-local Wi-Fi network.
 
 ## Requirements
 
@@ -289,7 +290,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.13.3`, code 35.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.13.4`, code 36.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password
