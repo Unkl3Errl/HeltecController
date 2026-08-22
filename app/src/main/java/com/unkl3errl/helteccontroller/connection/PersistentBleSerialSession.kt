@@ -139,6 +139,7 @@ internal class PersistentBleSerialSession(
         const val PREFERENCES = "persistent_bluetooth_devices"
         const val CONNECT_TIMEOUT_MS = 20_000L
         const val GATT_OPERATION_TIMEOUT_MS = 5_000L
+        const val MAX_CONSECUTIVE_WRITE_TIMEOUTS = 2
         const val GHOST_ACK_TIMEOUT_MS = 5_000L
         const val GHOST_END_TIMEOUT_MS = 120_000L
         const val MAX_RECONNECT_DELAY_MS = 30_000L
@@ -159,6 +160,7 @@ internal class PersistentBleSerialSession(
     private val decoder = GhostBleBridgeProtocol.Decoder()
     private val ghostCommands = ConcurrentHashMap<Int, GhostCommand>()
     private val commandSequence = AtomicInteger(1)
+    private val consecutiveWriteTimeouts = AtomicInteger(0)
 
     @Volatile private var gatt: BluetoothGatt? = null
     @Volatile private var writeCharacteristic: BluetoothGattCharacteristic? = null
@@ -293,6 +295,7 @@ internal class PersistentBleSerialSession(
             status: Int,
         ) {
             if (!accept(callbackGatt)) return
+            if (status == BluetoothGatt.GATT_SUCCESS) consecutiveWriteTimeouts.set(0)
             pendingWrite?.also {
                 it.status = status
                 it.latch.countDown()
@@ -562,12 +565,20 @@ internal class PersistentBleSerialSession(
         val completed = operation.latch.await(GATT_OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         if (pendingWrite === operation) pendingWrite = null
         if (!completed) {
-            // Android can leave a timed-out ATT write resident in its GATT queue. Any later
-            // write then fails as "prior command is not finished" until the stack eventually
-            // tears the link down. Close it now and use the normal bounded reconnect path.
-            failConnection("${kind.displayName} Bluetooth write timed out")
+            // A Heltec can miss one Android write callback while switching from an active USB
+            // console to its already-connected BLE path. Give that callback and the ATT queue
+            // one retry window before replacing a link that may still be healthy. A second
+            // consecutive timeout, or a failed dispatch on the next attempt, uses the normal
+            // bounded reconnect path.
+            val timeouts = consecutiveWriteTimeouts.incrementAndGet()
+            if (timeouts >= MAX_CONSECUTIVE_WRITE_TIMEOUTS) {
+                failConnection("${kind.displayName} Bluetooth write timed out")
+            } else {
+                Log.w(TAG, "${kind.displayName} Bluetooth write callback timed out; keeping the link for one retry")
+            }
             return@withLock BluetoothGatt.GATT_FAILURE
         }
+        if (operation.status == BluetoothGatt.GATT_SUCCESS) consecutiveWriteTimeouts.set(0)
         operation.status
     }
 
@@ -614,6 +625,7 @@ internal class PersistentBleSerialSession(
         if (!accept(callbackGatt)) return
         connecting = false
         ready = true
+        consecutiveWriteTimeouts.set(0)
         reconnectAttempts = 0
         currentAddress?.let { address ->
             appContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
@@ -645,6 +657,7 @@ internal class PersistentBleSerialSession(
         writeCharacteristic = null
         notifyCharacteristic = null
         mtu = GhostBleBridgeProtocol.DEFAULT_MTU
+        consecutiveWriteTimeouts.set(0)
         decoder.reset()
         pendingWrite?.latch?.countDown()
         pendingDescriptor?.latch?.countDown()

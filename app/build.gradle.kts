@@ -38,8 +38,8 @@ android {
         applicationId = "com.unkl3errl.helteccontroller"
         minSdk = 29
         targetSdk = 35
-        versionCode = 38
-        versionName = "0.13.6"
+        versionCode = 39
+        versionName = "0.13.7"
 
         testInstrumentationRunner = "android.test.InstrumentationTestRunner"
     }
