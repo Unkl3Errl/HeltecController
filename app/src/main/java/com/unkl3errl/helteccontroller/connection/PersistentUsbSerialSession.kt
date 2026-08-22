@@ -120,8 +120,6 @@ class PersistentUsbSerialSession internal constructor(
     fun addListener(listener: Listener, receiveExclusiveData: Boolean = false) {
         listeners.add(listener)
         if (receiveExclusiveData) exclusiveDataListeners.add(listener)
-        val status = lastStatus
-        val connected = isConnected
         val pending = synchronized(backlogLock) {
             if (backlog.isEmpty()) {
                 emptyList()
@@ -135,7 +133,10 @@ class PersistentUsbSerialSession internal constructor(
         // Avoid callbacks re-entering a screen controller while its constructor is still running.
         mainHandler.post {
             if (!listeners.contains(listener)) return@post
-            listener.onStatus(status, connected)
+            // The port may have connected between listener registration and this deferred
+            // callback. Read the live values here so an old "not connected" snapshot cannot
+            // overwrite a newer connection event in the UI.
+            listener.onStatus(lastStatus, isConnected)
             pending.forEach(listener::onData)
         }
     }
@@ -210,7 +211,9 @@ class PersistentUsbSerialSession internal constructor(
             try {
                 commandLock.withLock { activePort.write(data, 2_000) }
             } catch (error: Exception) {
+                closePort()
                 emitError("USB write failed: ${error.message ?: error.javaClass.simpleName}")
+                emitStatus("${kind.displayName} USB disconnected after a transport error", false)
             }
         }
     }
@@ -229,10 +232,20 @@ class PersistentUsbSerialSession internal constructor(
                     if (activePort == null || !activePort.isOpen) {
                         throw IllegalStateException("${kind.displayName} USB is disconnected")
                     }
-                    activePort.write(
-                        (command.trim() + "\r\n").toByteArray(Charsets.UTF_8),
-                        2_000,
-                    )
+                    try {
+                        activePort.write(
+                            (command.trim() + "\r\n").toByteArray(Charsets.UTF_8),
+                            2_000,
+                        )
+                    } catch (error: Exception) {
+                        closePort()
+                        emitError("USB command failed: ${error.message ?: error.javaClass.simpleName}")
+                        emitStatus(
+                            "${kind.displayName} USB disconnected after a transport error",
+                            false,
+                        )
+                        throw error
+                    }
                 }
             } finally {
                 exclusiveDataActive = false
@@ -306,7 +319,9 @@ class PersistentUsbSerialSession internal constructor(
                 UsbSerialPort.STOPBITS_1,
                 UsbSerialPort.PARITY_NONE,
             )
-            runCatching { selectedPort.setDTR(true) }
+            // Keep the ESP32-S3 GPIO0 boot strap released. Serial traffic does not require
+            // asserted DTR, and holding it low can turn the next power/reset into ROM recovery.
+            runCatching { selectedPort.setDTR(false) }
             port = selectedPort
             currentDeviceId = driver.device.deviceId
             boundTarget = UsbDeviceRegistry.target(usbManager, driver.device)

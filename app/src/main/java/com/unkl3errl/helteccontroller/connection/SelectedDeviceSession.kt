@@ -17,25 +17,8 @@ internal class SelectedDeviceSession(
     private val handler = Handler(Looper.getMainLooper())
 
     @Volatile private var attached: PersistentDeviceSession? = null
+    @Volatile private var attachedRelay: DeviceSerialSession.Listener? = null
     @Volatile private var lastStatus = "No ${kind.displayName} device selected"
-
-    private val relay = object : DeviceSerialSession.Listener {
-        override fun onStatus(message: String, connected: Boolean) {
-            if (attached !== selectedSession()) return
-            lastStatus = message
-            listeners.forEach { it.onStatus(message, connected) }
-        }
-
-        override fun onData(data: ByteArray) {
-            if (attached !== selectedSession()) return
-            listeners.forEach { it.onData(data) }
-        }
-
-        override fun onError(message: String) {
-            if (attached !== selectedSession()) return
-            listeners.forEach { it.onError(message) }
-        }
-    }
 
     override val connectionId: String
         get() = current()?.connectionId ?: "${kind.name}:none"
@@ -53,10 +36,8 @@ internal class SelectedDeviceSession(
         listeners.add(listener)
         if (receiveExclusiveData) exclusiveListeners.add(listener)
         refreshSelection()
-        val message = lastStatus
-        val connected = isConnected
         handler.post {
-            if (listeners.contains(listener)) listener.onStatus(message, connected)
+            if (listeners.contains(listener)) listener.onStatus(lastStatus, isConnected)
         }
     }
 
@@ -69,16 +50,43 @@ internal class SelectedDeviceSession(
     fun refreshSelection() {
         val next = selectedSession()
         if (attached === next) return
-        attached?.removeListener(relay)
+        attachedRelay?.let { relay -> attached?.removeListener(relay) }
         attached = next
-        next?.addListener(relay)
+        attachedRelay = next?.let(::relayFor)
+        attachedRelay?.let { relay ->
+            next?.addListener(relay, receiveExclusiveData = exclusiveListeners.isNotEmpty())
+        }
         lastStatus = next?.description()?.let { "Selected $it" }
             ?: "No ${kind.displayName} device selected"
-        val connected = next?.isConnected == true
         handler.post {
-            listeners.forEach { it.onStatus(lastStatus, connected) }
+            // Selection and transport connection can complete before this deferred callback.
+            // Deliver their live combined state so a captured pre-connect false value cannot
+            // overwrite the newer USB/Bluetooth status.
+            listeners.forEach { it.onStatus(lastStatus, isConnected) }
         }
     }
+
+    private fun relayFor(source: PersistentDeviceSession) =
+        object : DeviceSerialSession.Listener {
+            private fun isCurrent(): Boolean =
+                attached === source && attachedRelay === this
+
+            override fun onStatus(message: String, connected: Boolean) {
+                if (!isCurrent()) return
+                lastStatus = message
+                listeners.forEach { it.onStatus(message, connected) }
+            }
+
+            override fun onData(data: ByteArray) {
+                if (!isCurrent()) return
+                listeners.forEach { it.onData(data) }
+            }
+
+            override fun onError(message: String) {
+                if (!isCurrent()) return
+                listeners.forEach { it.onError(message) }
+            }
+        }
 
     override fun connectUsb() = current()?.connectUsb() ?: emitNoSelection()
     override fun connectBluetooth(address: String) =

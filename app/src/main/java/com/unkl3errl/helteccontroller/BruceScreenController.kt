@@ -339,9 +339,11 @@ class BruceScreenController(
 
     private fun hasFieldLogTransport(): Boolean = hasHttpTransport() || usbBridgeConnected
 
-    private fun onUsbBridgeState(connected: Boolean, message: String) {
-        usbBridgeConnected = connected
-        if (!connected) {
+    private fun onUsbBridgeState(@Suppress("UNUSED_PARAMETER") connected: Boolean, message: String) {
+        // The selected-device relay is asynchronous. Treat the transport's live state as
+        // authoritative if a superseded callback arrives after USB/Bluetooth has connected.
+        usbBridgeConnected = usbConsole.isBridgeConnected
+        if (!usbBridgeConnected) {
             if (client.network == null) {
                 connectionStatus.text = "Not connected to BruceNet · USB bridge unavailable: $message"
             }

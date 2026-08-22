@@ -39,7 +39,10 @@ class BruceUsbSerial(
         get() = session.connectionId
 
     init {
-        session.addListener(relay)
+        // Controller bridge transactions hold exclusive ownership through their response.
+        // Keep this listener eligible for that response while the console filter hides
+        // unrelated background storage protocol traffic.
+        session.addListener(relay, receiveExclusiveData = true)
     }
 
     fun connect() = session.connectUsb()
@@ -52,6 +55,9 @@ class BruceUsbSerial(
 
     fun writeCommand(command: String, onDispatched: () -> Unit = {}) =
         session.writeCommand(command, onDispatched)
+
+    fun <T> withExclusiveCommands(block: ((String) -> Unit) -> T): T =
+        session.withExclusiveCommands(block)
 
     fun close() = session.disconnectAll()
 

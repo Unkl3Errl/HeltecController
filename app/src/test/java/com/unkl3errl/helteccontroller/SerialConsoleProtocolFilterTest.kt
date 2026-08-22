@@ -22,6 +22,54 @@ class SerialConsoleProtocolFilterTest {
     }
 
     @Test
+    fun `hides Bruce command-wrapped bridge lines at every packet boundary`() {
+        val line = "# # COMMAND: @HELTEC-BRIDGE 9 logger-status\r\n"
+
+        for (splitAt in 0..line.length) {
+            val filter = SerialConsoleProtocolFilter()
+            val visible = filter.filter(line.substring(0, splitAt)) +
+                filter.filter(line.substring(splitAt))
+
+            assertEquals("split at $splitAt", "", visible)
+        }
+    }
+
+    @Test
+    fun `hides an orphaned bridge response at every packet boundary`() {
+        val line = "8 OK {\"formatVersion\":1,\"initialized\":true}\r\n"
+
+        for (splitAt in 0..line.length) {
+            val filter = SerialConsoleProtocolFilter()
+            val visible = filter.filter(line.substring(0, splitAt)) +
+                filter.filter(line.substring(splitAt))
+
+            assertEquals("split at $splitAt", "", visible)
+        }
+    }
+
+    @Test
+    fun `keeps ordinary numeric console output visible`() {
+        val filter = SerialConsoleProtocolFilter()
+
+        assertEquals("8 devices found\r\n", filter.filter("8 devices found\r\n"))
+    }
+
+    @Test
+    fun `hides an orphaned bridge error response`() {
+        val filter = SerialConsoleProtocolFilter()
+
+        assertEquals("", filter.filter("12 ERROR {\"error\":\"invalid request\"}\r\n"))
+    }
+
+    @Test
+    fun `keeps ordinary Bruce command echoes visible`() {
+        val filter = SerialConsoleProtocolFilter()
+
+        assertEquals("# COMMAND: info\r\n", filter.filter("# COMMAND: info\r\n"))
+        assertEquals("Bruce v1.16.1\r\n", filter.filter("Bruce v1.16.1\r\n"))
+    }
+
+    @Test
     fun `does not delay normal partial console text`() {
         val filter = SerialConsoleProtocolFilter()
 

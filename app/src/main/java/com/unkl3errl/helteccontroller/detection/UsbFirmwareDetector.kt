@@ -162,7 +162,9 @@ class UsbFirmwareDetector(
                 ?: throw IllegalStateException("The USB device has no serial port")
             selected.open(connection)
             selected.setParameters(115_200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE)
-            runCatching { selected.setDTR(true) }
+            // ESP32-S3 native USB maps asserted DTR to a low GPIO0 boot strap. Leave it
+            // released so a battery recovery or physical RST cannot enter ROM download mode.
+            runCatching { selected.setDTR(false) }
             port = selected
             currentTarget = UsbDeviceRegistry.target(usbManager, driver.device)
             evidence.clear()
