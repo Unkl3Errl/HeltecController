@@ -15,6 +15,12 @@ class FirmwareIdentityTest {
             FirmwareKind.BRUCE,
             FirmwareIdentity.classifyUsb("noise\nDevice: HELTEC-V4\n"),
         )
+        assertEquals(
+            FirmwareKind.BRUCE,
+            FirmwareIdentity.classifyUsb(
+                "[BOOT] reset=power_on (1), power guard=1200 ms\r\n",
+            ),
+        )
     }
 
     @Test fun detectsMarauderFromBannerInfoAndHelpResponses() {
@@ -50,6 +56,10 @@ class FirmwareIdentityTest {
     @Test fun refusesEmptyAmbiguousAndUnrelatedResponses() {
         assertEquals(FirmwareKind.UNKNOWN, FirmwareIdentity.classifyUsb(""))
         assertEquals(FirmwareKind.UNKNOWN, FirmwareIdentity.classifyUsb("ready\r\n> "))
+        assertEquals(
+            FirmwareKind.UNKNOWN,
+            FirmwareIdentity.classifyUsb("[BOOT] reset=power_on (1)\r\n"),
+        )
         assertEquals(
             FirmwareKind.UNKNOWN,
             FirmwareIdentity.classifyUsb("Bruce v1\nFirmware: Marauder\n"),

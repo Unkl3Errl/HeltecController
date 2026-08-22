@@ -177,26 +177,27 @@ class MarauderScreenController(
     }
 
     fun onDeviceSelected(connectionId: String) {
-        if (currentConnectionId == connectionId) return
-        cancelAccessPointScan()
-        sessionStore.stop("Switched to another Marauder device")
-        deviceConsoleBuffers[currentConnectionId] = consoleBuffer.toString()
-        currentConnectionId = connectionId
-        val folder = connectionId.hashCode().toUInt().toString(16)
-        sessionStore = MarauderSessionStore(
-            File(activity.filesDir, "marauder_sessions/$folder"),
-        )
-        resultParser = MarauderResultParser()
-        consoleBuffer.clear()
-        consoleBuffer.append(deviceConsoleBuffers[connectionId] ?: "Selected Marauder device.\n")
-        consoleText.reset()
-        protocolFilter.reset()
-        console.text = consoleBuffer.toString()
-        updateStructuredResults()
-        updateRecordingStatus()
-        connectionStatus.text = "Selected Marauder device · ${serial.connectionId.substringAfterLast(':')}"
-        setConsoleFollowing(true)
-        console.post(::scrollConsoleToBottom)
+        if (currentConnectionId != connectionId) {
+            cancelAccessPointScan()
+            sessionStore.stop("Switched to another Marauder device")
+            deviceConsoleBuffers[currentConnectionId] = consoleBuffer.toString()
+            currentConnectionId = connectionId
+            val folder = connectionId.hashCode().toUInt().toString(16)
+            sessionStore = MarauderSessionStore(
+                File(activity.filesDir, "marauder_sessions/$folder"),
+            )
+            resultParser = MarauderResultParser()
+            consoleBuffer.clear()
+            consoleBuffer.append(deviceConsoleBuffers[connectionId] ?: "Selected Marauder device.\n")
+            consoleText.reset()
+            protocolFilter.reset()
+            console.text = consoleBuffer.toString()
+            updateStructuredResults()
+            updateRecordingStatus()
+            setConsoleFollowing(true)
+            console.post(::scrollConsoleToBottom)
+        }
+        updateTransportStatus()
     }
 
     fun destroy() {
@@ -232,15 +233,21 @@ class MarauderScreenController(
         }.exceptionOrNull()
         activity.runOnUiThread {
             if (!connected) cancelAccessPointScan()
-            if (message.contains("USB", ignoreCase = true)) connectionStatus.text = message
-            if (message.contains("Bluetooth", ignoreCase = true)) bluetoothStatus.text = message
-            if (!message.contains("USB", true) && !message.contains("Bluetooth", true)) {
-                connectionStatus.text = message
-            }
+            updateTransportStatus(message)
             updateRecordingStatus(sessionError?.message)
             updateGlobalStatus()
-            appendConsole("\n[link] $message\n")
         }
+    }
+
+    private fun updateTransportStatus(latestMessage: String? = null) {
+        val labels = TransportStatusLabeler.labels(
+            deviceName = "Marauder",
+            usbConnected = serial.isUsbConnected,
+            bluetoothConnected = serial.isBluetoothConnected,
+            latestMessage = latestMessage,
+        )
+        connectionStatus.text = labels.usb
+        bluetoothStatus.text = labels.bluetooth
     }
 
     override fun onSerialData(data: ByteArray) {

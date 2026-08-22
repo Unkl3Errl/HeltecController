@@ -78,13 +78,18 @@ class Esp32S3BootloaderFlasher(context: Context) {
         private const val MAX_FLASH_ATTEMPTS = 3
         private const val RECONNECT_TIMEOUT_MS = 30_000L
         private const val RECONNECT_POLL_MS = 200L
+        private const val POST_FLASH_RECONNECT_TIMEOUT_MS = 15_000L
         private const val RTC_CNTL_WDTCONFIG0_REG = 0x60008098L
+        private const val RTC_CNTL_WDTCONFIG1_REG = 0x6000809CL
         private const val RTC_CNTL_WDTWPROTECT_REG = 0x600080B0L
         private const val RTC_CNTL_WDT_WKEY = 0x50D83AA1L
+        private const val RTC_CNTL_WDT_RESET_CONFIG = 0xD0000102L
         private const val RTC_CNTL_SWD_CONF_REG = 0x600080B4L
         private const val RTC_CNTL_SWD_WPROTECT_REG = 0x600080B8L
         private const val RTC_CNTL_SWD_WKEY = 0x8F1D312AL
         private const val RTC_CNTL_SWD_AUTO_FEED_EN = 1L shl 31
+        private const val RTC_CNTL_OPTION1_REG = 0x6000812CL
+        private const val RTC_CNTL_FORCE_DOWNLOAD_BOOT_MASK = 0x1L
     }
 
     private val appContext = context.applicationContext
@@ -308,8 +313,27 @@ class Esp32S3BootloaderFlasher(context: Context) {
             verifyImage(port, request.image)
             request.listener.onFlashProgress(100, "Verified. Restarting the device…")
             stage = "Restarting the flashed device"
-            hardReset(port)
-            return openedTarget
+            // ESP32-S3 native USB can latch force-download mode while entering recovery.
+            // Clear it before toggling reset or a verified image can return to ESP-ROM until
+            // the user presses the physical RST button.
+            runCatching {
+                writeRegister(
+                    port,
+                    RTC_CNTL_OPTION1_REG,
+                    0,
+                    RTC_CNTL_FORCE_DOWNLOAD_BOOT_MASK,
+                )
+            }.onFailure {
+                Log.w(TAG, "Could not clear ESP32-S3 force-download mode before reset", it)
+            }
+            watchdogReset(port)
+            // Release the ROM handle before waiting for Android to replace it with the
+            // firmware endpoint. UsbManager can briefly list the old handle even though any
+            // bulk write to it returns rc=-1.
+            runCatching { port.close() }
+            port = null
+            stage = "Waiting for the flashed device USB endpoint"
+            return waitForReenumeratedFirmwareEndpoint(openedTarget) ?: openedTarget
         } catch (error: Exception) {
             throw FlashAttemptFailure(stage, error)
         } finally {
@@ -346,6 +370,35 @@ class Esp32S3BootloaderFlasher(context: Context) {
         val connection = runCatching { usbManager.openDevice(device) }.getOrNull() ?: return false
         connection.close()
         return true
+    }
+
+    /** Waits for Android to replace the ROM UsbDevice without claiming the new serial port. */
+    private fun waitForReenumeratedFirmwareEndpoint(target: UsbDeviceTarget): UsbDeviceTarget? {
+        val deadline = System.nanoTime() + POST_FLASH_RECONNECT_TIMEOUT_MS * 1_000_000L
+        var sawDetached = false
+        while (!Thread.currentThread().isInterrupted && System.nanoTime() < deadline) {
+            val device = UsbDeviceRegistry.nativeDeviceFor(usbManager, target)
+            if (device == null) {
+                sawDetached = true
+            } else {
+                val current = UsbDeviceRegistry.target(usbManager, device)
+                if (
+                    sawDetached || current.deviceId != target.deviceId ||
+                    current.deviceName != target.deviceName
+                ) {
+                    // Give firmware initialization exclusive ownership of its first USB open.
+                    Thread.sleep(2_000)
+                    return UsbDeviceRegistry.nativeDeviceFor(usbManager, target)?.let {
+                        UsbDeviceRegistry.target(usbManager, it)
+                    } ?: current
+                }
+            }
+            Thread.sleep(RECONNECT_POLL_MS)
+        }
+        Log.w(TAG, "Android did not report a replacement firmware USB endpoint within 15 seconds")
+        return UsbDeviceRegistry.nativeDeviceFor(usbManager, target)?.let {
+            UsbDeviceRegistry.target(usbManager, it)
+        }
     }
 
     private fun permissionIntent(): PendingIntent = PendingIntent.getBroadcast(
@@ -459,11 +512,16 @@ class Esp32S3BootloaderFlasher(context: Context) {
     private fun readRegister(port: UsbSerialPort, address: Long): Long =
         command(port, READ_REG, le32(address), timeoutMs = 3_000).value
 
-    private fun writeRegister(port: UsbSerialPort, address: Long, value: Long) {
+    private fun writeRegister(
+        port: UsbSerialPort,
+        address: Long,
+        value: Long,
+        mask: Long = 0xffffffffL,
+    ) {
         command(
             port,
             WRITE_REG,
-            le32(address) + le32(value) + le32(0xffffffffL) + le32(0),
+            le32(address) + le32(value) + le32(mask) + le32(0),
             timeoutMs = 3_000,
         )
     }
@@ -539,11 +597,13 @@ class Esp32S3BootloaderFlasher(context: Context) {
         Thread.sleep(150)
     }
 
-    private fun hardReset(port: UsbSerialPort) {
-        port.setRTS(true)
-        Thread.sleep(200)
-        port.setRTS(false)
-        Thread.sleep(200)
+    /** Performs Espressif's ESP32-S3 full-chip watchdog reset without relying on USB RTS. */
+    private fun watchdogReset(port: UsbSerialPort) {
+        writeRegister(port, RTC_CNTL_WDTWPROTECT_REG, RTC_CNTL_WDT_WKEY)
+        writeRegister(port, RTC_CNTL_WDTCONFIG1_REG, 2_000)
+        writeRegister(port, RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_RESET_CONFIG)
+        writeRegister(port, RTC_CNTL_WDTWPROTECT_REG, 0)
+        Thread.sleep(750)
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")

@@ -192,24 +192,26 @@ class GhostScreenController(
     }
 
     fun onDeviceSelected(connectionId: String) {
-        if (currentConnectionId == connectionId || destroyed.get()) return
-        persistHandler.removeCallbacks(persistRunnable)
-        writeConsoleSnapshot()
-        currentConnectionId = connectionId
-        consoleFile = File(
-            activity.filesDir,
-            "ghost-console-${connectionId.hashCode().toUInt().toString(16)}.txt",
-        )
-        consoleBuffer.clear()
-        consoleBuffer.append(
-            restoreConsole(consoleFile).ifBlank { "Selected GhostESP device.\n" },
-        )
-        consoleText.reset()
-        protocolFilter.reset()
-        console.text = consoleBuffer.toString()
-        setConsoleFollowing(true)
-        console.post(::scrollConsoleToBottom)
-        usbStatus.text = "Selected GhostESP device · ${serial.connectionId.substringAfterLast(':')}"
+        if (destroyed.get()) return
+        if (currentConnectionId != connectionId) {
+            persistHandler.removeCallbacks(persistRunnable)
+            writeConsoleSnapshot()
+            currentConnectionId = connectionId
+            consoleFile = File(
+                activity.filesDir,
+                "ghost-console-${connectionId.hashCode().toUInt().toString(16)}.txt",
+            )
+            consoleBuffer.clear()
+            consoleBuffer.append(
+                restoreConsole(consoleFile).ifBlank { "Selected GhostESP device.\n" },
+            )
+            consoleText.reset()
+            protocolFilter.reset()
+            console.text = consoleBuffer.toString()
+            setConsoleFollowing(true)
+            console.post(::scrollConsoleToBottom)
+        }
+        updateTransportStatus()
         updateGlobalStatus()
     }
 
@@ -263,10 +265,19 @@ class GhostScreenController(
 
     override fun onSerialStatus(message: String, connected: Boolean) = onUi {
         if (destroyed.get()) return@onUi
-        if (message.contains("Bluetooth", ignoreCase = true)) bluetoothStatus.text = message
-        else usbStatus.text = message
-        appendConsole("\n[link] $message\n")
+        updateTransportStatus(message)
         updateGlobalStatus()
+    }
+
+    private fun updateTransportStatus(latestMessage: String? = null) {
+        val labels = TransportStatusLabeler.labels(
+            deviceName = "GhostESP",
+            usbConnected = serial.isUsbConnected,
+            bluetoothConnected = serial.isBluetoothConnected,
+            latestMessage = latestMessage,
+        )
+        usbStatus.text = labels.usb
+        bluetoothStatus.text = labels.bluetooth
     }
 
     override fun onSerialData(data: ByteArray) = onUi {

@@ -93,6 +93,9 @@ class MainActivity :
         private const val PREF_DETECTION_SOURCE = "detection_source"
         private const val PREF_FIRMWARE_VERSION = "firmware_version"
         private const val PREF_FIRMWARE_COMMIT = "firmware_commit"
+        private const val PREF_USB_KIND_PREFIX = "usb_firmware_kind:"
+        private const val PREF_USB_VERSION_PREFIX = "usb_firmware_version:"
+        private const val PREF_USB_COMMIT_PREFIX = "usb_firmware_commit:"
         private const val MENU_DETECT_USB = 5001
         private const val MENU_CONNECT_BRUCENET = 5002
         private const val MENU_CONNECT_GHOSTNET = 5003
@@ -344,12 +347,11 @@ class MainActivity :
             if (flashingKind != null) return
             val device = intent.usbDevice()
             if (device != null) {
-                startUsbDetection(
-                    UsbDeviceRegistry.target(
-                        getSystemService(Context.USB_SERVICE) as UsbManager,
-                        device,
-                    ),
+                val target = UsbDeviceRegistry.target(
+                    getSystemService(Context.USB_SERVICE) as UsbManager,
+                    device,
                 )
+                if (!restorePersistedUsbTarget(target)) startUsbDetection(target)
             } else {
                 startUsbDetection()
             }
@@ -913,24 +915,26 @@ class MainActivity :
             )
         } else null
         if (connectionId != null) deviceDetections[connectionId] = detection
-        getSharedPreferences(SESSION_PREFS, MODE_PRIVATE).edit()
+        val preferences = getSharedPreferences(SESSION_PREFS, MODE_PRIVATE)
+        val editor = preferences.edit()
             .putString(PREF_FIRMWARE_KIND, detection.kind.name)
             .putString(PREF_DETECTION_SOURCE, detection.source.name)
             .putString(PREF_FIRMWARE_VERSION, detection.version)
             .putString(PREF_FIRMWARE_COMMIT, detection.commit)
             .putString("${PREF_FIRMWARE_VERSION}_${detection.kind.name}", detection.version)
             .putString("${PREF_FIRMWARE_COMMIT}_${detection.kind.name}", detection.commit)
-            .apply()
-        val source = when (detection.source) {
-            DetectionSource.USB -> "USB"
-            DetectionSource.BRUCENET -> "BruceNet"
-            DetectionSource.GHOSTNET -> "GhostNet"
-            DetectionSource.MANUAL -> "manual override"
+        if (
+            detection.source == DetectionSource.USB &&
+            detection.usbTarget?.serialNumber?.isNotBlank() == true
+        ) {
+            val target = requireNotNull(detection.usbTarget)
+            editor
+                .putString(usbPreferenceKey(PREF_USB_KIND_PREFIX, target), detection.kind.name)
+                .putString(usbPreferenceKey(PREF_USB_VERSION_PREFIX, target), detection.version)
+                .putString(usbPreferenceKey(PREF_USB_COMMIT_PREFIX, target), detection.commit)
         }
-        detectionStatus.text =
-            "Verified ${detection.kind.displayName}" +
-                detection.version?.let { " $it" }.orEmpty() +
-                " via $source · ${detection.evidence}"
+        editor.apply()
+        detectionStatus.text = detectionSummary(detection)
         setControllerSubtitle(detection.kind.displayName.uppercase())
         setGlobalStatus("${detection.kind.displayName.uppercase()} READY")
         tabBruce.isEnabled = true
@@ -1077,8 +1081,61 @@ class MainActivity :
             }
         }
 
-        if (usbDetector.hasCandidate()) startUsbDetection()
+        val targets = usbDetector.targets()
+        if (targets.isEmpty()) return
+        val restoredTargets = targets.filter(::restorePersistedUsbTarget)
+        val unknownTargets = targets.filterNot { target ->
+            restoredTargets.any(target::samePhysicalDevice)
+        }
+        when (unknownTargets.size) {
+            0 -> Unit
+            1 -> startUsbDetection(unknownTargets.single())
+            else -> showUsbTargetPicker(
+                title = "Detect which unrecognized USB device?",
+                targets = unknownTargets,
+                onSelected = ::detectUsbTarget,
+            )
+        }
     }
+
+    private fun restorePersistedUsbTarget(target: UsbDeviceTarget): Boolean {
+        if (target.serialNumber.isNullOrBlank()) return false
+        val preferences = getSharedPreferences(SESSION_PREFS, MODE_PRIVATE)
+        val kind = runCatching {
+            FirmwareKind.valueOf(
+                preferences.getString(usbPreferenceKey(PREF_USB_KIND_PREFIX, target), "") ?: "",
+            )
+        }.getOrNull()?.takeUnless { it == FirmwareKind.UNKNOWN } ?: return false
+        applyDetection(
+            FirmwareDetection(
+                kind = kind,
+                source = DetectionSource.USB,
+                evidence = "restored verified assignment for S/N ${target.serialNumber}",
+                version = preferences.getString(
+                    usbPreferenceKey(PREF_USB_VERSION_PREFIX, target),
+                    null,
+                ),
+                commit = preferences.getString(
+                    usbPreferenceKey(PREF_USB_COMMIT_PREFIX, target),
+                    null,
+                ),
+                usbTarget = target,
+            ),
+        )
+        return true
+    }
+
+    private fun forgetPersistedUsbTarget(target: UsbDeviceTarget) {
+        if (target.serialNumber.isNullOrBlank()) return
+        getSharedPreferences(SESSION_PREFS, MODE_PRIVATE).edit()
+            .remove(usbPreferenceKey(PREF_USB_KIND_PREFIX, target))
+            .remove(usbPreferenceKey(PREF_USB_VERSION_PREFIX, target))
+            .remove(usbPreferenceKey(PREF_USB_COMMIT_PREFIX, target))
+            .apply()
+    }
+
+    private fun usbPreferenceKey(prefix: String, target: UsbDeviceTarget): String =
+        prefix + target.stableKey
 
     private fun restorePersistentUsbDetection(kind: PersistentUsbKind) {
         val firmwareKind = when (kind) {
@@ -1120,6 +1177,7 @@ class MainActivity :
         }
         setTabAppearance(selected)
         updateDeviceTabs()
+        refreshSelectedFirmwareHeader()
         refreshSelectedGlobalStatus()
         if (::firmwareRepository.isInitialized) {
             firmwareRepository.refreshIfStale(FIRMWARE_RESUME_REFRESH_AGE_MS)
@@ -1148,6 +1206,7 @@ class MainActivity :
         if (selectedScreen.toPersistentUsbKind() == kind) {
             updateDeviceTabs()
             updateUsbTargetCards()
+            refreshSelectedFirmwareHeader()
             refreshSelectedGlobalStatus()
         }
     }
@@ -1231,6 +1290,37 @@ class MainActivity :
             PersistentUsbKind.GHOSTESP -> ghostController.onDeviceSelected(connectionId)
             PersistentUsbKind.MARAUDER -> marauderController.onDeviceSelected(connectionId)
         }
+    }
+
+    private fun refreshSelectedFirmwareHeader() {
+        val selectedDetection = PersistentDeviceConnections
+            .selected(selectedScreen.toPersistentUsbKind())
+            ?.connectionId
+            ?.let(deviceDetections::get)
+            ?: detectedFirmwares[selectedScreen]
+        if (selectedDetection != null) {
+            detectedFirmware = selectedDetection
+            detectedFirmwares[selectedDetection.kind] = selectedDetection
+            setControllerSubtitle(selectedScreen.displayName.uppercase())
+            detectionStatus.text = detectionSummary(selectedDetection)
+        } else if (detectedFirmwares.isNotEmpty()) {
+            setControllerSubtitle(selectedScreen.displayName.uppercase())
+            detectionStatus.text =
+                "No verified ${selectedScreen.displayName} device is assigned. " +
+                    "Select a connection or flash this firmware to an attached board."
+        }
+    }
+
+    private fun detectionSummary(detection: FirmwareDetection): String {
+        val source = when (detection.source) {
+            DetectionSource.USB -> "USB"
+            DetectionSource.BRUCENET -> "BruceNet"
+            DetectionSource.GHOSTNET -> "GhostNet"
+            DetectionSource.MANUAL -> "manual override"
+        }
+        return "Verified ${detection.kind.displayName}" +
+            detection.version?.let { " $it" }.orEmpty() +
+            " via $source · ${detection.evidence}"
     }
 
     private fun setTabAppearance(selected: FirmwareKind) {
@@ -1498,6 +1588,9 @@ class MainActivity :
         target: UsbDeviceTarget,
     ) {
         usbDetector.cancel()
+        // Do not restore a stale identity if the app or phone restarts during a reflash. The
+        // verified completion path writes the new board-to-firmware assignment back atomically.
+        forgetPersistedUsbTarget(target)
         PersistentDeviceConnections.disconnectUsbTarget(target)
         flashingKind = kind
         detectedFirmwares.entries.removeAll {
@@ -1526,7 +1619,21 @@ class MainActivity :
                 detectionStatus.text = "${release.displayName} ${release.version} flashed and verified. Reconnecting…"
                 setGlobalStatus("FLASH VERIFIED")
                 updateFirmwareCards()
-                container.postDelayed({ startUsbDetection(flashedTarget) }, 1_500L)
+                // The exact retained image and its full-flash MD5 were already verified. Trust
+                // that stronger evidence instead of racing a serial identity probe against
+                // Android while native USB is still re-enumerating after ROM soft reset.
+                container.postDelayed({
+                    applyDetection(
+                        FirmwareDetection(
+                            kind = kind,
+                            source = DetectionSource.USB,
+                            evidence = "installed image verified after flash",
+                            version = release.version,
+                            commit = release.sourceCommit,
+                            usbTarget = flashedTarget,
+                        ),
+                    )
+                }, 2_500L)
             }
 
             override fun onFlashFailed(message: String) = runOnUiThread {

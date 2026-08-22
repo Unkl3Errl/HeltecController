@@ -120,12 +120,10 @@ internal class PersistentDeviceSession(
     ) {
         listeners.add(listener)
         if (receiveExclusiveData) exclusiveDataListeners.add(listener)
-        val status = lastStatus
-        val connected = isConnected
         // Screen controllers register from their constructors; never re-enter them before their
         // remaining fields have been initialized.
         mainHandler.post {
-            if (listeners.contains(listener)) listener.onStatus(status, connected)
+            if (listeners.contains(listener)) listener.onStatus(lastStatus, isConnected)
         }
     }
 
@@ -176,26 +174,33 @@ internal class PersistentDeviceSession(
 
     override fun writeCommand(command: String, onDispatched: () -> Unit) {
         userCommandWriter.execute {
-            commandLock.withLock {
-                val sent = when {
-                    usb.isConnected -> {
-                        usb.withExclusiveCommands { send ->
-                            onDispatched()
-                            send(command)
+            runCatching {
+                commandLock.withLock {
+                    val sent = when {
+                        usb.isConnected -> {
+                            usb.withExclusiveCommands { send ->
+                                onDispatched()
+                                send(command)
+                            }
+                            true
                         }
-                        true
-                    }
-                    bluetooth?.isConnected == true -> {
-                        bluetooth.withExclusiveCommands { send ->
-                            onDispatched()
-                            send(command)
+                        bluetooth?.isConnected == true -> {
+                            bluetooth.withExclusiveCommands { send ->
+                                onDispatched()
+                                send(command)
+                            }
+                            true
                         }
-                        true
+                        else -> false
                     }
-                    else -> false
+                    if (sent) markUserResponseWindow()
+                    else emitError("Connect ${kind.displayName} over USB or Bluetooth first")
                 }
-                if (sent) markUserResponseWindow()
-                else emitError("Connect ${kind.displayName} over USB or Bluetooth first")
+            }.onFailure { error ->
+                emitError(
+                    "${kind.displayName} command failed: " +
+                        (error.message ?: error.javaClass.simpleName),
+                )
             }
         }
     }

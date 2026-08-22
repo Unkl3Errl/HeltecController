@@ -314,13 +314,16 @@ internal class PersistentBleSerialSession(
 
     fun addListener(listener: Listener) {
         listeners.add(listener)
-        val connected = ready
-        val message = when {
-            connected -> "${kind.displayName} Bluetooth connected · ${currentAddress.orEmpty()}"
-            connecting -> "${kind.displayName} Bluetooth is connecting…"
-            else -> "${kind.displayName} Bluetooth is not connected"
+        handler.post {
+            if (!listeners.contains(listener)) return@post
+            val connected = ready
+            val message = when {
+                connected -> "${kind.displayName} Bluetooth connected · ${currentAddress.orEmpty()}"
+                connecting -> "${kind.displayName} Bluetooth is connecting…"
+                else -> "${kind.displayName} Bluetooth is not connected"
+            }
+            listener.onStatus(message, connected)
         }
-        handler.post { if (listeners.contains(listener)) listener.onStatus(message, connected) }
     }
 
     fun removeListener(listener: Listener) {
@@ -553,10 +556,18 @@ internal class PersistentBleSerialSession(
         }
         if (!dispatched) {
             pendingWrite = null
+            failConnection("${kind.displayName} Bluetooth write could not start")
             return@withLock BluetoothGatt.GATT_FAILURE
         }
-        operation.latch.await(GATT_OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        val completed = operation.latch.await(GATT_OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         if (pendingWrite === operation) pendingWrite = null
+        if (!completed) {
+            // Android can leave a timed-out ATT write resident in its GATT queue. Any later
+            // write then fails as "prior command is not finished" until the stack eventually
+            // tears the link down. Close it now and use the normal bounded reconnect path.
+            failConnection("${kind.displayName} Bluetooth write timed out")
+            return@withLock BluetoothGatt.GATT_FAILURE
+        }
         operation.status
     }
 

@@ -43,7 +43,9 @@ class BruceUsbConsoleController(
     private val bridgeBuffer = StringBuilder()
     private val bridgeRequests = ConcurrentHashMap<Long, CompletableFuture<JSONObject>>()
     private val bridgeSequence = AtomicLong()
-    private val protocolFilter = SerialConsoleProtocolFilter()
+    private val deviceProtocolFilters = mutableMapOf<String, SerialConsoleProtocolFilter>()
+    private var protocolFilter = SerialConsoleProtocolFilter()
+    @Volatile private var discardUntilLineBoundary = false
     private var consoleFollowing = true
 
     val isBridgeConnected: Boolean get() = serial.isConnected
@@ -116,18 +118,26 @@ class BruceUsbConsoleController(
     fun connectBridge() = serial.connect()
 
     fun onDeviceSelected(connectionId: String) {
-        if (currentConnectionId == connectionId) return
-        deviceBuffers[currentConnectionId] = buffer.toString()
-        failBridgeRequests("Switched to another Bruce device")
-        bridgeBuffer.clear()
-        protocolFilter.reset()
-        currentConnectionId = connectionId
-        buffer.clear()
-        buffer.append(deviceBuffers[connectionId] ?: "Selected Bruce device.\n")
-        consoleText.reset()
-        console.text = buffer.toString()
-        setConsoleFollowing(true)
-        console.post(::scrollConsoleToBottom)
+        if (currentConnectionId != connectionId) {
+            deviceBuffers[currentConnectionId] = buffer.toString()
+            deviceProtocolFilters[currentConnectionId] = protocolFilter
+            failBridgeRequests("Switched to another Bruce device")
+            bridgeBuffer.clear()
+            currentConnectionId = connectionId
+            protocolFilter = deviceProtocolFilters.getOrPut(connectionId) {
+                SerialConsoleProtocolFilter()
+            }
+            // The selected board may still be emitting the tail of a response started before
+            // it was deselected. Resume only after that old line reaches its boundary.
+            discardUntilLineBoundary = true
+            buffer.clear()
+            buffer.append(deviceBuffers[connectionId] ?: "Selected Bruce device.\n")
+            consoleText.reset()
+            console.text = buffer.toString()
+            setConsoleFollowing(true)
+            console.post(::scrollConsoleToBottom)
+        }
+        updateTransportStatus()
     }
 
     fun globalStatusLabel(): String? = when {
@@ -153,9 +163,11 @@ class BruceUsbConsoleController(
             append("@HELTEC-BRIDGE ").append(id).append(' ').append(action)
             if (form.isNotEmpty()) append(' ').append(form)
         }
-        serial.writeCommand(command)
         return try {
-            future.get(timeoutMs, TimeUnit.MILLISECONDS)
+            serial.withExclusiveCommands { send ->
+                send(command)
+                future.get(timeoutMs, TimeUnit.MILLISECONDS)
+            }
         } finally {
             bridgeRequests.remove(id)
         }
@@ -216,9 +228,10 @@ class BruceUsbConsoleController(
 
     private fun send(command: String, sent: () -> Unit) {
         append("\n> $command\n")
+        val responseFilter = protocolFilter
         serial.writeCommand(command) {
             if (command.trim().startsWith("sd", ignoreCase = true)) {
-                protocolFilter.showNextStorageResponse()
+                responseFilter.showNextStorageResponse()
             }
         }
         sent()
@@ -226,8 +239,7 @@ class BruceUsbConsoleController(
 
     override fun onBruceUsbStatus(message: String, connected: Boolean) = activity.runOnUiThread {
         if (!connected) failBridgeRequests(message)
-        if (message.contains("Bluetooth", ignoreCase = true)) bluetoothStatus.text = message
-        else status.text = message
+        updateTransportStatus(message)
         setGlobalStatus(
             when {
                 serial.isUsbConnected -> "BRUCE USB"
@@ -235,14 +247,36 @@ class BruceUsbConsoleController(
                 else -> "IDLE"
             },
         )
-        append("\n[link] $message\n")
         bridgeState(connected, message)
     }
 
+    private fun updateTransportStatus(latestMessage: String? = null) {
+        val labels = TransportStatusLabeler.labels(
+            deviceName = "Bruce",
+            usbConnected = serial.isUsbConnected,
+            bluetoothConnected = serial.isBluetoothConnected,
+            latestMessage = latestMessage,
+        )
+        status.text = labels.usb
+        bluetoothStatus.text = labels.bluetooth
+    }
+
     override fun onBruceUsbData(data: ByteArray) {
-        val raw = data.toString(Charsets.UTF_8)
+        var raw = data.toString(Charsets.UTF_8)
+        if (discardUntilLineBoundary) {
+            val newline = raw.indexOf('\n')
+            if (newline < 0) return
+            discardUntilLineBoundary = false
+            raw = raw.substring(newline + 1)
+            if (raw.isEmpty()) return
+        }
+        // A bridge response is fragmented across several USB packets or BLE notifications.
+        // Keep every fragment out of the human console while the matching controller request
+        // is outstanding; parseBridgeData still receives the full stream and completes it.
+        val controllerBridgeTraffic = bridgeRequests.isNotEmpty()
         parseBridgeData(raw)
         val visible = protocolFilter.filter(raw)
+        if (controllerBridgeTraffic) return
         if (visible.isNotEmpty()) activity.runOnUiThread { append(visible) }
     }
 

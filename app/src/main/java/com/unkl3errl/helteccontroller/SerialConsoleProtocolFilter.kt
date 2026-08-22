@@ -52,6 +52,14 @@ internal class SerialConsoleProtocolFilter {
                                 undecidedPrefix.clear()
                                 suppressLine = true
                             }
+                            isCompleteOrphanBridgeResponse(candidate) -> {
+                                // A selected-device change can occur between BLE notification
+                                // fragments after the bridge marker was already suppressed. Do
+                                // not let the remaining request ID/status/JSON pollute the new
+                                // device's console.
+                                undecidedPrefix.clear()
+                                suppressLine = true
+                            }
                             isCompleteMarker(candidate, STORAGE_RESPONSE_MARKER) -> {
                                 if (storageResponseIsVisible()) {
                                     // A device can emit prompts without a newline before its reply.
@@ -66,9 +74,11 @@ internal class SerialConsoleProtocolFilter {
                                     suppressLine = true
                                 }
                             }
-                            candidate.isEmpty() || protocolMarkers.any {
-                                it.startsWith(candidate, ignoreCase = true)
-                            } -> Unit
+                            candidate.isEmpty() ||
+                                couldBeOrphanBridgeResponse(candidate) ||
+                                protocolMarkers.any {
+                                    it.startsWith(candidate, ignoreCase = true)
+                                } -> Unit
                             else -> {
                                 append(undecidedPrefix)
                                 undecidedPrefix.clear()
@@ -98,12 +108,20 @@ internal class SerialConsoleProtocolFilter {
 
     private fun protocolCandidate(value: CharSequence): String {
         var index = 0
-        while (index < value.length && value[index].isWhitespace()) index++
-        while (index < value.length && value[index] in PROMPT_CHARACTERS) {
-            index++
+        while (true) {
             while (index < value.length && value[index].isWhitespace()) index++
+
+            while (index < value.length && value[index] in PROMPT_CHARACTERS) {
+                index++
+                while (index < value.length && value[index].isWhitespace()) index++
+            }
+
+            val candidate = value.substring(index)
+            if (COMMAND_ECHO_PREFIX.startsWith(candidate, ignoreCase = true)) return ""
+            if (!candidate.startsWith(COMMAND_ECHO_PREFIX, ignoreCase = true)) return candidate
+
+            index += COMMAND_ECHO_PREFIX.length
         }
-        return value.substring(index)
     }
 
     private fun storageResponseIsVisible(): Boolean {
@@ -127,12 +145,33 @@ internal class SerialConsoleProtocolFilter {
     private fun isCompleteMarker(candidate: String, marker: String): Boolean =
         candidate.equals(marker, ignoreCase = true)
 
+    private fun isCompleteOrphanBridgeResponse(candidate: String): Boolean {
+        val match = ORPHAN_BRIDGE_RESPONSE.matchEntire(candidate) ?: return false
+        return match.groupValues[1].equals("OK", true) ||
+            match.groupValues[1].equals("ERROR", true)
+    }
+
+    private fun couldBeOrphanBridgeResponse(candidate: String): Boolean {
+        var index = 0
+        while (index < candidate.length && candidate[index].isDigit()) index++
+        if (index == 0) return false
+        if (index == candidate.length) return true
+        if (!candidate[index].isWhitespace()) return false
+        while (index < candidate.length && candidate[index].isWhitespace()) index++
+        if (index == candidate.length) return true
+        val status = candidate.substring(index)
+        return "OK".startsWith(status, ignoreCase = true) ||
+            "ERROR".startsWith(status, ignoreCase = true)
+    }
+
     private companion object {
         const val BRIDGE_MARKER = "@HELTEC-BRIDGE"
+        const val COMMAND_ECHO_PREFIX = "COMMAND:"
         const val STORAGE_RESPONSE_MARKER = "SD:"
         const val STORAGE_HOST_MARKER = "SD HOST"
         const val STORAGE_COMMAND_MARKER = "SD "
         const val STORAGE_RESPONSE_TIMEOUT_NANOS = 5_000_000_000L
+        val ORPHAN_BRIDGE_RESPONSE = Regex("""\d+\s+(OK|ERROR)""", RegexOption.IGNORE_CASE)
         val PROMPT_CHARACTERS = setOf('>', '#', '$')
         val protocolMarkers = listOf(
             BRIDGE_MARKER,

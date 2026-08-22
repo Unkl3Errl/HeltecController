@@ -22,6 +22,10 @@ object FirmwareIdentity {
     private val bruceSignatures = listOf(
         Regex("(?im)^Bruce\\s+v?[^\\r\\n]*$"),
         Regex("(?im)^Device:\\s*HELTEC(?:[-_ ]|$)"),
+        Regex(
+            "(?im)^\\[BOOT]\\s+reset=[a-z0-9_]+\\s+\\([0-9]+\\),\\s+" +
+                "power guard=[0-9]+\\s+ms\\s*$",
+        ),
     )
     private val marauderSignatures = listOf(
         Regex("(?im)^\\s*ESP32\\s+Marauder\\s*$"),
