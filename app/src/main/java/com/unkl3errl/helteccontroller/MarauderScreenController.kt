@@ -41,9 +41,11 @@ class MarauderScreenController(
     private val activity: Activity,
     private val root: View,
     private val requestExport: (MarauderExportRequest) -> Unit,
+    private val requestBluetooth: () -> Unit,
     private val setGlobalStatus: (String) -> Unit,
 ) : MarauderUsbSerial.Listener {
     private val connectionStatus: TextView = root.findViewById(R.id.marauderConnectionStatus)
+    private val bluetoothStatus: TextView = root.findViewById(R.id.marauderBluetoothStatus)
     private val recordingStatus: TextView = root.findViewById(R.id.marauderRecordingStatus)
     private val apResultsStatus: TextView = root.findViewById(R.id.marauderApResultsStatus)
     private val bleResultsStatus: TextView = root.findViewById(R.id.marauderBleResultsStatus)
@@ -52,11 +54,14 @@ class MarauderScreenController(
     private val wifiSurveyButton: Button = root.findViewById(R.id.cmdWifiScan)
     private val commandInput: EditText = root.findViewById(R.id.marauderCommand)
     private val serial = MarauderUsbSerial(activity, this)
-    private val sessionStore = MarauderSessionStore(File(activity.filesDir, "marauder_sessions"))
-    private val resultParser = MarauderResultParser()
+    private var sessionStore = MarauderSessionStore(File(activity.filesDir, "marauder_sessions"))
+    private var resultParser = MarauderResultParser()
     private val timedCommandHandler = Handler(Looper.getMainLooper())
     private val consoleBuffer = StringBuilder("Connect to begin.\n")
+    private val deviceConsoleBuffers = mutableMapOf<String, String>()
+    private var currentConnectionId = "MARAUDER:none"
     private val consoleText = SerialConsoleText()
+    private val protocolFilter = SerialConsoleProtocolFilter()
     private var consoleFollowing = true
     private var accessPointScanRunning = false
 
@@ -85,11 +90,21 @@ class MarauderScreenController(
         }
         root.findViewById<Button>(R.id.marauderDisconnect).setOnClickListener {
             cancelAccessPointScan()
-            serial.close()
+            serial.disconnectUsb()
+        }
+        root.findViewById<Button>(R.id.marauderBluetoothConnect).setOnClickListener {
+            bluetoothStatus.text = "Scanning for the Marauder BLE UART service…"
+            requestBluetooth()
+        }
+        root.findViewById<Button>(R.id.marauderBluetoothDisconnect).setOnClickListener {
+            serial.disconnectBluetooth()
+            bluetoothStatus.text = "Marauder Bluetooth disconnected"
+            updateGlobalStatus()
         }
         root.findViewById<Button>(R.id.consoleClear).setOnClickListener {
             consoleBuffer.clear()
             consoleText.reset()
+            protocolFilter.reset()
             console.text = ""
             setConsoleFollowing(true)
             console.scrollTo(0, 0)
@@ -155,10 +170,33 @@ class MarauderScreenController(
     }
 
     fun connectUsb() {
-        if (serial.isConnected) return
+        if (serial.isUsbConnected) return
         connectionStatus.text = "Opening the detected Marauder USB link…"
         setGlobalStatus("USB CONNECTING…")
         serial.connect()
+    }
+
+    fun onDeviceSelected(connectionId: String) {
+        if (currentConnectionId == connectionId) return
+        cancelAccessPointScan()
+        sessionStore.stop("Switched to another Marauder device")
+        deviceConsoleBuffers[currentConnectionId] = consoleBuffer.toString()
+        currentConnectionId = connectionId
+        val folder = connectionId.hashCode().toUInt().toString(16)
+        sessionStore = MarauderSessionStore(
+            File(activity.filesDir, "marauder_sessions/$folder"),
+        )
+        resultParser = MarauderResultParser()
+        consoleBuffer.clear()
+        consoleBuffer.append(deviceConsoleBuffers[connectionId] ?: "Selected Marauder device.\n")
+        consoleText.reset()
+        protocolFilter.reset()
+        console.text = consoleBuffer.toString()
+        updateStructuredResults()
+        updateRecordingStatus()
+        connectionStatus.text = "Selected Marauder device · ${serial.connectionId.substringAfterLast(':')}"
+        setConsoleFollowing(true)
+        console.post(::scrollConsoleToBottom)
     }
 
     fun destroy() {
@@ -169,12 +207,12 @@ class MarauderScreenController(
     }
 
     fun onExportSaved(fileName: String) {
-        setGlobalStatus(if (serial.isConnected) "MARAUDER USB" else "IDLE")
+        updateGlobalStatus()
         Toast.makeText(activity, "Saved $fileName", Toast.LENGTH_LONG).show()
     }
 
     fun onExportCancelled() {
-        setGlobalStatus(if (serial.isConnected) "MARAUDER USB" else "IDLE")
+        updateGlobalStatus()
     }
 
     fun onExportError(message: String) {
@@ -194,9 +232,13 @@ class MarauderScreenController(
         }.exceptionOrNull()
         activity.runOnUiThread {
             if (!connected) cancelAccessPointScan()
-            connectionStatus.text = message
+            if (message.contains("USB", ignoreCase = true)) connectionStatus.text = message
+            if (message.contains("Bluetooth", ignoreCase = true)) bluetoothStatus.text = message
+            if (!message.contains("USB", true) && !message.contains("Bluetooth", true)) {
+                connectionStatus.text = message
+            }
             updateRecordingStatus(sessionError?.message)
-            setGlobalStatus(if (connected) "MARAUDER USB" else "IDLE")
+            updateGlobalStatus()
             appendConsole("\n[link] $message\n")
         }
     }
@@ -204,10 +246,11 @@ class MarauderScreenController(
     override fun onSerialData(data: ByteArray) {
         val text = data.toString(Charsets.UTF_8)
         sessionStore.append("RX", text)
+        val visible = protocolFilter.filter(text)
         activity.runOnUiThread {
             if (resultParser.consume(text)) updateStructuredResults()
             updateRecordingStatus()
-            appendConsole(text)
+            if (visible.isNotEmpty()) appendConsole(visible)
         }
     }
 
@@ -216,7 +259,7 @@ class MarauderScreenController(
         activity.runOnUiThread {
             appendConsole("\n[error] $message\n")
             Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
-            setGlobalStatus("USB ERROR")
+            setGlobalStatus("DEVICE LINK ERROR")
         }
     }
 
@@ -226,7 +269,7 @@ class MarauderScreenController(
 
     private fun startAccessPointScan() {
         if (!serial.isConnected) {
-            Toast.makeText(activity, "Connect the Marauder USB device first", Toast.LENGTH_LONG).show()
+            Toast.makeText(activity, "Connect Marauder over USB or Bluetooth first", Toast.LENGTH_LONG).show()
             return
         }
         cancelAccessPointScan()
@@ -254,7 +297,7 @@ class MarauderScreenController(
 
     private fun stopActiveScan() {
         if (!serial.isConnected) {
-            Toast.makeText(activity, "Connect the Marauder USB device first", Toast.LENGTH_LONG).show()
+            Toast.makeText(activity, "Connect Marauder over USB or Bluetooth first", Toast.LENGTH_LONG).show()
             return
         }
         val listAccessPoints = accessPointScanRunning
@@ -273,7 +316,7 @@ class MarauderScreenController(
 
     private fun stopAndListAccessPoints() {
         if (!serial.isConnected) {
-            Toast.makeText(activity, "Connect the Marauder USB device first", Toast.LENGTH_LONG).show()
+            Toast.makeText(activity, "Connect Marauder over USB or Bluetooth first", Toast.LENGTH_LONG).show()
             return
         }
         cancelAccessPointScan()
@@ -303,7 +346,7 @@ class MarauderScreenController(
 
     private fun sendGuarded(command: String, sent: () -> Unit = {}) {
         if (!serial.isConnected) {
-            Toast.makeText(activity, "Connect the Marauder USB device first", Toast.LENGTH_LONG).show()
+            Toast.makeText(activity, "Connect Marauder over USB or Bluetooth first", Toast.LENGTH_LONG).show()
             return
         }
         when (CommandSafety.classify(command)) {
@@ -350,7 +393,11 @@ class MarauderScreenController(
         appendConsole("\n> $command\n")
         sessionStore.append("TX", command)
         updateRecordingStatus()
-        serial.writeCommand(command)
+        serial.writeCommand(command) {
+            if (command.trim().startsWith("sd", ignoreCase = true)) {
+                protocolFilter.showNextStorageResponse()
+            }
+        }
         sent()
     }
 
@@ -366,7 +413,7 @@ class MarauderScreenController(
                 recordingStatus.setTextColor(activity.getColor(R.color.teal))
             }
             else -> {
-                recordingStatus.text = "Session recording starts automatically with the USB link"
+                recordingStatus.text = "Session recording starts automatically with a device link"
                 recordingStatus.setTextColor(activity.getColor(R.color.muted))
             }
         }
@@ -459,7 +506,7 @@ class MarauderScreenController(
         if (sessions.isEmpty()) {
             AlertDialog.Builder(activity)
                 .setTitle("Marauder sessions")
-                .setMessage("No saved USB sessions yet. Recording begins automatically after Connect succeeds.")
+                .setMessage("No saved device sessions yet. Recording begins automatically after a connection succeeds.")
                 .setPositiveButton("OK", null)
                 .show()
             return
@@ -596,6 +643,18 @@ class MarauderScreenController(
         bytes >= 1_048_576 -> String.format(Locale.ROOT, "%.1f MB", bytes / 1_048_576.0)
         bytes >= 1_024 -> String.format(Locale.ROOT, "%.1f KB", bytes / 1_024.0)
         else -> "$bytes B"
+    }
+
+    fun refreshGlobalStatus() = updateGlobalStatus()
+
+    private fun updateGlobalStatus() {
+        setGlobalStatus(
+            when {
+                serial.isUsbConnected -> "MARAUDER USB"
+                serial.isBluetoothConnected -> "MARAUDER BLUETOOTH"
+                else -> "IDLE"
+            },
+        )
     }
 
     private fun appendConsole(text: String) {

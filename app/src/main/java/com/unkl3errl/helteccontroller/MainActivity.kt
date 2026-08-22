@@ -19,10 +19,13 @@ import android.net.Network
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
@@ -34,6 +37,9 @@ import com.unkl3errl.helteccontroller.bruce.PhoneWifiObservation
 import com.unkl3errl.helteccontroller.connection.PersistentDeviceConnections
 import com.unkl3errl.helteccontroller.connection.PersistentUsbKind
 import com.unkl3errl.helteccontroller.connection.AndroidStorageRouting
+import com.unkl3errl.helteccontroller.connection.FirmwareBleDevice
+import com.unkl3errl.helteccontroller.connection.FirmwareBleScanner
+import com.unkl3errl.helteccontroller.connection.hasBluetoothPermissions
 import com.unkl3errl.helteccontroller.detection.DetectionSource
 import com.unkl3errl.helteccontroller.detection.FirmwareDetection
 import com.unkl3errl.helteccontroller.detection.FirmwareIdentity
@@ -44,6 +50,7 @@ import com.unkl3errl.helteccontroller.firmware.FirmwareCatalog
 import com.unkl3errl.helteccontroller.firmware.FirmwareImageRepository
 import com.unkl3errl.helteccontroller.firmware.FirmwareRelease
 import com.unkl3errl.helteccontroller.firmware.FirmwareVersion
+import com.unkl3errl.helteccontroller.firmware.FirmwareUpdateJobService
 import com.unkl3errl.helteccontroller.firmware.UpstreamRelease
 import com.unkl3errl.helteccontroller.ghost.GhostApiClient
 import com.unkl3errl.helteccontroller.usb.UsbDeviceRegistry
@@ -56,13 +63,15 @@ class MainActivity :
     Activity(),
     BruceNetworkManager.Listener,
     AndroidWifiFieldScanner.Listener,
-    UsbFirmwareDetector.Listener {
+    UsbFirmwareDetector.Listener,
+    PersistentDeviceConnections.Listener {
     companion object {
         private const val WIFI_PERMISSION_REQUEST = 2001
         private const val BRUCE_EXPORT_REQUEST = 2002
         private const val PHONE_GPS_PERMISSION_REQUEST = 2003
         private const val PHONE_WIFI_PERMISSION_REQUEST = 2004
         private const val SESSION_NOTIFICATION_PERMISSION_REQUEST = 2005
+        private const val BLUETOOTH_PERMISSION_REQUEST = 2006
         private const val MARAUDER_EXPORT_REQUEST = 3001
         private const val GHOST_EXPORT_REQUEST = 4001
         private const val ANDROID_STORAGE_TREE_REQUEST = 4002
@@ -90,12 +99,16 @@ class MainActivity :
         private const val MENU_CHOOSE_ANDROID_STORAGE = 5004
         private const val MENU_SYNC_ANDROID_STORAGE = 5005
         private const val RELEASE_NOTICE_PREFS = "firmware_release_notices"
+        private const val FIRMWARE_REFRESH_INTERVAL_MS = 5 * 60_000L
+        private const val FIRMWARE_RESUME_REFRESH_AGE_MS = 30_000L
     }
 
     private lateinit var globalStatus: TextView
     private lateinit var appSubtitle: TextView
     private lateinit var detectionStatus: TextView
+    private lateinit var androidStorageStatus: TextView
     private lateinit var container: FrameLayout
+    private lateinit var deviceTabs: LinearLayout
     private lateinit var tabBruce: Button
     private lateinit var tabGhost: Button
     private lateinit var tabMarauder: Button
@@ -109,6 +122,7 @@ class MainActivity :
     private lateinit var usbDetector: UsbFirmwareDetector
     private lateinit var phoneLocationManager: LocationManager
     private lateinit var phoneWifiScanner: AndroidWifiFieldScanner
+    private lateinit var firmwareBleScanner: FirmwareBleScanner
     private lateinit var firmwareRepository: FirmwareImageRepository
     private lateinit var bootloaderFlasher: Esp32S3BootloaderFlasher
     private lateinit var bruceFirmwareStatus: TextView
@@ -127,8 +141,19 @@ class MainActivity :
     private val client = BruceApiClient()
     private val ghostClient = GhostApiClient()
     private val detectorExecutor = Executors.newSingleThreadExecutor()
+    private val firmwareRefreshHandler = Handler(Looper.getMainLooper())
+    private val firmwareRefreshRunnable = object : Runnable {
+        override fun run() {
+            if (::firmwareRepository.isInitialized) {
+                firmwareRepository.refreshIfStale(FIRMWARE_REFRESH_INTERVAL_MS)
+            }
+            firmwareRefreshHandler.postDelayed(this, FIRMWARE_REFRESH_INTERVAL_MS)
+        }
+    }
     private var detectedFirmware: FirmwareDetection? = null
     private val detectedFirmwares = EnumMap<FirmwareKind, FirmwareDetection>(FirmwareKind::class.java)
+    private val deviceDetections = linkedMapOf<String, FirmwareDetection>()
+    private val displayedConnectionIds = EnumMap<PersistentUsbKind, String>(PersistentUsbKind::class.java)
     private var pendingWifi: Pair<String, String>? = null
     private var pendingBruceNetDetection = false
     private var pendingGhostNetDetection = false
@@ -144,6 +169,8 @@ class MainActivity :
     private var usbTransportDetached = false
     private var selectedScreen = FirmwareKind.BRUCE
     private var requestedNetworkKind: FirmwareKind? = null
+    private var pendingBluetoothKind: PersistentUsbKind? = null
+    private var pendingBluetoothAsNewDevice = false
     private var activeNetworkKind: FirmwareKind? = null
     private var flashingKind: FirmwareKind? = null
 
@@ -179,7 +206,9 @@ class MainActivity :
         globalStatus = findViewById(R.id.globalStatus)
         appSubtitle = findViewById(R.id.appSubtitle)
         detectionStatus = findViewById(R.id.detectionStatus)
+        androidStorageStatus = findViewById(R.id.androidStorageStatus)
         container = findViewById(R.id.screenContainer)
+        deviceTabs = findViewById(R.id.deviceTabs)
         tabBruce = findViewById(R.id.tabBruce)
         tabGhost = findViewById(R.id.tabGhost)
         tabMarauder = findViewById(R.id.tabMarauder)
@@ -187,8 +216,11 @@ class MainActivity :
         usbDetector = UsbFirmwareDetector(this, this)
         phoneLocationManager = getSystemService(LocationManager::class.java)
         phoneWifiScanner = AndroidWifiFieldScanner(this, this)
+        firmwareBleScanner = FirmwareBleScanner(this)
+        PersistentDeviceConnections.addListener(this)
         registerUsbDetachReceiver()
         requestSessionNotificationPermission()
+        FirmwareUpdateJobService.schedule(this)
 
         val inflater = LayoutInflater.from(this)
         bruceView = inflater.inflate(R.layout.screen_bruce, container, false)
@@ -217,22 +249,32 @@ class MainActivity :
             requestPhoneWifi = ::requestPhoneWifi,
             requestFieldLogExport = ::requestBruceFieldLogExport,
             requestDeviceFileExport = ::requestBruceDeviceFileExport,
-            setGlobalStatus = ::setGlobalStatus,
+            requestBluetooth = { requestBluetooth(PersistentUsbKind.BRUCE) },
+            setGlobalStatus = { status ->
+                setFirmwareGlobalStatus(FirmwareKind.BRUCE, status)
+            },
         )
         marauderController = MarauderScreenController(
             activity = this,
             root = marauderView,
             requestExport = ::requestMarauderExport,
-            setGlobalStatus = ::setGlobalStatus,
+            requestBluetooth = { requestBluetooth(PersistentUsbKind.MARAUDER) },
+            setGlobalStatus = { status ->
+                setFirmwareGlobalStatus(FirmwareKind.MARAUDER, status)
+            },
         )
         ghostController = GhostScreenController(
             activity = this,
             root = ghostView,
             requestGhostNet = ::requestGhostNet,
+            requestBluetooth = { requestBluetooth(PersistentUsbKind.GHOSTESP) },
             requestExport = ::requestGhostExport,
-            setGlobalStatus = ::setGlobalStatus,
+            setGlobalStatus = { status ->
+                setFirmwareGlobalStatus(FirmwareKind.GHOSTESP, status)
+            },
         )
         networkManager.attach(this)
+        if (hasBluetoothPermissions(this)) PersistentDeviceConnections.restoreBluetooth(this)
 
         globalStatus.setOnClickListener { showConnectionMenu() }
         tabBruce.setOnClickListener { showScreen(bruceView, FirmwareKind.BRUCE) }
@@ -249,6 +291,7 @@ class MainActivity :
             "All firmware screens are available. Automatic USB detection is active; " +
                 "USB and local Wi-Fi connections can remain active while you switch screens.",
         )
+        refreshAndroidStorageStatus()
         container.post(::restorePersistentConnectionOrDetect)
         firmwareRepository.initialize(object : FirmwareImageRepository.Listener {
             override fun onCatalogChanged(catalog: FirmwareCatalog) = runOnUiThread {
@@ -313,7 +356,28 @@ class MainActivity :
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshAndroidStorageStatus()
+        refreshSelectedGlobalStatus()
+        if (::firmwareRepository.isInitialized) {
+            firmwareRepository.refreshIfStale(FIRMWARE_RESUME_REFRESH_AGE_MS)
+        }
+        firmwareRefreshHandler.removeCallbacks(firmwareRefreshRunnable)
+        firmwareRefreshHandler.postDelayed(
+            firmwareRefreshRunnable,
+            FIRMWARE_REFRESH_INTERVAL_MS,
+        )
+    }
+
+    override fun onPause() {
+        firmwareRefreshHandler.removeCallbacks(firmwareRefreshRunnable)
+        super.onPause()
+    }
+
     override fun onDestroy() {
+        firmwareRefreshHandler.removeCallbacks(firmwareRefreshRunnable)
+        if (::firmwareBleScanner.isInitialized) firmwareBleScanner.stop()
         stopPhoneWifi()
         stopPhoneGps()
         if (::bruceController.isInitialized) bruceController.destroy()
@@ -323,6 +387,7 @@ class MainActivity :
         if (::usbDetector.isInitialized) usbDetector.destroy()
         if (::firmwareRepository.isInitialized) firmwareRepository.close()
         if (::bootloaderFlasher.isInitialized) bootloaderFlasher.close()
+        PersistentDeviceConnections.removeListener(this)
         runCatching { unregisterReceiver(usbDetachReceiver) }
         detectorExecutor.shutdownNow()
         if (isFinishing) {
@@ -361,6 +426,21 @@ class MainActivity :
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == SESSION_NOTIFICATION_PERMISSION_REQUEST) return
+        if (requestCode == BLUETOOTH_PERMISSION_REQUEST) {
+            val kind = pendingBluetoothKind
+            val asNewDevice = pendingBluetoothAsNewDevice
+            pendingBluetoothKind = null
+            pendingBluetoothAsNewDevice = false
+            if (kind != null && hasBluetoothPermissions(this)) {
+                beginBluetoothScan(kind, asNewDevice)
+            }
+            else Toast.makeText(
+                this,
+                "Nearby devices permission was denied",
+                Toast.LENGTH_LONG,
+            ).show()
+            return
+        }
         if (requestCode == PHONE_GPS_PERMISSION_REQUEST) {
             val granted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED
@@ -424,6 +504,82 @@ class MainActivity :
                 SESSION_NOTIFICATION_PERMISSION_REQUEST,
             )
         }
+    }
+
+    private fun requestBluetooth(kind: PersistentUsbKind, asNewDevice: Boolean = false) {
+        val permissions = if (Build.VERSION.SDK_INT >= 31) {
+            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (permissions.all { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) {
+            beginBluetoothScan(kind, asNewDevice)
+        } else {
+            pendingBluetoothKind = kind
+            pendingBluetoothAsNewDevice = asNewDevice
+            requestPermissions(permissions, BLUETOOTH_PERMISSION_REQUEST)
+        }
+    }
+
+    private fun beginBluetoothScan(kind: PersistentUsbKind, asNewDevice: Boolean) {
+        setGlobalStatus("BLUETOOTH SCAN")
+        Toast.makeText(
+            this,
+            "Scanning for ${kind.displayName} Bluetooth…",
+            Toast.LENGTH_SHORT,
+        ).show()
+        firmwareBleScanner.scan(kind) { outcome -> runOnUiThread {
+            outcome.onSuccess { devices -> showBluetoothDevices(kind, devices, asNewDevice) }
+                .onFailure { error ->
+                    setGlobalStatus("BLUETOOTH UNAVAILABLE")
+                    Toast.makeText(
+                        this,
+                        error.message ?: "Bluetooth scan failed",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+        } }
+    }
+
+    private fun showBluetoothDevices(
+        kind: PersistentUsbKind,
+        devices: List<FirmwareBleDevice>,
+        asNewDevice: Boolean,
+    ) {
+        if (devices.isEmpty()) {
+            setGlobalStatus("BLUETOOTH NOT FOUND")
+            val setup = when (kind) {
+                PersistentUsbKind.GHOSTESP ->
+                    "No GhostESP Bridge was found. Keep the device powered and nearby; relay-only builds also need a configured GhostLink peer."
+                PersistentUsbKind.BRUCE ->
+                    "No Bruce BLE service was found. Enable BLE API on the Bruce device, then scan again."
+                PersistentUsbKind.MARAUDER ->
+                    "No Marauder UART service was found. Flash the mobile Marauder image, let it finish booting, then scan again."
+            }
+            AlertDialog.Builder(this)
+                .setTitle("No ${kind.displayName} Bluetooth device found")
+                .setMessage(setup)
+                .setPositiveButton("OK", null)
+                .show()
+            return
+        }
+        val labels = devices.map { device ->
+            "${device.name} · ${device.rssi} dBm\n${device.address}"
+        }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Connect ${kind.displayName} over Bluetooth")
+            .setItems(labels) { _, index ->
+                val selected = devices[index]
+                setGlobalStatus("BLUETOOTH CONNECTING")
+                PersistentDeviceConnections.addBluetooth(
+                    this,
+                    kind,
+                    selected.address,
+                    attachToSelected = !asNewDevice,
+                )
+            }
+            .setNegativeButton("CANCEL", null)
+            .show()
     }
 
     override fun onBruceNetworkAvailable(network: Network) {
@@ -566,7 +722,8 @@ class MainActivity :
 
     private fun detectUsbTarget(target: UsbDeviceTarget) {
         val assigned = PersistentDeviceConnections.assignedKind(target)
-        if (assigned != null && assigned in PersistentDeviceConnections.activeUsbKinds()) {
+        if (assigned != null && PersistentDeviceConnections.isUsbTargetConnected(target)) {
+            PersistentDeviceConnections.selectUsbTarget(target)
             restorePersistentUsbDetection(assigned)
             return
         }
@@ -610,8 +767,9 @@ class MainActivity :
             val requestedKind = kind.toPersistentUsbKind()
             if (
                 previousKind == requestedKind &&
-                requestedKind in PersistentDeviceConnections.activeUsbKinds()
+                PersistentDeviceConnections.isUsbTargetConnected(target)
             ) {
+                PersistentDeviceConnections.selectUsbTarget(target)
                 restorePersistentUsbDetection(requestedKind)
                 Toast.makeText(
                     this,
@@ -726,7 +884,11 @@ class MainActivity :
     }
 
     private fun applyDetection(incoming: FirmwareDetection) {
-        val previous = detectedFirmwares[incoming.kind]
+        val previous = incoming.usbTarget?.let { target ->
+            deviceDetections.values.firstOrNull {
+                it.usbTarget?.samePhysicalDevice(target) == true
+            }
+        } ?: detectedFirmwares[incoming.kind]
         val persistentTarget = if (incoming.kind == FirmwareKind.UNKNOWN) null else {
             PersistentDeviceConnections.target(incoming.kind.toPersistentUsbKind())
         }
@@ -743,13 +905,14 @@ class MainActivity :
         usbTransportDetached = false
         detectedFirmware = detection
         detectedFirmwares[detection.kind] = detection
-        if (detection.source == DetectionSource.USB && detection.usbTarget != null) {
+        val connectionId = if (detection.source == DetectionSource.USB && detection.usbTarget != null) {
             PersistentDeviceConnections.bindUsb(
                 this,
                 detection.kind.toPersistentUsbKind(),
                 detection.usbTarget,
             )
-        }
+        } else null
+        if (connectionId != null) deviceDetections[connectionId] = detection
         getSharedPreferences(SESSION_PREFS, MODE_PRIVATE).edit()
             .putString(PREF_FIRMWARE_KIND, detection.kind.name)
             .putString(PREF_DETECTION_SOURCE, detection.source.name)
@@ -811,7 +974,7 @@ class MainActivity :
         if (container.childCount == 0) showScreen(bruceView, FirmwareKind.BRUCE)
         else setTabAppearance(selectedScreen)
         setGlobalStatus(
-            if (PersistentDeviceConnections.activeUsbKinds().isEmpty()) "UNKNOWN" else "USB READY",
+            if (PersistentDeviceConnections.activeKinds().isEmpty()) "UNKNOWN" else "DEVICE READY",
         )
         updateFirmwareCards()
     }
@@ -945,6 +1108,10 @@ class MainActivity :
         appSubtitle.text = "CONTROLLER $controllerVersionName // $state"
     }
 
+    private fun setFirmwareGlobalStatus(kind: FirmwareKind, status: String) {
+        if (selectedScreen == kind) setGlobalStatus(status)
+    }
+
     private fun showScreen(view: View, selected: FirmwareKind) {
         selectedScreen = selected
         if (container.childCount != 1 || container.getChildAt(0) !== view) {
@@ -952,7 +1119,118 @@ class MainActivity :
             container.addView(view)
         }
         setTabAppearance(selected)
+        updateDeviceTabs()
+        refreshSelectedGlobalStatus()
+        if (::firmwareRepository.isInitialized) {
+            firmwareRepository.refreshIfStale(FIRMWARE_RESUME_REFRESH_AGE_MS)
+        }
         showReleaseNotice(selected)
+    }
+
+    private fun refreshSelectedGlobalStatus() {
+        when (selectedScreen) {
+            FirmwareKind.BRUCE -> if (::bruceController.isInitialized) {
+                bruceController.refreshGlobalStatus()
+            }
+            FirmwareKind.GHOSTESP -> if (::ghostController.isInitialized) {
+                ghostController.refreshGlobalStatus()
+            }
+            FirmwareKind.MARAUDER -> if (::marauderController.isInitialized) {
+                marauderController.refreshGlobalStatus()
+            }
+            FirmwareKind.UNKNOWN -> setGlobalStatus("IDLE")
+        }
+    }
+
+    override fun onDeviceConnectionsChanged(kind: PersistentUsbKind) = runOnUiThread {
+        refreshAndroidStorageStatus()
+        setTabAppearance(selectedScreen)
+        if (selectedScreen.toPersistentUsbKind() == kind) {
+            updateDeviceTabs()
+            updateUsbTargetCards()
+            refreshSelectedGlobalStatus()
+        }
+    }
+
+    private fun updateDeviceTabs() {
+        if (!::deviceTabs.isInitialized) return
+        val kind = selectedScreen.toPersistentUsbKind()
+        val devices = PersistentDeviceConnections.devices(kind)
+        devices.firstOrNull { it.selected }?.connectionId?.let { connectionId ->
+            if (displayedConnectionIds.put(kind, connectionId) != connectionId) {
+                notifyControllerSelection(kind, connectionId)
+            }
+        }
+        deviceTabs.removeAllViews()
+        devices.forEach { device ->
+            deviceTabs.addView(deviceTabButton(
+                text = "${device.displayLabel.substringAfter(" · ")} · ${device.transportLabel}",
+                selected = device.selected,
+            ) {
+                PersistentDeviceConnections.select(kind, device.connectionId)
+            })
+        }
+        deviceTabs.addView(deviceTabButton(
+            text = if (devices.isEmpty()) "+ ADD DEVICE" else "+ ADD",
+            selected = false,
+        ) { showAddDeviceDialog(kind) })
+    }
+
+    private fun deviceTabButton(
+        text: String,
+        selected: Boolean,
+        action: () -> Unit,
+    ): Button = Button(this).apply {
+        this.text = text
+        contentDescription = if (selected) "$text, selected device" else text
+        isSelected = selected
+        isAllCaps = false
+        textSize = 11f
+        minHeight = dp(40)
+        minimumHeight = dp(40)
+        setPadding(dp(12), 0, dp(12), 0)
+        setTextColor(getColor(if (selected) R.color.bg else R.color.text))
+        backgroundTintList = ColorStateList.valueOf(
+            getColor(if (selected) R.color.teal else R.color.surface_high),
+        )
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            marginEnd = dp(6)
+        }
+        setOnClickListener { action() }
+    }
+
+    private fun showAddDeviceDialog(kind: PersistentUsbKind) {
+        val labels = buildList {
+            add("Wired USB device")
+            add("Bluetooth device")
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Add ${kind.displayName} device")
+            .setItems(labels.toTypedArray()) { _, index ->
+                when (labels[index]) {
+                    "Wired USB device" -> selectUsbTargetFor(kind.toFirmwareKind())
+                    else -> requestBluetooth(kind, asNewDevice = true)
+                }
+            }
+            .setNegativeButton("CANCEL", null)
+            .show()
+    }
+
+    private fun notifyControllerSelection(kind: PersistentUsbKind, connectionId: String) {
+        deviceDetections[connectionId]?.let { detection ->
+            detectedFirmware = detection
+            detectedFirmwares[detection.kind] = detection
+            updateFirmwareCards()
+            notifyIfFirmwareUpdateExists()
+        }
+        when (kind) {
+            PersistentUsbKind.BRUCE -> bruceController.onDeviceSelected(connectionId)
+            PersistentUsbKind.GHOSTESP -> ghostController.onDeviceSelected(connectionId)
+            PersistentUsbKind.MARAUDER -> marauderController.onDeviceSelected(connectionId)
+        }
     }
 
     private fun setTabAppearance(selected: FirmwareKind) {
@@ -983,6 +1261,14 @@ class MainActivity :
         tabMarauder.setTextColor(
             getColor(if (selected == FirmwareKind.MARAUDER) R.color.bg else R.color.text),
         )
+        tabBruce.text = firmwareTabLabel("BRUCE", PersistentUsbKind.BRUCE)
+        tabGhost.text = firmwareTabLabel("GHOSTESP", PersistentUsbKind.GHOSTESP)
+        tabMarauder.text = firmwareTabLabel("MARAUDER", PersistentUsbKind.MARAUDER)
+    }
+
+    private fun firmwareTabLabel(label: String, kind: PersistentUsbKind): String {
+        val count = PersistentDeviceConnections.devices(kind).size
+        return if (count > 0) "$label ($count)" else label
     }
 
     private fun updateFirmwareCards() {
@@ -1215,6 +1501,9 @@ class MainActivity :
         PersistentDeviceConnections.disconnectUsbTarget(target)
         flashingKind = kind
         detectedFirmwares.entries.removeAll {
+            it.value.usbTarget?.samePhysicalDevice(target) == true
+        }
+        deviceDetections.entries.removeAll {
             it.value.usbTarget?.samePhysicalDevice(target) == true
         }
         if (detectedFirmware?.usbTarget?.samePhysicalDevice(target) == true) {
@@ -1582,7 +1871,7 @@ class MainActivity :
             menu.add(0, MENU_DETECT_USB, 0, "USB Detect")
             menu.add(0, MENU_CONNECT_BRUCENET, 1, "Connect BruceNet")
             menu.add(0, MENU_CONNECT_GHOSTNET, 2, "Connect GhostNet")
-            menu.add(0, MENU_CHOOSE_ANDROID_STORAGE, 3, "Choose Android storage")
+            menu.add(0, MENU_CHOOSE_ANDROID_STORAGE, 3, AndroidStorageRouting.capacityLabel(this@MainActivity))
             menu.add(0, MENU_SYNC_ANDROID_STORAGE, 4, "Sync Android storage now")
             setOnMenuItemClickListener { item ->
                 when (item.itemId) {
@@ -1628,6 +1917,7 @@ class MainActivity :
             contentResolver.takePersistableUriPermission(uri, permissions)
             AndroidStorageRouting.selectRoot(this, uri)
         }.onSuccess {
+            refreshAndroidStorageStatus()
             Toast.makeText(this, "Android storage selected; continuous sync is active", Toast.LENGTH_LONG)
                 .show()
             syncAndroidStorage()
@@ -1641,9 +1931,13 @@ class MainActivity :
     }
 
     private fun syncAndroidStorage() {
-        val kinds = PersistentDeviceConnections.activeUsbKinds()
+        val kinds = PersistentDeviceConnections.activeKinds()
         if (kinds.isEmpty()) {
-            Toast.makeText(this, "Connect a firmware over USB first", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Connect a firmware over USB or Bluetooth first",
+                Toast.LENGTH_SHORT,
+            ).show()
             return
         }
         if (AndroidStorageRouting.selectedRoot(this) == null) {
@@ -1665,9 +1959,10 @@ class MainActivity :
                         completeMessages.joinToString("\n"),
                         Toast.LENGTH_LONG,
                     ).show()
+                    refreshAndroidStorageStatus()
                     setGlobalStatus(
-                        if (PersistentDeviceConnections.activeUsbKinds().isNotEmpty()) {
-                            "USB READY"
+                        if (PersistentDeviceConnections.activeKinds().isNotEmpty()) {
+                            "DEVICE READY"
                         } else {
                             "READY"
                         },
@@ -1675,6 +1970,11 @@ class MainActivity :
                 }
             }
         }
+    }
+
+    private fun refreshAndroidStorageStatus() {
+        if (!::androidStorageStatus.isInitialized) return
+        androidStorageStatus.text = AndroidStorageRouting.capacityLabel(this)
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -1702,6 +2002,15 @@ class MainActivity :
         FirmwareKind.MARAUDER -> PersistentUsbKind.MARAUDER
         FirmwareKind.UNKNOWN -> error("Unknown firmware cannot own a USB session")
     }
+
+    private fun PersistentUsbKind.toFirmwareKind(): FirmwareKind = when (this) {
+        PersistentUsbKind.BRUCE -> FirmwareKind.BRUCE
+        PersistentUsbKind.GHOSTESP -> FirmwareKind.GHOSTESP
+        PersistentUsbKind.MARAUDER -> FirmwareKind.MARAUDER
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 
     @Suppress("DEPRECATION")
     private fun Intent.usbDevice(): UsbDevice? =

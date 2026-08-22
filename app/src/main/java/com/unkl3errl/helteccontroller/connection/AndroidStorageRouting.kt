@@ -2,19 +2,25 @@ package com.unkl3errl.helteccontroller.connection
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.os.StatFs
 import android.os.SystemClock
+import android.os.storage.StorageManager
+import android.provider.DocumentsContract
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import org.json.JSONObject
 import java.io.FileOutputStream
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import java.util.EnumMap
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.zip.CRC32
 
@@ -26,11 +32,11 @@ object AndroidStorageRouting {
     private const val PREFERENCES = "android_storage_routing"
     private const val ROOT_URI = "root_uri"
     private val lock = Any()
-    private val mirrors = EnumMap<PersistentUsbKind, StorageSpoolMirror>(PersistentUsbKind::class.java)
+    private val mirrors = linkedMapOf<String, StorageSpoolMirror>()
 
-    fun attach(context: Context, session: PersistentUsbSerialSession) {
+    internal fun attach(context: Context, session: PersistentDeviceSession) {
         synchronized(lock) {
-            mirrors.getOrPut(session.kind) {
+            mirrors.getOrPut(session.connectionId) {
                 StorageSpoolMirror(context.applicationContext, session)
             }
         }
@@ -55,28 +61,93 @@ object AndroidStorageRouting {
         synchronized(lock) { mirrors.values.toList() }.forEach { it.requestSync() }
     }
 
+    fun capacity(context: Context): VirtualSdCapacity? {
+        val uri = selectedRoot(context) ?: return null
+        val treeId = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull()
+            ?: return null
+        val requestedVolume = treeId.substringBefore(':')
+        val storageManager = context.getSystemService(StorageManager::class.java)
+        val volume = storageManager.storageVolumes.firstOrNull { candidate ->
+            if (requestedVolume.equals("primary", ignoreCase = true)) candidate.isPrimary
+            else candidate.uuid.equals(requestedVolume, ignoreCase = true)
+        } ?: return null
+        val directory = when {
+            Build.VERSION.SDK_INT >= 30 -> volume.directory
+            volume.isPrimary -> Environment.getExternalStorageDirectory()
+            else -> null
+        } ?: return null
+        return runCatching {
+            val stats = StatFs(directory.absolutePath)
+            VirtualSdCapacity(
+                totalBytes = stats.blockCountLong * stats.blockSizeLong,
+                freeBytes = stats.availableBlocksLong * stats.blockSizeLong,
+            )
+        }.getOrNull()?.takeIf { it.totalBytes > 0 && it.freeBytes in 0..it.totalBytes }
+    }
+
+    fun capacityLabel(context: Context): String {
+        if (selectedRoot(context) == null) return "VIRTUAL SD // CHOOSE ANDROID STORAGE"
+        val capacity = capacity(context) ?: return "VIRTUAL SD // ANDROID CAPACITY UNAVAILABLE"
+        return "VIRTUAL SD // ${formatCapacity(capacity.freeBytes)} FREE OF " +
+            formatCapacity(capacity.totalBytes)
+    }
+
     fun syncNow(
         context: Context,
         kind: PersistentUsbKind,
         completion: (String) -> Unit,
     ) {
-        val session = PersistentDeviceConnections.usb(context, kind)
-        val mirror = synchronized(lock) {
-            mirrors.getOrPut(kind) { StorageSpoolMirror(context.applicationContext, session) }
+        val sessions = PersistentDeviceConnections.activeSessions(kind)
+        if (sessions.isEmpty()) {
+            completion("No connected ${kind.displayName} device to sync")
+            return
         }
-        mirror.requestSync(completion)
+        val remaining = AtomicInteger(sessions.size)
+        val messages = CopyOnWriteArrayList<String>()
+        sessions.forEach { session ->
+            val mirror = synchronized(lock) {
+                mirrors.getOrPut(session.connectionId) {
+                    StorageSpoolMirror(context.applicationContext, session)
+                }
+            }
+            mirror.requestSync { message ->
+                messages += message
+                if (remaining.decrementAndGet() == 0) completion(messages.joinToString("\n"))
+            }
+        }
+    }
+
+    private fun formatCapacity(bytes: Long): String {
+        if (bytes < 1024) return "$bytes B"
+        val units = arrayOf("KB", "MB", "GB", "TB")
+        var value = bytes.toDouble()
+        var unit = -1
+        while (value >= 1024 && unit < units.lastIndex) {
+            value /= 1024.0
+            unit++
+        }
+        return String.format(Locale.US, if (value >= 100) "%.0f %s" else "%.1f %s", value, units[unit])
     }
 }
 
+data class VirtualSdCapacity(
+    val totalBytes: Long,
+    val freeBytes: Long,
+)
+
 private class StorageSpoolMirror(
     private val context: Context,
-    private val session: PersistentUsbSerialSession,
-) : PersistentUsbSerialSession.Listener {
+    private val session: PersistentDeviceSession,
+) : DeviceSerialSession.Listener {
     private companion object {
-        const val QUIET_WINDOW_MS = 10_000L
-        const val SYNC_INTERVAL_SECONDS = 10L
+        const val TAG = "StorageSpoolMirror"
+        const val QUIET_WINDOW_MS = 1_500L
+        const val SYNC_INTERVAL_SECONDS = 2L
         const val COMMAND_TIMEOUT_SECONDS = 8L
         const val READ_CHUNK_BYTES = 768L
+        // GhostESP emits command replies through glog's 512-byte line buffer.
+        // Keep the base64 line, prefix, and newline below that hard limit.
+        const val GHOST_READ_CHUNK_BYTES = 360L
         const val BRUCE_FIELD_READ_CHUNK_BYTES = 384
         const val MAX_DIRECTORIES = 128
         const val MAX_FILES = 512
@@ -152,27 +223,27 @@ private class StorageSpoolMirror(
     }
 
     private fun drainStableFiles(): Int {
-        check(session.isConnected) { "USB is not connected" }
+        check(session.isConnected) { "USB and Bluetooth are disconnected" }
         val rootUri = AndroidStorageRouting.selectedRoot(context)
             ?: error("Choose an Android storage folder first")
         val selectedRoot = DocumentFile.fromTreeUri(context, rootUri)
             ?: error("Android can no longer open the selected folder")
         check(selectedRoot.canWrite()) { "The selected Android folder is not writable" }
-        val archiveRoot = selectedRoot.findFile(session.kind.displayName)
+        val initialCapacity = AndroidStorageRouting.capacity(context)
+            ?: error("Android storage capacity is unavailable")
+        publishHostCapacity(initialCapacity)
+        val firmwareRoot = selectedRoot.findFile(session.kind.displayName)
             ?: selectedRoot.createDirectory(session.kind.displayName)
             ?: error("Could not create the ${session.kind.displayName} archive folder")
+        val deviceFolder = deviceFolderName(session)
+        val archiveRoot = firmwareRoot.findFile(deviceFolder)
+            ?: firmwareRoot.createDirectory(deviceFolder)
+            ?: error("Could not create the $deviceFolder device archive folder")
 
         val remoteFiles = listRemoteFiles()
         observations.keys.retainAll(remoteFiles.mapTo(mutableSetOf(), SdRemoteFile::path))
 
-        var released = if (session.kind == PersistentUsbKind.BRUCE) {
-            val fieldLogs = archiveRoot.findFile("FieldLogs")
-                ?: archiveRoot.createDirectory("FieldLogs")
-                ?: error("Could not create the Bruce FieldLogs archive folder")
-            drainBruceFieldLogs(fieldLogs)
-        } else {
-            0
-        }
+        var released = 0
         val now = SystemClock.elapsedRealtime()
         val stable = remoteFiles.filter { file ->
             if (!isArchiveCandidate(file.path)) return@filter false
@@ -190,7 +261,26 @@ private class StorageSpoolMirror(
             observations.remove(file.path)
             released++
         }
+        if (session.kind == PersistentUsbKind.BRUCE) {
+            val fieldLogResult = runCatching {
+                val fieldLogs = archiveRoot.findFile("FieldLogs")
+                    ?: archiveRoot.createDirectory("FieldLogs")
+                    ?: error("Could not create the Bruce FieldLogs archive folder")
+                drainBruceFieldLogs(fieldLogs)
+            }
+            released += fieldLogResult.getOrElse { error ->
+                // Field logging is optional. A disabled or temporarily unavailable logger
+                // must not prevent ordinary virtual-SD files from reaching Android.
+                Log.w(TAG, "Bruce field-log sync deferred", error)
+                0
+            }
+        }
+        AndroidStorageRouting.capacity(context)?.let(::publishHostCapacity)
         return released
+    }
+
+    private fun publishHostCapacity(capacity: VirtualSdCapacity) {
+        transact(SdStorageProtocol.hostCapacityCommand(capacity))
     }
 
     private fun drainBruceFieldLogs(directory: DocumentFile): Int {
@@ -431,7 +521,12 @@ private class StorageSpoolMirror(
             FileOutputStream(it.fileDescriptor).use { output ->
                 output.channel.position(offset)
                 while (offset < remote.size) {
-                    val length = minOf(READ_CHUNK_BYTES, remote.size - offset)
+                    val chunkBytes = if (session.kind == PersistentUsbKind.GHOSTESP) {
+                        GHOST_READ_CHUNK_BYTES
+                    } else {
+                        READ_CHUNK_BYTES
+                    }
+                    val length = minOf(chunkBytes, remote.size - offset)
                     val response = transact(
                         "sd read ${SdStorageProtocol.quotedPath(remote.path)} $offset $length --base64",
                     )
@@ -471,6 +566,20 @@ private class StorageSpoolMirror(
             collector.collect(command, send, COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         }
 
+}
+
+private fun deviceFolderName(session: PersistentDeviceSession): String {
+    // Use the transport identity that created the session. A session can later gain its fallback
+    // transport, but its Android archive folder must not change in the middle of a transfer.
+    val identity = when {
+        ":ble:" in session.connectionId -> session.connectionId.substringAfter(":ble:")
+        else -> session.usbTarget?.serialNumber?.takeIf(String::isNotBlank)
+            ?: session.bluetoothAddress
+    }
+        ?: session.connectionId.substringAfterLast(':')
+    val safe = identity.replace(Regex("[^A-Za-z0-9._-]"), "-").take(48).ifBlank { "device" }
+    val suffix = session.connectionId.hashCode().toUInt().toString(16).padStart(8, '0')
+    return "$safe-$suffix"
 }
 
 private class HeltecBridgeResponseCollector {

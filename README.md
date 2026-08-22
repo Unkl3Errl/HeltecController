@@ -4,7 +4,7 @@ This is the single Android companion for the independent Heltec WiFi LoRa 32 V4
 firmware builds in this workspace:
 
 - Bruce in [`Unkl3Errl/HeltecFirmware`](https://github.com/Unkl3Errl/HeltecFirmware)
-- GhostESP, adapted from the upstream `v2.1` stable release
+- GhostESP, adapted from the upstream `v2.1.1` stable release
 - ESP32 Marauder in the independent
   [`heltec-v4-full`](https://github.com/Unkl3Errl/ESP32Marauder/tree/heltec-v4-full)
   branch
@@ -27,13 +27,20 @@ USB recovery interface. It verifies the target chip and ROM security state,
 writes without a full-chip erase, checks the flashed MD5 on the device, and then
 restarts and redetects the firmware.
 
-Version 0.10.0 adds powered USB-hub operation. When more than one serial board
-is attached, Android shows every compatible physical target and the app requires
+Powered USB-hub operation allows more than one serial board to remain active.
+When multiple boards
+are attached, Android shows every compatible physical target and the app requires
 an explicit choice. A read-only firmware probe binds the verified device to its
-Bruce, GhostESP, or Marauder tab; each family then owns a separate persistent
-serial session, so all three wired connections can remain active together.
+Bruce, GhostESP, or Marauder tab. Each physical board owns a separate persistent
+session, including when two or more boards run the same firmware.
 Labels include the USB product, serial number when Android exposes one, and
 VID:PID. Without a serial number, Android's current USB path/device ID is shown.
+
+The firmware tabs contain a second row of device tabs. Select a device tab to
+route that screen's console and controls to that board; selecting another board
+does not disconnect the first. Each device keeps an independent console state,
+session history, storage transfer, and Android archive directory. Use **+ Add**
+to verify another wired board or discover another supported Bluetooth device.
 
 Flashing also presents the complete ESP32-S3 target list and repeats the exact
 selected identity in the destructive-action confirmation. Only that target's
@@ -51,13 +58,19 @@ an older version, the tab changes to an update action and the app shows an
 update notice.
 
 The app separately queries each project's official GitHub `releases/latest`
-endpoint over a validated internet connection. This keeps the newest stable
-upstream version and release date current even while the process is connected
-to a device-only Wi-Fi network. Drafts, prereleases, nightlies, and tags that
-are not stable semantic versions are ignored. If upstream is newer than the
-source baseline of the signed image, the tab reports **compatibility build
-pending**; it never substitutes a generic upstream binary for the customized
-Android-storage build.
+endpoint over a validated internet connection. It checks at launch, whenever
+the app resumes or a firmware tab is opened, every five minutes while the UI is
+visible, and through Android's network-aware background scheduler at roughly
+15-minute intervals. The last verified signed catalog and last valid upstream
+release state remain visible offline. A system notification distinguishes a
+new source release from a signed compatibility image that is actually ready to
+flash. Android and GitHub may defer background jobs, so the next launch/resume
+check is the immediate fallback.
+
+Drafts, prereleases, nightlies, and tags that are not stable semantic versions
+are ignored. If upstream is newer than the source baseline of the signed image,
+the tab reports **compatibility build pending**; it never substitutes a generic
+upstream binary for the customized Android-storage build.
 
 ## Firmware detection
 
@@ -96,9 +109,10 @@ that this ongoing background-session indicator remains visible.
 
 Tap the status badge, choose **Choose Android storage**, and grant a folder from
 Android's system picker. While a customized firmware is connected by USB, the
-foreground service checks the device spool every ten seconds, continues with
+foreground service checks every connected device spool every ten seconds, continues with
 the screen locked, and archives completed files beneath `Bruce`, `GhostESP`, or
-`Marauder` in that folder.
+`Marauder` in that folder. A stable per-device subdirectory prevents two boards
+running the same firmware from overwriting one another.
 
 Transfers are resumable and lossless: Android writes a stable partial document,
 flushes it, verifies its byte count and CRC-32, finalizes it, verifies it again,
@@ -121,11 +135,20 @@ continuous operation depends on reconnecting a writable Android destination
 before the remaining onboard reserve is consumed.
 
 The Bruce, GhostESP, and Marauder tabs are always available. Each firmware view
-keeps its own scroll position, and its controller remains active while another
-tab is visible. Up to one verified USB board per firmware family and one Android
-local-only Wi-Fi session can run together. Switching between BruceNet and GhostNet replaces the current
+keeps its own scroll position, and every verified USB or supported Bluetooth
+device remains active while another firmware or device tab is visible. Multiple
+boards may run the same firmware simultaneously. Switching between BruceNet and GhostNet replaces the current
 Wi-Fi access-point request because Android can associate with only one of those
 local APs at a time. Selecting a tab never disconnects either transport.
+
+Bruce can use its BLE API service, and GhostESP can use the upstream GhostESP
+Bridge GATT service. Android performs GATT discovery and subscription itself;
+the user only enables Bluetooth, grants **Nearby devices**, and selects the
+advertised board in the app. Manual pairing in Android Settings is not required.
+USB remains preferred when USB and Bluetooth belong to the selected device.
+Marauder does not currently advertise a phone-facing GATT service, so its app
+transport remains USB-only. GhostESP Bridge requires its upstream GhostLink
+bridge-board arrangement.
 
 Bruce can also be detected without USB. **Connect BruceNet** in the status menu requests the
 default local-only `BruceNet` / `brucenet` network and verifies the Bruce WebUI
@@ -266,7 +289,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.13.1`, code 33.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.13.3`, code 35.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password

@@ -43,6 +43,7 @@ class BruceScreenController(
     private val requestPhoneWifi: (Boolean) -> Unit,
     private val requestFieldLogExport: (String) -> Unit,
     private val requestDeviceFileExport: (String) -> Unit,
+    private val requestBluetooth: () -> Unit,
     private val setGlobalStatus: (String) -> Unit,
 ) {
     private companion object {
@@ -84,6 +85,7 @@ class BruceScreenController(
         activity,
         root,
         setGlobalStatus,
+        requestBluetooth,
         ::onUsbBridgeState,
     )
 
@@ -124,6 +126,13 @@ class BruceScreenController(
         root.findViewById<Button>(R.id.bruceFileManager).setOnClickListener { showFileManager("/") }
     }
 
+    fun refreshGlobalStatus() {
+        setGlobalStatus(
+            usbConsole.globalStatusLabel()
+                ?: if (client.network != null) "BRUCENET" else "IDLE",
+        )
+    }
+
     fun onNetworkAvailable() {
         connectionStatus.text = "BruceNet local link available · logging in…"
         loginAfterNetworkApproval = false
@@ -140,6 +149,11 @@ class BruceScreenController(
             connectionStatus.text = "Bruce detected over USB · connect BruceNet for the Web UI"
         }
         usbConsole.connectBridge()
+    }
+
+    fun onDeviceSelected(connectionId: String) {
+        usbConsole.onDeviceSelected(connectionId)
+        connectionStatus.text = "Selected Bruce device · use its active USB, Bluetooth, or BruceNet link"
     }
 
     fun onNetworkError(message: String) {

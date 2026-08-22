@@ -38,6 +38,19 @@ fi
 dist_dir="$project_dir/dist"
 release_apk="$dist_dir/HeltecController-$version_name.apk"
 mkdir -p "$dist_dir"
+
+# Keep the release directory unambiguous. Old APKs and firmware images can be
+# mistaken for the current signed release when the directory is uploaded.
+for old_release_artifact in \
+    "$dist_dir"/HeltecController-*.apk* \
+    "$dist_dir"/bruce-*.bin* \
+    "$dist_dir"/ghostesp-*.bin* \
+    "$dist_dir"/marauder-*.bin*
+do
+    [ -e "$old_release_artifact" ] || continue
+    rm -f -- "$old_release_artifact"
+done
+
 install -m 0644 "$source_apk" "$release_apk"
 
 for bundled_firmware in "$project_dir"/app/src/main/assets/firmware/*.bin; do

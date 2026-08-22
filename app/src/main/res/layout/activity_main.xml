@@ -67,6 +67,17 @@
         android:layout_marginRight="18dp"
         android:text="Automatic USB detection is active. Tap the status badge for connection options." />
 
+    <TextView
+        android:id="@+id/androidStorageStatus"
+        style="@style/MutedText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="18dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginRight="18dp"
+        android:text="VIRTUAL SD // CHOOSE ANDROID STORAGE"
+        android:textStyle="bold" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -103,6 +114,23 @@
             android:layout_weight="1"
             android:text="MARAUDER" />
     </LinearLayout>
+
+    <HorizontalScrollView
+        android:id="@+id/deviceTabsScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fillViewport="false"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/deviceTabs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp" />
+    </HorizontalScrollView>
 
     <FrameLayout
         android:id="@+id/screenContainer"

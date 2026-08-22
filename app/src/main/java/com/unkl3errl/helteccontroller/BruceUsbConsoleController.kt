@@ -28,17 +28,22 @@ class BruceUsbConsoleController(
     private val activity: Activity,
     root: View,
     private val setGlobalStatus: (String) -> Unit,
+    private val requestBluetooth: () -> Unit,
     private val bridgeState: (Boolean, String) -> Unit,
 ) : BruceUsbSerial.Listener {
     private val status: TextView = root.findViewById(R.id.bruceUsbStatus)
+    private val bluetoothStatus: TextView = root.findViewById(R.id.bruceBluetoothStatus)
     private val console: TextView = root.findViewById(R.id.bruceUsbConsole)
     private val consoleLive: Button = root.findViewById(R.id.bruceUsbConsoleLive)
     private val input: EditText = root.findViewById(R.id.bruceUsbCommand)
     private val serial = BruceUsbSerial(activity, this)
     private val buffer = StringBuilder("Connect the Bruce device to begin.\n")
+    private val deviceBuffers = mutableMapOf<String, String>()
+    private var currentConnectionId = serial.connectionId
     private val bridgeBuffer = StringBuilder()
     private val bridgeRequests = ConcurrentHashMap<Long, CompletableFuture<JSONObject>>()
     private val bridgeSequence = AtomicLong()
+    private val protocolFilter = SerialConsoleProtocolFilter()
     private var consoleFollowing = true
 
     val isBridgeConnected: Boolean get() = serial.isConnected
@@ -61,11 +66,20 @@ class BruceUsbConsoleController(
             serial.connect()
         }
         root.findViewById<Button>(R.id.bruceUsbDisconnect).setOnClickListener {
-            serial.close()
+            serial.disconnectUsb()
+        }
+        root.findViewById<Button>(R.id.bruceBluetoothConnect).setOnClickListener {
+            bluetoothStatus.text = "Scanning for the Bruce BLE serial service…"
+            requestBluetooth()
+        }
+        root.findViewById<Button>(R.id.bruceBluetoothDisconnect).setOnClickListener {
+            serial.disconnectBluetooth()
+            bluetoothStatus.text = "Bruce Bluetooth disconnected"
         }
         root.findViewById<Button>(R.id.bruceUsbClear).setOnClickListener {
             buffer.clear()
             consoleText.reset()
+            protocolFilter.reset()
             console.text = ""
             setConsoleFollowing(true)
             console.scrollTo(0, 0)
@@ -95,19 +109,40 @@ class BruceUsbConsoleController(
     }
 
     fun destroy() {
-        failBridgeRequests("Bruce USB bridge closed")
+        failBridgeRequests("Bruce device bridge closed")
         serial.destroy()
     }
 
     fun connectBridge() = serial.connect()
+
+    fun onDeviceSelected(connectionId: String) {
+        if (currentConnectionId == connectionId) return
+        deviceBuffers[currentConnectionId] = buffer.toString()
+        failBridgeRequests("Switched to another Bruce device")
+        bridgeBuffer.clear()
+        protocolFilter.reset()
+        currentConnectionId = connectionId
+        buffer.clear()
+        buffer.append(deviceBuffers[connectionId] ?: "Selected Bruce device.\n")
+        consoleText.reset()
+        console.text = buffer.toString()
+        setConsoleFollowing(true)
+        console.post(::scrollConsoleToBottom)
+    }
+
+    fun globalStatusLabel(): String? = when {
+        serial.isUsbConnected -> "BRUCE USB"
+        serial.isBluetoothConnected -> "BRUCE BLUETOOTH"
+        else -> null
+    }
 
     fun bridgeRequest(
         action: String,
         values: Map<String, String> = emptyMap(),
         timeoutMs: Long = 7_000L,
     ): JSONObject {
-        if (!serial.isConnected) throw IllegalStateException("Connect the Bruce USB device first")
-        require(action in BRIDGE_ACTIONS) { "Unsupported USB bridge action" }
+        if (!serial.isConnected) throw IllegalStateException("Connect Bruce over USB or Bluetooth first")
+        require(action in BRIDGE_ACTIONS) { "Unsupported device bridge action" }
         val id = bridgeSequence.incrementAndGet()
         val future = CompletableFuture<JSONObject>()
         bridgeRequests[id] = future
@@ -138,14 +173,14 @@ class BruceUsbConsoleController(
 
     private fun sendGuarded(command: String, sent: () -> Unit = {}) {
         if (!serial.isConnected) {
-            toast("Connect the Bruce USB device first")
+            toast("Connect Bruce over USB or Bluetooth first")
             return
         }
         when (BruceCommandSafety.classify(command)) {
             BruceCommandRisk.SAFE -> send(command, sent)
             BruceCommandRisk.CONFIRM -> AlertDialog.Builder(activity)
                 .setTitle("Send unclassified Bruce command?")
-                .setMessage("Review this command before sending it over USB:\n\n$command")
+                .setMessage("Review this command before sending it over the active device link:\n\n$command")
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Send") { _, _ -> send(command, sent) }
                 .show()
@@ -181,27 +216,40 @@ class BruceUsbConsoleController(
 
     private fun send(command: String, sent: () -> Unit) {
         append("\n> $command\n")
-        serial.writeCommand(command)
+        serial.writeCommand(command) {
+            if (command.trim().startsWith("sd", ignoreCase = true)) {
+                protocolFilter.showNextStorageResponse()
+            }
+        }
         sent()
     }
 
     override fun onBruceUsbStatus(message: String, connected: Boolean) = activity.runOnUiThread {
         if (!connected) failBridgeRequests(message)
-        status.text = message
-        setGlobalStatus(if (connected) "BRUCE USB" else "IDLE")
+        if (message.contains("Bluetooth", ignoreCase = true)) bluetoothStatus.text = message
+        else status.text = message
+        setGlobalStatus(
+            when {
+                serial.isUsbConnected -> "BRUCE USB"
+                serial.isBluetoothConnected -> "BRUCE BLUETOOTH"
+                else -> "IDLE"
+            },
+        )
         append("\n[link] $message\n")
         bridgeState(connected, message)
     }
 
     override fun onBruceUsbData(data: ByteArray) {
-        parseBridgeData(data.toString(Charsets.UTF_8))
-        activity.runOnUiThread { append(data.toString(Charsets.UTF_8)) }
+        val raw = data.toString(Charsets.UTF_8)
+        parseBridgeData(raw)
+        val visible = protocolFilter.filter(raw)
+        if (visible.isNotEmpty()) activity.runOnUiThread { append(visible) }
     }
 
     override fun onBruceUsbError(message: String) = activity.runOnUiThread {
         failBridgeRequests(message)
         append("\n[error] $message\n")
-        setGlobalStatus("USB ERROR")
+        setGlobalStatus("DEVICE LINK ERROR")
         toast(message)
     }
 

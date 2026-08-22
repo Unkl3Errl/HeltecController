@@ -37,6 +37,13 @@ data class FirmwareCatalog(
     val releases: Map<FirmwareKind, FirmwareRelease>,
 )
 
+internal fun FirmwareCatalog.isAtLeastAsNewAs(baseline: FirmwareCatalog): Boolean =
+    generatedAt >= baseline.generatedAt && baseline.releases.all { (kind, baselineRelease) ->
+        releases[kind]?.let { candidate ->
+            FirmwareVersion.isOlder(candidate.version, baselineRelease.version) != true
+        } == true
+    }
+
 object FirmwareCatalogParser {
     fun parse(text: String): FirmwareCatalog {
         val root = JSONObject(text)

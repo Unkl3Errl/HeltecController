@@ -11,12 +11,12 @@
     {
       "id": "bruce",
       "displayName": "Bruce",
-      "version": "1.16.1-mobile.2",
+      "version": "1.16.1-mobile.3",
       "releasedAt": "2026-08-21",
-      "summary": "Complete recovery image with low-voltage boot recovery, resilient Android-backed storage, and acknowledged rolling field-log handoff.",
+      "summary": "Complete recovery image with automatic phone-facing Bluetooth at boot, Android-capacity reporting, and acknowledged rolling field-log handoff.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/HeltecFirmware",
-        "commit": "2576f3e1615cec4e8592b4cdb813ef87e24e4c49"
+        "commit": "0cd22dd059b83c6686a481375c8070706bdcbfee"
       },
       "upstream": {
         "repository": "https://github.com/BruceDevices/firmware",
@@ -25,56 +25,56 @@
         "baselineCommit": "ba519c936c87b89c9c667c15b932d7faca5360d5"
       },
       "image": {
-        "asset": "bruce-1.16.1-mobile.2.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.1/bruce-1.16.1-mobile.2.bin",
-        "sha256": "6377e6bd72005e9b829a640aef434d04bc2778f3003f065bd4050b09cab2d6de",
-        "sizeBytes": 3884048
+        "asset": "bruce-1.16.1-mobile.3.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.3/bruce-1.16.1-mobile.3.bin",
+        "sha256": "ebb4e7a08d6f1c3322a34f58f24775fff7df480836fe80f95e7ff710993153dc",
+        "sizeBytes": 3885744
       }
     },
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.0-mobile.5",
-      "releasedAt": "2026-08-13",
-      "summary": "Complete recovery image with reliable virtual-storage initialization, acknowledged Android archive handoff, and persistent Web UI settings.",
+      "version": "2.1.1-mobile.10",
+      "releasedAt": "2026-08-21",
+      "summary": "GhostESP 2.1.1 recovery image with reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, persistent Web UI settings, and a cache-safe BLE storage worker.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "a1ac57c8e8b278453d8ff33a62b4a8ccab300dd4"
+        "commit": "f41162362c0a08cd38500af46099648129ac06a3"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
         "latestReleaseApi": "https://api.github.com/repos/GhostESP-Revival/GhostESP/releases/latest",
-        "baselineVersion": "2.1",
-        "baselineCommit": "9151548e8d841afb38f97ac9bc31d4e33e71a243"
+        "baselineVersion": "2.1.1",
+        "baselineCommit": "4ea9b59b9f6eb921a6d2566d86fdc02e2bedfbf6"
       },
       "image": {
-        "asset": "ghostesp-2.1.0-mobile.5.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.0/ghostesp-2.1.0-mobile.5.bin",
-        "sha256": "80b03b97aaa0769e2758f09d92875a3c51e77c7a22fb2dad0ac870f7ab51d891",
-        "sizeBytes": 3124000
+        "asset": "ghostesp-2.1.1-mobile.10.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.3/ghostesp-2.1.1-mobile.10.bin",
+        "sha256": "b27d108954552c19e5654c0bb1b8a68fc922dc6e5e7f6c305cc4de926c9124a3",
+        "sizeBytes": 3176160
       }
     },
     {
       "id": "marauder",
       "displayName": "Marauder",
-      "version": "1.14.1-mobile.5",
+      "version": "1.15.0-mobile.5",
       "releasedAt": "2026-08-21",
-      "summary": "Complete recovery image with low-voltage boot recovery, recoverable Android-backed storage, and acknowledged rolling capture handoff.",
+      "summary": "Complete recovery image with persistent phone-facing Bluetooth, Android-sized virtual SD reporting, acknowledged rolling handoff, and loss-resistant spool backpressure.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
-        "commit": "f1306d18741252fcea08e9a883308e9fe785be1a"
+        "commit": "f5d941db3db9f28ed0eab9e743a4e7b2cef10aae"
       },
       "upstream": {
         "repository": "https://github.com/justcallmekoko/ESP32Marauder",
         "latestReleaseApi": "https://api.github.com/repos/justcallmekoko/ESP32Marauder/releases/latest",
-        "baselineVersion": "1.14.1",
-        "baselineCommit": "43aa8bc127f95c9ea205726bd1e059b4bacd97d9"
+        "baselineVersion": "1.15.0",
+        "baselineCommit": "6e375e377abb70084720484e9b25de485627f688"
       },
       "image": {
-        "asset": "marauder-1.14.1-mobile.5.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.1/marauder-1.14.1-mobile.5.bin",
-        "sha256": "cb521840c2dab03e76380e5adef12acdd49228533bc44c66241a2a98868f17ea",
-        "sizeBytes": 1276896
+        "asset": "marauder-1.15.0-mobile.5.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.3/marauder-1.15.0-mobile.5.bin",
+        "sha256": "d56d4797093160d92edc72e427e2301528b8ef89a50e9928daa1f83348167735",
+        "sizeBytes": 1286608
       }
     }
   ]

@@ -1,11 +1,11 @@
 package com.unkl3errl.helteccontroller.ghost
 
 import android.content.Context
+import com.unkl3errl.helteccontroller.connection.DeviceSerialSession
 import com.unkl3errl.helteccontroller.connection.PersistentDeviceConnections
 import com.unkl3errl.helteccontroller.connection.PersistentUsbKind
-import com.unkl3errl.helteccontroller.connection.PersistentUsbSerialSession
 
-/** GhostESP-specific view of the process-wide USB session. */
+/** GhostESP-specific view of the device currently selected beneath the GhostESP tab. */
 class GhostUsbSerial(
     context: Context,
     private val listener: Listener,
@@ -16,8 +16,8 @@ class GhostUsbSerial(
         fun onSerialError(message: String)
     }
 
-    private val session = PersistentDeviceConnections.usb(context, PersistentUsbKind.GHOSTESP)
-    private val relay = object : PersistentUsbSerialSession.Listener {
+    private val session = PersistentDeviceConnections.selection(context, PersistentUsbKind.GHOSTESP)
+    private val relay = object : DeviceSerialSession.Listener {
         override fun onStatus(message: String, connected: Boolean) =
             listener.onSerialStatus(message, connected)
 
@@ -29,17 +29,33 @@ class GhostUsbSerial(
     val isConnected: Boolean
         get() = session.isConnected
 
+    val isUsbConnected: Boolean
+        get() = session.isUsbConnected
+
+    val isBluetoothConnected: Boolean
+        get() = session.isBluetoothConnected
+
+    val connectionId: String
+        get() = session.connectionId
+
     init {
         session.addListener(relay)
     }
 
-    fun connect() = session.connect()
+    fun connect() = session.connectUsb()
+
+    fun connectBluetooth(address: String) = session.connectBluetooth(address)
+
+    fun disconnectUsb() = session.disconnectUsb()
+
+    fun disconnectBluetooth() = session.disconnectBluetooth()
 
     fun write(data: ByteArray) = session.write(data)
 
-    fun writeCommand(command: String) = session.writeCommand(command)
+    fun writeCommand(command: String, onDispatched: () -> Unit = {}) =
+        session.writeCommand(command, onDispatched)
 
-    fun disconnect() = session.disconnect()
+    fun disconnect() = session.disconnectAll()
 
     fun close() = disconnect()
 

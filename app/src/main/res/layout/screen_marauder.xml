@@ -87,14 +87,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Session recording starts automatically with the USB link" />
+                android:text="Session recording starts automatically with a device link" />
 
             <TextView
                 style="@style/MutedText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="The app detects and opens Marauder automatically after USB-C attachment. Android must be the USB host; use Reconnect only for link recovery." />
+                android:text="The app detects and opens Marauder automatically after USB-C attachment. Android must be the USB host; use Reconnect only for link recovery. USB is preferred while both links are connected." />
 
             <TextView
                 style="@style/MutedText"
@@ -102,7 +102,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="10dp"
-                android:text="Validated with ESP32 Marauder v1.14.1 on Heltec V4. OLED PRG: 1x next, hold select/start, 2x back/stop; the first press wakes a blank display." />
+                android:text="Validated with ESP32 Marauder v1.15.0-mobile.4 on the Heltec V4 device type. OLED PRG: 1x next, hold select/start, 2x back/stop; the first press wakes a blank display." />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -110,7 +110,42 @@
                 android:orientation="horizontal">
 
                 <Button android:id="@+id/marauderConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="4dp" android:layout_weight="1" android:text="RECONNECT USB" />
-                <Button android:id="@+id/marauderDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="4dp" android:layout_weight="1" android:text="DISCONNECT" />
+                <Button android:id="@+id/marauderDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="4dp" android:layout_weight="1" android:text="DISCONNECT USB" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BLUETOOTH UART LINK" />
+
+            <TextView
+                android:id="@+id/marauderBluetoothStatus"
+                style="@style/BodyText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Marauder Bluetooth is not connected" />
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="10dp"
+                android:text="The mobile firmware advertises a Marauder UART service for commands, console output, and virtual-SD synchronization. Passive BLE scans can share the radio; BLE transmit/spoof operations may temporarily interrupt this link." />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/marauderBluetoothConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="4dp" android:layout_weight="1" android:text="CONNECT BLUETOOTH" />
+                <Button android:id="@+id/marauderBluetoothDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="4dp" android:layout_weight="1" android:text="DISCONNECT" />
             </LinearLayout>
         </LinearLayout>
 
@@ -259,7 +294,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="USB sessions are timestamped in private app storage. Password-like join arguments are redacted before saving. History can be viewed, renamed, exported, shared, or deleted." />
+                android:text="Device sessions are timestamped in private app storage. Password-like join arguments are redacted before saving. History can be viewed, renamed, exported, shared, or deleted." />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
                 <Button android:id="@+id/marauderSessionHistory" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="4dp" android:layout_weight="1" android:text="SESSIONS" />

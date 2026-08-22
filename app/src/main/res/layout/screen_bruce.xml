@@ -250,7 +250,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BRUCE USB CONSOLE" />
+            <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BRUCE DEVICE CONSOLE" />
 
             <TextView
                 android:id="@+id/bruceUsbStatus"
@@ -266,7 +266,32 @@
                 android:orientation="horizontal">
 
                 <Button android:id="@+id/bruceUsbConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="RECONNECT USB" />
-                <Button android:id="@+id/bruceUsbDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="DISCONNECT" />
+                <Button android:id="@+id/bruceUsbDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="DISCONNECT USB" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/bruceBluetoothStatus"
+                style="@style/BodyText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Bruce Bluetooth is not connected" />
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Uses Bruce's existing BLE serial service when BLE API is enabled on the device. USB remains preferred while both links are active." />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/bruceBluetoothConnect" style="@style/ActionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="CONNECT BLUETOOTH" />
+                <Button android:id="@+id/bruceBluetoothDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="DISCONNECT BLUETOOTH" />
             </LinearLayout>
 
             <LinearLayout
