@@ -19,6 +19,7 @@ import com.unkl3errl.helteccontroller.usb.UsbDeviceTarget
 import java.util.EnumMap
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -55,6 +56,7 @@ class PersistentUsbSerialSession internal constructor(
     private val backlogLock = Any()
     private val backlog = ArrayDeque<ByteArray>()
     private var backlogBytes = 0
+    private val expectedRunError = AtomicBoolean(false)
 
     @Volatile
     private var port: UsbSerialPort? = null
@@ -105,7 +107,7 @@ class PersistentUsbSerialSession internal constructor(
 
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
                     if (intent.usbDevice()?.deviceId == currentDeviceId) {
-                        closePort()
+                        closePort(expectRunError = true)
                         emitStatus("${kind.displayName} USB device disconnected", false)
                     }
                 }
@@ -211,7 +213,7 @@ class PersistentUsbSerialSession internal constructor(
             try {
                 commandLock.withLock { activePort.write(data, 2_000) }
             } catch (error: Exception) {
-                closePort()
+                closePort(expectRunError = true)
                 emitError("USB write failed: ${error.message ?: error.javaClass.simpleName}")
                 emitStatus("${kind.displayName} USB disconnected after a transport error", false)
             }
@@ -238,7 +240,7 @@ class PersistentUsbSerialSession internal constructor(
                             2_000,
                         )
                     } catch (error: Exception) {
-                        closePort()
+                        closePort(expectRunError = true)
                         emitError("USB command failed: ${error.message ?: error.javaClass.simpleName}")
                         emitStatus(
                             "${kind.displayName} USB disconnected after a transport error",
@@ -255,7 +257,7 @@ class PersistentUsbSerialSession internal constructor(
     fun disconnect() {
         val wasConnected = isConnected || pendingDriver != null
         pendingDriver = null
-        closePort()
+        closePort(expectRunError = true)
         if (wasConnected) emitStatus("${kind.displayName} USB disconnected", false)
     }
 
@@ -287,6 +289,10 @@ class PersistentUsbSerialSession internal constructor(
     }
 
     override fun onRunError(error: Exception) {
+        // SerialInputOutputManager reports "Connection closed" when stop() closes a healthy
+        // session. The caller already published the intended transport state, so keep that
+        // callback out of the command console. Genuine reader failures still surface here.
+        if (expectedRunError.getAndSet(false)) return
         closePort()
         emitError("USB serial stopped: ${error.message ?: error.javaClass.simpleName}")
         emitStatus("${kind.displayName} USB disconnected", false)
@@ -332,13 +338,19 @@ class PersistentUsbSerialSession internal constructor(
             )
             DeviceConnectionService.refresh(appContext)
         } catch (error: Exception) {
-            closePort()
+            closePort(expectRunError = true)
             emitError("USB connection failed: ${error.message ?: error.javaClass.simpleName}")
             emitStatus("${kind.displayName} USB connection failed", false)
         }
     }
 
-    private fun closePort() {
+    private fun closePort(expectRunError: Boolean = false) {
+        if (expectRunError && ioManager != null) {
+            expectedRunError.set(true)
+            // stop() normally reports immediately, but do not let a missing callback suppress
+            // a later, unrelated transport failure after a reconnect.
+            mainHandler.postDelayed({ expectedRunError.set(false) }, 2_000L)
+        }
         ioManager?.stop()
         ioManager = null
         runCatching { port?.close() }
