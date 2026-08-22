@@ -245,8 +245,10 @@ Reconnect control remains available for permission or cable recovery. The app pr
   Transmit/state-changing commands require typed `AUTHORIZE`; unknown commands
   require explicit review.
 
-Marauder Bluetooth scanning is a firmware feature, not an app transport. The
-current Marauder build still requires USB for Android control.
+Marauder Bluetooth scanning remains a firmware feature, while the customized
+mobile image also advertises a separate phone-facing UART GATT service for
+Android commands, console output, and virtual-SD synchronization. USB remains
+the preferred transport when it is connected.
 
 ## Bruce phone-assisted Wi-Fi logging
 
