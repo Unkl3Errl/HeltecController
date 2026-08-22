@@ -47,7 +47,8 @@ internal class SerialConsoleProtocolFilter {
                         val candidate = protocolCandidate(undecidedPrefix)
                         when {
                             isCompleteMarker(candidate, BRIDGE_MARKER) ||
-                                isCompleteMarker(candidate, STORAGE_HOST_MARKER) -> {
+                                isCompleteMarker(candidate, STORAGE_HOST_MARKER) ||
+                                isCompleteMarker(candidate, STORAGE_COMMAND_MARKER) -> {
                                 undecidedPrefix.clear()
                                 suppressLine = true
                             }
@@ -130,8 +131,14 @@ internal class SerialConsoleProtocolFilter {
         const val BRIDGE_MARKER = "@HELTEC-BRIDGE"
         const val STORAGE_RESPONSE_MARKER = "SD:"
         const val STORAGE_HOST_MARKER = "SD HOST"
+        const val STORAGE_COMMAND_MARKER = "SD "
         const val STORAGE_RESPONSE_TIMEOUT_NANOS = 5_000_000_000L
         val PROMPT_CHARACTERS = setOf('>', '#', '$')
-        val protocolMarkers = listOf(BRIDGE_MARKER, STORAGE_RESPONSE_MARKER, STORAGE_HOST_MARKER)
+        val protocolMarkers = listOf(
+            BRIDGE_MARKER,
+            STORAGE_RESPONSE_MARKER,
+            STORAGE_HOST_MARKER,
+            STORAGE_COMMAND_MARKER,
+        )
     }
 }

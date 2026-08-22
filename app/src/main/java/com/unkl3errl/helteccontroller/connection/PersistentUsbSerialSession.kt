@@ -407,13 +407,40 @@ object PersistentDeviceConnections {
         val id: String
         synchronized(lock) {
             val conflictingIds = deviceSessions.values
-                .filter { it.kind != kind && it.usbTarget?.samePhysicalDevice(target) == true }
+                .filter {
+                    it.kind != kind &&
+                        (
+                            it.usbTarget?.samePhysicalDevice(target) == true ||
+                                Esp32BluetoothIdentity.sameHardware(
+                                    it.bluetoothAddress,
+                                    target.serialNumber,
+                                )
+                        )
+                }
                 .map(PersistentDeviceSession::connectionId)
-            conflictingIds.forEach(::removeSessionLocked)
+            conflictingIds.forEach { removeSessionLocked(it, forgetBluetooth = true) }
 
-            id = deviceSessions.values.firstOrNull {
+            // USB exposes the ESP32 base MAC while BLE commonly exposes another address from
+            // the same four-address block. Attach USB to that existing BLE session so one board
+            // has one command lock, one storage mirror, and USB-first/BLE-fallback routing.
+            val bluetoothMatch = deviceSessions.values.firstOrNull {
+                it.kind == kind &&
+                    it.bluetoothAddress != null &&
+                    Esp32BluetoothIdentity.sameHardware(
+                        it.bluetoothAddress,
+                        target.serialNumber,
+                    )
+            }
+            val usbMatch = deviceSessions.values.firstOrNull {
                 it.kind == kind && it.usbTarget?.samePhysicalDevice(target) == true
-            }?.connectionId ?: usbConnectionId(kind, target)
+            }
+            if (bluetoothMatch != null && usbMatch != null && bluetoothMatch !== usbMatch) {
+                removeSessionLocked(usbMatch.connectionId)
+            }
+
+            id = bluetoothMatch?.connectionId
+                ?: usbMatch?.connectionId
+                ?: usbConnectionId(kind, target)
             val session = deviceSessions[id] ?: createSessionLocked(context, kind, id)
             usbSessions.getValue(id).bind(target)
             selectedIds[kind] = id

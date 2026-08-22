@@ -33,6 +33,9 @@ class SerialConsoleProtocolFilterTest {
     fun `hides background storage protocol and prompt fragments`() {
         val filter = SerialConsoleProtocolFilter()
 
+        assertEquals("", filter.filter("sd list /mnt/ghostesp/scans\r\n"))
+        assertEquals("", filter.filter("> sd read /mnt/ghostesp/scans/test.bin 0 128\r\n"))
+        assertEquals("", filter.filter("# sD ack /mnt/ghostesp/scans/test.bin 128 C0FFEE\r\n"))
         assertEquals("", filter.filter("# SD:HOST:free=123\r\n"))
         assertEquals("", filter.filter("SD:OK:host-capacity\r\n"))
         assertEquals("", filter.filter("# \r\n"))

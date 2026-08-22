@@ -19,6 +19,12 @@ class Esp32BluetoothIdentityTest {
                 "8C:FD:49:B5:E0:A2",
             ),
         )
+        assertTrue(
+            Esp32BluetoothIdentity.sameHardware(
+                "8C:FD:49:B6:8C:16",
+                "8C:FD:49:B6:8C:14",
+            ),
+        )
     }
 
     @Test

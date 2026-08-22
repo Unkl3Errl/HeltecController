@@ -569,8 +569,13 @@ private class StorageSpoolMirror(
 }
 
 private fun deviceFolderName(session: PersistentDeviceSession): String {
-    val identity = session.usbTarget?.serialNumber?.takeIf(String::isNotBlank)
-        ?: session.bluetoothAddress
+    // Use the transport identity that created the session. A session can later gain its fallback
+    // transport, but its Android archive folder must not change in the middle of a transfer.
+    val identity = when {
+        ":ble:" in session.connectionId -> session.connectionId.substringAfter(":ble:")
+        else -> session.usbTarget?.serialNumber?.takeIf(String::isNotBlank)
+            ?: session.bluetoothAddress
+    }
         ?: session.connectionId.substringAfterLast(':')
     val safe = identity.replace(Regex("[^A-Za-z0-9._-]"), "-").take(48).ifBlank { "device" }
     val suffix = session.connectionId.hashCode().toUInt().toString(16).padStart(8, '0')
