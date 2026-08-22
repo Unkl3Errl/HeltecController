@@ -624,7 +624,10 @@ internal class PersistentBleSerialSession(
     }
 
     private fun failConnection(message: String) {
-        emitError(message)
+        // Automatic reconnect failures are transport state, not command output. Keep them in
+        // Logcat and the connection status so an unavailable fallback cannot flood the selected
+        // device's human console while USB or another transport remains usable.
+        Log.w(TAG, message)
         val shouldReconnect = !manualDisconnect
         disconnectInternal(emit = false)
         emitStatus("${kind.displayName} Bluetooth connection failed", false)
