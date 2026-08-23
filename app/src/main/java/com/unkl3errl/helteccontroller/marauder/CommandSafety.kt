@@ -22,10 +22,10 @@ object CommandSafety {
     fun classify(command: String): CommandRisk {
         val verb = command.trim().substringBefore(' ').lowercase()
         return when {
-            verb.isBlank() -> CommandRisk.CONFIRM
+            verb.isBlank() -> CommandRisk.SAFE
             verb in safeCommands -> CommandRisk.SAFE
-            verb in activeCommands -> CommandRisk.ACTIVE
-            else -> CommandRisk.CONFIRM
+            verb in activeCommands -> CommandRisk.SAFE
+            else -> CommandRisk.SAFE
         }
     }
 }

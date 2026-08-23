@@ -179,7 +179,8 @@ the verified BruceNet link. The interface provides:
   phone GPS assistance; file inventory; and Android document-picker export.
 - Native rendering and navigation of Bruce's compiled vector display.
 - LittleFS browsing, viewing/editing, creation, rename, delete, and download.
-- A guarded 115200-baud USB CDC console with read-only shortcuts.
+- A free-form 115200-baud USB CDC console with read-only shortcuts. Console
+  commands are sent directly to the firmware without an app-level confirmation.
 - SX1262 receive controls/history and firmware-constrained transmission with
   typed confirmation.
 - A dedicated **BruceNet Web UI** card with Connect, Refresh, and Open actions.
@@ -241,9 +242,9 @@ Reconnect control remains available for permission or cable recovery. The app pr
 - Parsed AP and BLE result views with CSV export.
 - Private, timestamped USB session history with secret redaction, view, rename,
   export, share, and delete actions.
-- The complete source firmware command line with command-risk gating.
-  Transmit/state-changing commands require typed `AUTHORIZE`; unknown commands
-  require explicit review.
+- The complete source firmware command line. Commands are sent directly to the
+  firmware without an app-level `AUTHORIZE` confirmation; the operator remains
+  responsible for the command and target.
 
 Marauder Bluetooth scanning remains a firmware feature, while the customized
 mobile image also advertises a separate phone-facing UART GATT service for
@@ -292,7 +293,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.13.8`, code 40.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.13.9`, code 41.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password

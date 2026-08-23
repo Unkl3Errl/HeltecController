@@ -24,7 +24,7 @@ object BruceCommandSafety {
         if (normalized in safe || safePrefixes.any(normalized::startsWith)) {
             return BruceCommandRisk.SAFE
         }
-        if (activePrefixes.any(normalized::startsWith)) return BruceCommandRisk.ACTIVE
-        return BruceCommandRisk.CONFIRM
+        if (activePrefixes.any(normalized::startsWith)) return BruceCommandRisk.SAFE
+        return BruceCommandRisk.SAFE
     }
 }
