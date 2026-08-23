@@ -1,0 +1,30 @@
+Firmware Controller open-source notices
+=======================================
+
+Except where a file says otherwise, the original Android controller source is
+copyright 2026 Unkl3Errl and contributors and is licensed under the GNU General
+Public License as published by the Free Software Foundation, either version 3
+of the License, or (at your option) any later version. The full license is in
+controller-GPL-3.0.txt. Source: https://github.com/Unkl3Errl/HeltecController
+
+Bundled flashable firmware images remain separate programs under their own
+licenses. Exact source revisions are authenticated by assets/firmware/catalog.json.
+
+Bruce 1.16.1-mobile.5
+  License: GNU Affero General Public License, version 3
+  Source: https://github.com/Unkl3Errl/HeltecFirmware/tree/37dc306bad91070b38f5d3d70c48e90e7131aad4
+  License text: bruce-AGPL-3.0.txt
+
+GhostESP 2.1.1-mobile.10
+  License: GNU General Public License, version 3
+  Source: https://github.com/Unkl3Errl/GhostESP/tree/f41162362c0a08cd38500af46099648129ac06a3
+  License text: ghostesp-GPL-3.0.txt
+
+ESP32 Marauder 1.15.0-mobile.5
+  License: MIT License
+  Source: https://github.com/Unkl3Errl/ESP32Marauder/tree/f5d941db3db9f28ed0eab9e743a4e7b2cef10aae
+  License text: marauder-MIT.txt
+
+The app also uses AndroidX and Kotlin components under Apache License 2.0 and
+usb-serial-for-android under the MIT License. Their packaged artifacts retain
+their license metadata.
