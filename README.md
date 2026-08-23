@@ -292,7 +292,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.13.7`, code 39.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.13.8`, code 40.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password
@@ -302,3 +302,15 @@ variables, Gradle deliberately produces an unsigned release.
 Maintainers should use [`RELEASING.md`](RELEASING.md) and
 `./scripts/package-release-macos.sh` to run the complete release gate and create
 the signed, versioned APK plus its SHA-256 checksum for a GitHub release.
+
+## Project information
+
+- Except where a file says otherwise, the original Android controller source is
+  copyright 2026 Unkl3Errl and contributors and is licensed under
+  [GPL-3.0-or-later](LICENSE).
+- The bundled firmware images retain their own licenses and exact corresponding
+  source links; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+- Read [`SUPPORT.md`](SUPPORT.md) before opening a support issue.
+- See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the build, test, compatibility,
+  and safety requirements for pull requests.
+- Report vulnerabilities privately according to [`SECURITY.md`](SECURITY.md).
