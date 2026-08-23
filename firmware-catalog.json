@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-22",
+  "generatedAt": "2026-08-23",
   "board": {
     "id": "heltec-wifi-lora-32-v4",
     "name": "Heltec WiFi LoRa 32 V4",
@@ -11,12 +11,12 @@
     {
       "id": "bruce",
       "displayName": "Bruce",
-      "version": "1.16.1-mobile.5",
-      "releasedAt": "2026-08-22",
-      "summary": "Complete recovery image with simultaneous USB and phone-facing Bluetooth commands, MTU-safe Bluetooth replies, buffered commands across GATT packets, cable-loss fallback, Android-capacity reporting, and acknowledged rolling field-log handoff.",
+      "version": "1.16.1-mobile.6",
+      "releasedAt": "2026-08-23",
+      "summary": "Complete recovery image with reliable simultaneous BruceNet and phone-facing Bluetooth, PSRAM-backed NimBLE host allocation, USB/Bluetooth command fallback, Android-capacity reporting, and acknowledged rolling field-log handoff.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/HeltecFirmware",
-        "commit": "37dc306bad91070b38f5d3d70c48e90e7131aad4"
+        "commit": "90515338f83d32444a2f2ad18a4b69304fa2f274"
       },
       "upstream": {
         "repository": "https://github.com/BruceDevices/firmware",
@@ -25,10 +25,10 @@
         "baselineCommit": "ba519c936c87b89c9c667c15b932d7faca5360d5"
       },
       "image": {
-        "asset": "bruce-1.16.1-mobile.5.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.5/bruce-1.16.1-mobile.5.bin",
-        "sha256": "533891a0cad30effb3328bad8e8f83e1508ce862c674d593a4f63a086a98d3d5",
-        "sizeBytes": 3887232
+        "asset": "bruce-1.16.1-mobile.6.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.10/bruce-1.16.1-mobile.6.bin",
+        "sha256": "60faae3417fc9910c240133d426cdf57446cefe3ae4acb4c666a013374a64be0",
+        "sizeBytes": 3887216
       }
     },
     {
