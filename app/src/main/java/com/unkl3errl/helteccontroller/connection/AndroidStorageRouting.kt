@@ -605,8 +605,7 @@ private class HeltecBridgeResponseCollector {
                 if (marker < 0) continue
                 val line = raw.substring(marker)
                 val request = active ?: continue
-                val fields = line.split(' ', limit = 4)
-                if (fields.size == 4 && fields[1].toLongOrNull() == request.id) {
+                if (HeltecBridgeWireProtocol.isResponseFor(line, request.id)) {
                     request.queue.offer(line)
                 }
             }
@@ -653,6 +652,15 @@ private class HeltecBridgeResponseCollector {
 
     private fun encode(value: String): String =
         URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+}
+
+internal object HeltecBridgeWireProtocol {
+    fun isResponseFor(line: String, requestId: Long): Boolean {
+        val fields = line.split(' ', limit = 4)
+        return fields.size == 4 &&
+            fields[1].toLongOrNull() == requestId &&
+            (fields[2] == "OK" || fields[2] == "ERROR")
+    }
 }
 
 private class SdResponseCollector {
