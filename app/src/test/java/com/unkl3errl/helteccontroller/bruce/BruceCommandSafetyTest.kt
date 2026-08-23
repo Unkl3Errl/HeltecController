@@ -12,14 +12,14 @@ class BruceCommandSafetyTest {
     }
 
     @Test
-    fun stateChangingCommandsRequireTypedAuthorization() {
-        assertEquals(BruceCommandRisk.ACTIVE, BruceCommandSafety.classify("wifi off"))
-        assertEquals(BruceCommandRisk.ACTIVE, BruceCommandSafety.classify("rm /config.conf"))
-        assertEquals(BruceCommandRisk.ACTIVE, BruceCommandSafety.classify("js /test.js"))
+    fun stateChangingCommandsPassThroughToFirmware() {
+        assertEquals(BruceCommandRisk.SAFE, BruceCommandSafety.classify("wifi off"))
+        assertEquals(BruceCommandRisk.SAFE, BruceCommandSafety.classify("rm /config.conf"))
+        assertEquals(BruceCommandRisk.SAFE, BruceCommandSafety.classify("js /test.js"))
     }
 
     @Test
-    fun unknownCommandsRequireReview() {
-        assertEquals(BruceCommandRisk.CONFIRM, BruceCommandSafety.classify("future_command"))
+    fun unknownCommandsPassThroughToFirmware() {
+        assertEquals(BruceCommandRisk.SAFE, BruceCommandSafety.classify("future_command"))
     }
 }

@@ -30,8 +30,9 @@ developer build must not contain production keys or locally captured data.
 - Never acknowledge a virtual-SD segment until Android has durably finalized it
   and verified its byte count and CRC-32.
 - Keep consoles and storage isolated by physical device identity.
-- Preserve explicit confirmation for flashing and potentially transmitting or
-  state-changing commands.
+- Preserve explicit confirmation for flashing and dedicated transmit actions.
+  Free-form firmware consoles intentionally pass operator-entered commands
+  through without an additional app-level confirmation.
 - Keep passive detection read-only.
 - Do not add features intended for unauthorized access, interception, jamming,
   credential theft, or destructive use.

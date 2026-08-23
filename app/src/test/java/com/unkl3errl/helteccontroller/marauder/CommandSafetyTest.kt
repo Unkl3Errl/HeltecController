@@ -10,14 +10,14 @@ class CommandSafetyTest {
         assertEquals(CommandRisk.SAFE, CommandSafety.classify("STOPSCAN"))
     }
 
-    @Test fun transmitAndStateChangingCommandsAreActive() {
-        assertEquals(CommandRisk.ACTIVE, CommandSafety.classify("attack -t deauth"))
-        assertEquals(CommandRisk.ACTIVE, CommandSafety.classify("blespam -t all"))
-        assertEquals(CommandRisk.ACTIVE, CommandSafety.classify("reboot"))
+    @Test fun transmitAndStateChangingCommandsPassThroughToFirmware() {
+        assertEquals(CommandRisk.SAFE, CommandSafety.classify("attack -t deauth"))
+        assertEquals(CommandRisk.SAFE, CommandSafety.classify("blespam -t all"))
+        assertEquals(CommandRisk.SAFE, CommandSafety.classify("reboot"))
     }
 
-    @Test fun unknownCommandsRequireConfirmation() {
-        assertEquals(CommandRisk.CONFIRM, CommandSafety.classify("futurecommand -x"))
-        assertEquals(CommandRisk.CONFIRM, CommandSafety.classify(""))
+    @Test fun unknownCommandsPassThroughToFirmware() {
+        assertEquals(CommandRisk.SAFE, CommandSafety.classify("futurecommand -x"))
+        assertEquals(CommandRisk.SAFE, CommandSafety.classify(""))
     }
 }
