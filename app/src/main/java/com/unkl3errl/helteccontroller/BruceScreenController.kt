@@ -107,7 +107,7 @@ class BruceScreenController(
         root.findViewById<Button>(R.id.loraStart).setOnClickListener { startLora() }
         root.findViewById<Button>(R.id.loraStop).setOnClickListener { loraAction("stop") }
         root.findViewById<Button>(R.id.loraHistory).setOnClickListener { showLoraHistory() }
-        root.findViewById<Button>(R.id.loraTransmit).setOnClickListener { confirmLoraTransmit() }
+        root.findViewById<Button>(R.id.loraTransmit).setOnClickListener { transmitLora() }
         root.findViewById<Button>(R.id.bruceOpenWebUi).setOnClickListener { openWebUi() }
         root.findViewById<Button>(R.id.bruceRestart).setOnClickListener {
             typedConfirmation(
@@ -776,25 +776,19 @@ class BruceScreenController(
         }
     }
 
-    private fun confirmLoraTransmit() {
+    private fun transmitLora() {
         val payload = root.findViewById<EditText>(R.id.loraPayload).text.toString()
         if (payload.isBlank()) {
             toast("Enter a printable ASCII payload")
             return
         }
-        typedConfirmation(
-            title = "Transmit LoRa packet?",
-            message = "This sends one ${payload.length}-byte packet at the firmware-limited +2 dBm setting. Confirm that the selected frequency and target are authorized, then type TRANSMIT.",
-            expected = "TRANSMIT",
-        ) {
-            configureClient()
-            work("TRANSMITTING…", {
-                client.postForm(
-                    "/api/heltec/lora/transmit",
-                    mapOf("payload" to payload, "confirm" to "TRANSMIT"),
-                )
-            }) { loraStatus.text = formatLora(it) }
-        }
+        configureClient()
+        work("TRANSMITTING…", {
+            client.postForm(
+                "/api/heltec/lora/transmit",
+                mapOf("payload" to payload, "confirm" to "TRANSMIT"),
+            )
+        }) { loraStatus.text = formatLora(it) }
     }
 
     private fun restartDevice() {

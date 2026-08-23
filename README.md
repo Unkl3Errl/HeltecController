@@ -181,8 +181,9 @@ the verified BruceNet link. The interface provides:
 - LittleFS browsing, viewing/editing, creation, rename, delete, and download.
 - A free-form 115200-baud USB CDC console with read-only shortcuts. Console
   commands are sent directly to the firmware without an app-level confirmation.
-- SX1262 receive controls/history and firmware-constrained transmission with
-  typed confirmation.
+- SX1262 receive controls/history and firmware-constrained transmission. The
+  transmit button sends immediately after validating that the payload is not
+  blank.
 - A dedicated **BruceNet Web UI** card with Connect, Refresh, and Open actions.
 - The original WebUI in a network-bound embedded browser. An authenticated
   native session is handed to the WebView for seamless opening and removed
