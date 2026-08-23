@@ -534,7 +534,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Transmission requires the receiver to be active plus a typed confirmation. Use only on frequencies and systems you are authorized to test." />
+                android:text="Transmission requires the receiver to be active. Firmware payload, cooldown, and power limits still apply. Use only on frequencies and systems you are authorized to test." />
         </LinearLayout>
 
         <LinearLayout
