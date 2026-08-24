@@ -21,6 +21,7 @@ install -m 0644 "$catalog_signature" "$bundled_signature"
 "$script_dir/build-release-macos.sh" testDebugUnitTest lintDebug assembleRelease
 
 "$build_tools/apksigner" verify --verbose "$source_apk"
+"$script_dir/verify-apk-icon.sh" "$source_apk"
 actual_certificate=$("$build_tools/apksigner" verify --print-certs "$source_apk" |
     sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
 if [ "$actual_certificate" != "$expected_certificate" ]; then
