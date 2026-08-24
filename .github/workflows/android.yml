@@ -33,6 +33,11 @@ jobs:
       - name: Test, lint, and build
         run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease
 
+      - name: Verify packaged launcher icons
+        run: |
+          ./scripts/verify-apk-icon.sh app/build/outputs/apk/debug/app-debug.apk
+          ./scripts/verify-apk-icon.sh app/build/outputs/apk/release/app-release-unsigned.apk
+
       - name: Upload APKs
         uses: actions/upload-artifact@v7
         with:
