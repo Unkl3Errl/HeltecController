@@ -34,12 +34,12 @@
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.1-mobile.11",
+      "version": "2.1.1-mobile.12",
       "releasedAt": "2026-08-24",
-      "summary": "GhostESP 2.1.1 recovery image with cache-safe full-environment sweep and NimBLE flash operations, reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, and persistent Web UI settings.",
+      "summary": "GhostESP 2.1.1 recovery image with cache-safe queued PCAP writes, full-environment sweep and NimBLE flash operations, reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, and persistent Web UI settings.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "a67bae5b48aaaeee70f42e37c445925d1e186ae2"
+        "commit": "3bb18496beb7be7270e304d40cabdb0042276af6"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
@@ -48,10 +48,10 @@
         "baselineCommit": "4ea9b59b9f6eb921a6d2566d86fdc02e2bedfbf6"
       },
       "image": {
-        "asset": "ghostesp-2.1.1-mobile.11.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.13/ghostesp-2.1.1-mobile.11.bin",
-        "sha256": "07b8e627b8b572b7b66cf0cf0b791deaae64da58cd548bdb4eb6988c9da73706",
-        "sizeBytes": 3176048
+        "asset": "ghostesp-2.1.1-mobile.12.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.14/ghostesp-2.1.1-mobile.12.bin",
+        "sha256": "1fa66cd7533852b717114ed1884669ed3dfe380161d93895fd7301e203428af2",
+        "sizeBytes": 3176112
       }
     },
     {
