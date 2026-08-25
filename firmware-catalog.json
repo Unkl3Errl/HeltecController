@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-23",
+  "generatedAt": "2026-08-24",
   "board": {
     "id": "heltec-wifi-lora-32-v4",
     "name": "Heltec WiFi LoRa 32 V4",
@@ -34,12 +34,12 @@
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.1-mobile.10",
-      "releasedAt": "2026-08-21",
-      "summary": "GhostESP 2.1.1 recovery image with reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, persistent Web UI settings, and a cache-safe BLE storage worker.",
+      "version": "2.1.1-mobile.11",
+      "releasedAt": "2026-08-24",
+      "summary": "GhostESP 2.1.1 recovery image with cache-safe full-environment sweep and NimBLE flash operations, reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, and persistent Web UI settings.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "f41162362c0a08cd38500af46099648129ac06a3"
+        "commit": "a67bae5b48aaaeee70f42e37c445925d1e186ae2"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
@@ -48,10 +48,10 @@
         "baselineCommit": "4ea9b59b9f6eb921a6d2566d86fdc02e2bedfbf6"
       },
       "image": {
-        "asset": "ghostesp-2.1.1-mobile.10.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.3/ghostesp-2.1.1-mobile.10.bin",
-        "sha256": "b27d108954552c19e5654c0bb1b8a68fc922dc6e5e7f6c305cc4de926c9124a3",
-        "sizeBytes": 3176160
+        "asset": "ghostesp-2.1.1-mobile.11.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.13/ghostesp-2.1.1-mobile.11.bin",
+        "sha256": "07b8e627b8b572b7b66cf0cf0b791deaae64da58cd548bdb4eb6988c9da73706",
+        "sizeBytes": 3176048
       }
     },
     {
