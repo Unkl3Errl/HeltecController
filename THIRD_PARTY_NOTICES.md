@@ -5,7 +5,7 @@ flashable firmware images remain separate programs under their respective
 upstream licenses. The controller license does not replace or weaken those
 terms.
 
-## Bruce 1.16.1-mobile.6
+## Bruce 1.16.1-mobile.7
 
 - License: GNU Affero General Public License, version 3
 - Corresponding source: [`90515338f83d32444a2f2ad18a4b69304fa2f274`](https://github.com/Unkl3Errl/HeltecFirmware/tree/90515338f83d32444a2f2ad18a4b69304fa2f274)
