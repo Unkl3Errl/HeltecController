@@ -10,7 +10,7 @@ controller-GPL-3.0.txt. Source: https://github.com/Unkl3Errl/HeltecController
 Bundled flashable firmware images remain separate programs under their own
 licenses. Exact source revisions are authenticated by assets/firmware/catalog.json.
 
-Bruce 1.16.1-mobile.6
+Bruce 1.16.1-mobile.7
   License: GNU Affero General Public License, version 3
   Source: https://github.com/Unkl3Errl/HeltecFirmware/tree/90515338f83d32444a2f2ad18a4b69304fa2f274
   License text: bruce-AGPL-3.0.txt
