@@ -250,6 +250,13 @@
             android:layout_height="wrap_content"
             android:text="QUICK DIAGNOSTICS // NO ATTACKS" />
 
+        <Button
+            android:id="@+id/ghostGuidedCommands"
+            style="@style/ActionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ALL COMMANDS" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

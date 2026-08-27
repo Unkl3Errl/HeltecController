@@ -15,6 +15,8 @@ import android.widget.Toast
 import com.unkl3errl.helteccontroller.bruce.BruceCommandRisk
 import com.unkl3errl.helteccontroller.bruce.BruceCommandSafety
 import com.unkl3errl.helteccontroller.bruce.BruceUsbSerial
+import com.unkl3errl.helteccontroller.guided.GuidedCommandDialog
+import com.unkl3errl.helteccontroller.guided.GuidedFirmware
 import org.json.JSONObject
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -108,6 +110,11 @@ class BruceUsbConsoleController(
         bind(root, R.id.bruceUsbUptime, "uptime")
         bind(root, R.id.bruceUsbFree, "free")
         bind(root, R.id.bruceUsbOptions, "optionsJSON")
+        root.findViewById<Button>(R.id.bruceGuidedCommands).setOnClickListener {
+            GuidedCommandDialog.show(activity, GuidedFirmware.BRUCE) { _, command ->
+                sendGuarded(command)
+            }
+        }
     }
 
     fun destroy() {

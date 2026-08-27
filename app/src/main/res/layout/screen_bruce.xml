@@ -294,6 +294,13 @@
                 <Button android:id="@+id/bruceBluetoothDisconnect" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_weight="1" android:text="DISCONNECT BLUETOOTH" />
             </LinearLayout>
 
+            <Button
+                android:id="@+id/bruceGuidedCommands"
+                style="@style/ActionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ALL COMMANDS" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

@@ -18,6 +18,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.unkl3errl.helteccontroller.guided.GuidedCommandDialog
+import com.unkl3errl.helteccontroller.guided.GuidedFirmware
 import com.unkl3errl.helteccontroller.marauder.CommandRisk
 import com.unkl3errl.helteccontroller.marauder.CommandSafety
 import com.unkl3errl.helteccontroller.marauder.MarauderCommandGuidance
@@ -128,6 +130,11 @@ class MarauderScreenController(
         }
 
         bindCommand(R.id.cmdHelp, "help")
+        root.findViewById<Button>(R.id.marauderGuidedCommands).setOnClickListener {
+            GuidedCommandDialog.show(activity, GuidedFirmware.MARAUDER) { _, command ->
+                sendGuarded(command)
+            }
+        }
         bindCommand(R.id.cmdGpsFix, "gps -g fix")
         bindCommand(R.id.cmdGpsData, "gpsdata")
         wifiSurveyButton.setOnClickListener { startAccessPointScan() }
