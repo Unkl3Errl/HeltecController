@@ -8,101 +8,101 @@ bruce	System	bruce-memory	Memory status	Show free heap and memory information.	f
 bruce	System	bruce-i2c	Scan I2C bus	List devices detected on the I2C bus.	i2c	safe
 bruce	System	bruce-options-json	Menu options as JSON	Return the current device menu tree for controller integrations.	optionsJSON	safe
 bruce	System	bruce-display	Display snapshot	Dump the current display state.	display [option]	safe
-bruce	System	bruce-navigation	Press a device control	Operate a navigation control for a selected duration.	nav <control> [duration]	review
-bruce	System	bruce-run-option	Run menu option	Run a menu option by its numeric identifier.	options <option_index>	review
-bruce	System	bruce-loader	Loader command	Send an application-loader command.	loader <operation> [application]	review
+bruce	System	bruce-navigation	Press a device control	Operate a navigation control for a selected duration.	nav <control> [duration]	safe
+bruce	System	bruce-run-option	Run menu option	Run a menu option by its numeric identifier.	options <option_index>	safe
+bruce	System	bruce-loader	Loader command	Send an application-loader command.	loader <operation> [application]	safe
 bruce	Power	bruce-poweroff	Power off	Power down the device.	poweroff	active
 bruce	Power	bruce-reboot	Restart device	Restart the device.	reboot	active
 bruce	Power	bruce-sleep	Sleep	Put the device into sleep mode.	sleep	active
 bruce	Settings	bruce-settings	Show settings	Print the current configuration.	settings	safe
 bruce	Settings	bruce-factory-reset	Factory reset	Erase saved settings and return to defaults.	factory_reset	active
 bruce	Display	bruce-clock	Show clock	Show the device clock on the display.	clock	safe
-bruce	Display	bruce-brightness	Set brightness	Set display brightness.	screen brightness <brightness>	review
-bruce	Display	bruce-color-rgb	Set display color by RGB	Set the primary display color using red, green, and blue values.	screen color rgb <red> <green> <blue>	review
-bruce	Display	bruce-color-hex	Set display color by hex	Set the primary display color using a hexadecimal value.	screen color hex <hex_color>	review
-bruce	Audio	bruce-tone	Play tone	Play a tone at a frequency for a duration.	tone <frequency_hz> <duration_ms>	review
-bruce	Audio	bruce-play	Play song	Play a named or stored song.	play <song>	review
-bruce	Audio	bruce-tts	Speak text	Speak text through supported audio hardware.	tts <text...>	review
-bruce	Wi-Fi	bruce-webui	Start Web UI	Start the Bruce Web UI access point and server.	webui	review
-bruce	Wi-Fi	bruce-webui-no-ap	Start Web UI without AP	Start the Web UI server without creating an access point.	webui -noAp	review
+bruce	Display	bruce-brightness	Set brightness	Set display brightness.	screen brightness <brightness>	safe
+bruce	Display	bruce-color-rgb	Set display color by RGB	Set the primary display color using red, green, and blue values.	screen color rgb <red> <green> <blue>	safe
+bruce	Display	bruce-color-hex	Set display color by hex	Set the primary display color using a hexadecimal value.	screen color hex <hex_color>	safe
+bruce	Audio	bruce-tone	Play tone	Play a tone at a frequency for a duration.	tone <frequency_hz> <duration_ms>	safe
+bruce	Audio	bruce-play	Play song	Play a named or stored song.	play <song>	safe
+bruce	Audio	bruce-tts	Speak text	Speak text through supported audio hardware.	tts <text...>	safe
+bruce	Wi-Fi	bruce-webui	Start Web UI	Start the Bruce Web UI access point and server.	webui	safe
+bruce	Wi-Fi	bruce-webui-no-ap	Start Web UI without AP	Start the Web UI server without creating an access point.	webui -noAp	safe
 bruce	Wi-Fi	bruce-wifi-status	Wi-Fi status	Show the current Wi-Fi status.	wifi status	safe
-bruce	Wi-Fi	bruce-wifi-connect	Connect to Wi-Fi	Connect the device to a Wi-Fi network.	wifi connect <ssid> [password]	review
-bruce	Wi-Fi	bruce-wifi-disconnect	Disconnect Wi-Fi	Disconnect the current Wi-Fi station link.	wifi disconnect	review
-bruce	Wi-Fi	bruce-arp	Discover local hosts	Scan the connected local network for hosts.	arp	active
-bruce	Wi-Fi	bruce-listen	Listen for TCP traffic	Start the firmware TCP listener.	listen	review
-bruce	Wi-Fi	bruce-sniffer	Wi-Fi sniffer	Start the firmware Wi-Fi packet sniffer.	sniffer	active
-bruce	GPIO	bruce-gpio-mode	Set GPIO mode	Set a GPIO pin mode.	gpio mode <pin_and_mode>	review
-bruce	GPIO	bruce-gpio-write	Write GPIO	Set a GPIO pin output value.	gpio set <pin_and_value>	review
+bruce	Wi-Fi	bruce-wifi-connect	Connect to Wi-Fi	Connect the device to a Wi-Fi network.	wifi connect <ssid> [password]	safe
+bruce	Wi-Fi	bruce-wifi-disconnect	Disconnect Wi-Fi	Disconnect the current Wi-Fi station link.	wifi disconnect	safe
+bruce	Wi-Fi	bruce-arp	Discover local hosts	Scan the connected local network for hosts.	arp	safe
+bruce	Wi-Fi	bruce-listen	Listen for TCP traffic	Start the firmware TCP listener.	listen	safe
+bruce	Wi-Fi	bruce-sniffer	Wi-Fi sniffer	Start the firmware Wi-Fi packet sniffer.	sniffer	safe
+bruce	GPIO	bruce-gpio-mode	Set GPIO mode	Set a GPIO pin mode.	gpio mode <pin_and_mode>	safe
+bruce	GPIO	bruce-gpio-write	Write GPIO	Set a GPIO pin output value.	gpio set <pin_and_value>	safe
 bruce	GPIO	bruce-gpio-read	Read GPIO	Read a GPIO pin.	gpio read <pin>	safe
 bruce	Infrared	bruce-ir-receive	Receive infrared	Listen for an infrared signal.	ir rx [raw]	safe
-bruce	Infrared	bruce-ir-send	Send decoded infrared	Transmit an infrared protocol command.	ir tx <protocol> <address> <command>	active
-bruce	Infrared	bruce-ir-send-raw	Send raw infrared	Transmit raw infrared timing samples.	ir tx_raw <frequency_hz> <samples...>	active
-bruce	Infrared	bruce-ir-file	Send infrared file	Transmit infrared data from a stored file.	ir tx_from_file <file_path> [hide_ui]	active
+bruce	Infrared	bruce-ir-send	Send decoded infrared	Transmit an infrared protocol command.	ir tx <protocol> <address> <command>	safe
+bruce	Infrared	bruce-ir-send-raw	Send raw infrared	Transmit raw infrared timing samples.	ir tx_raw <frequency_hz> <samples...>	safe
+bruce	Infrared	bruce-ir-file	Send infrared file	Transmit infrared data from a stored file.	ir tx_from_file <file_path> [hide_ui]	safe
 bruce	RF	bruce-rf-receive	Receive sub-GHz	Listen for sub-GHz signals with an optional timeout.	rf rx [timeout_ms]	safe
 bruce	RF	bruce-rf-receive-raw	Receive raw sub-GHz	Listen for raw sub-GHz samples.	rf rx raw [timeout_ms]	safe
-bruce	RF	bruce-rf-send	Send sub-GHz key	Transmit a raw sub-GHz key.	rf tx <key> [frequency_hz] [pulse_length] [repeat_count]	active
-bruce	RF	bruce-rf-protocol	Send sub-GHz protocol	Transmit with a named protocol.	rf txp <protocol> [frequency_hz] [bits] [key] [pulse_length] [repeat_count]	active
+bruce	RF	bruce-rf-send	Send sub-GHz key	Transmit a raw sub-GHz key.	rf tx <key> [frequency_hz] [pulse_length] [repeat_count]	safe
+bruce	RF	bruce-rf-protocol	Send sub-GHz protocol	Transmit with a named protocol.	rf txp <protocol> [frequency_hz] [bits] [key] [pulse_length] [repeat_count]	safe
 bruce	RF	bruce-rf-scan	Scan sub-GHz range	Scan a frequency range for activity.	rf scan <start_frequency_hz> <stop_frequency_hz>	safe
-bruce	RF	bruce-rf-file	Send sub-GHz file	Transmit a stored sub-GHz capture.	rf tx_from_file <file_path> [hide_ui]	active
-bruce	RF	bruce-rf-keeloq	Send KeeLoq frame	Transmit a KeeLoq frame using supplied manufacturer and counter values.	rf keeloqtx <manufacturer> [frequency_hz] [button] [serial] [counter] [repeat_count]	active
-bruce	RF	bruce-rf-mf-add	Add manufacturer code	Add an entry to the RF manufacturer-code list.	rf mfcodes add <entry>	review
+bruce	RF	bruce-rf-file	Send sub-GHz file	Transmit a stored sub-GHz capture.	rf tx_from_file <file_path> [hide_ui]	safe
+bruce	RF	bruce-rf-keeloq	Send KeeLoq frame	Transmit a KeeLoq frame using supplied manufacturer and counter values.	rf keeloqtx <manufacturer> [frequency_hz] [button] [serial] [counter] [repeat_count]	safe
+bruce	RF	bruce-rf-mf-add	Add manufacturer code	Add an entry to the RF manufacturer-code list.	rf mfcodes add <entry>	safe
 bruce	RF	bruce-rf-mf-list	List manufacturer codes	List stored RF manufacturer codes.	rf mfcodes list	safe
-bruce	RF	bruce-rf-mf-clear	Clear manufacturer codes	Clear stored RF manufacturer codes.	rf mfcodes clear	active
+bruce	RF	bruce-rf-mf-clear	Clear manufacturer codes	Clear stored RF manufacturer codes.	rf mfcodes clear	safe
 bruce	RFID	bruce-rfid-read	Read RFID or NFC	Read a supported tag with a timeout.	rfid read [timeout_ms]	safe
-bruce	RFID	bruce-rfid-write	Write RFID or NFC	Write prepared data to a supported tag.	rfid write [timeout_ms]	active
-bruce	RFID	bruce-rfid-clone	Clone RFID or NFC	Read and clone a supported tag.	rfid clone [timeout_ms]	active
-bruce	RFID	bruce-rfid-emulate	Emulate tag	Emulate a prepared RFID or NFC tag.	rfid emulate [options]	active
-bruce	RFID	bruce-rfid-erase	Erase tag	Erase a supported writable tag.	rfid erase	active
+bruce	RFID	bruce-rfid-write	Write RFID or NFC	Write prepared data to a supported tag.	rfid write [timeout_ms]	safe
+bruce	RFID	bruce-rfid-clone	Clone RFID or NFC	Read and clone a supported tag.	rfid clone [timeout_ms]	safe
+bruce	RFID	bruce-rfid-emulate	Emulate tag	Emulate a prepared RFID or NFC tag.	rfid emulate [options]	safe
+bruce	RFID	bruce-rfid-erase	Erase tag	Erase a supported writable tag.	rfid erase	safe
 bruce	RFID	bruce-rfid-info	Tag information	Show the currently loaded RFID or NFC data.	rfid info	safe
-bruce	RFID	bruce-rfid-save	Save tag data	Save the current tag data to a file.	rfid save [file_name] [format]	review
-bruce	RFID	bruce-rfid-load	Load tag file	Load RFID or NFC data from a file.	rfid loadfile <file_path>	review
-bruce	RFID	bruce-rfid-ndef	NDEF operation	Run an NDEF subcommand with its values.	rfid ndef [options]	review
-bruce	RFID	bruce-rfid-reset	Reset RFID module	Reset the RFID or NFC subsystem.	rfid reset	review
-bruce	RFID	bruce-rfid-test	RFID self-test	Run a tag workflow self-test.	rfid autotest [mode] [timeout_ms]	review
+bruce	RFID	bruce-rfid-save	Save tag data	Save the current tag data to a file.	rfid save [file_name] [format]	safe
+bruce	RFID	bruce-rfid-load	Load tag file	Load RFID or NFC data from a file.	rfid loadfile <file_path>	safe
+bruce	RFID	bruce-rfid-ndef	NDEF operation	Run an NDEF subcommand with its values.	rfid ndef [options]	safe
+bruce	RFID	bruce-rfid-reset	Reset RFID module	Reset the RFID or NFC subsystem.	rfid reset	safe
+bruce	RFID	bruce-rfid-test	RFID self-test	Run a tag workflow self-test.	rfid autotest [mode] [timeout_ms]	safe
 bruce	Storage	bruce-list-files	List files	List a directory on the device storage.	ls [file_path]	safe
 bruce	Storage	bruce-read-file	Read file	Print a stored file.	cat <file_path>	safe
 bruce	Storage	bruce-file-md5	File MD5	Calculate a file MD5 digest.	md5 <file_path>	safe
 bruce	Storage	bruce-file-crc32	File CRC32	Calculate a file CRC32 checksum.	crc32 <file_path>	safe
-bruce	Storage	bruce-remove-file	Remove file	Delete a file from device storage.	rm <file_path>	active
-bruce	Storage	bruce-make-directory	Create directory	Create a storage directory.	mkdir <file_path>	review
-bruce	Storage	bruce-remove-directory	Remove directory	Delete a storage directory.	rmdir <file_path>	active
-bruce	Storage	bruce-storage-write	Receive file	Prepare a file for an incoming serial transfer.	storage write <file_path> [size_bytes]	review
-bruce	Storage	bruce-storage-rename	Rename file	Rename a stored file or directory.	storage rename <file_path> <new_name>	review
-bruce	Storage	bruce-storage-copy	Copy file	Copy a stored file or directory.	storage copy <file_path> <new_name>	review
+bruce	Storage	bruce-remove-file	Remove file	Delete a file from device storage.	rm <file_path>	safe
+bruce	Storage	bruce-make-directory	Create directory	Create a storage directory.	mkdir <file_path>	safe
+bruce	Storage	bruce-remove-directory	Remove directory	Delete a storage directory.	rmdir <file_path>	safe
+bruce	Storage	bruce-storage-write	Receive file	Prepare a file for an incoming serial transfer.	storage write <file_path> [size_bytes]	safe
+bruce	Storage	bruce-storage-rename	Rename file	Rename a stored file or directory.	storage rename <file_path> <new_name>	safe
+bruce	Storage	bruce-storage-copy	Copy file	Copy a stored file or directory.	storage copy <file_path> <new_name>	safe
 bruce	Storage	bruce-storage-stat	File information	Show detailed storage information for a path.	storage stat <file_path>	safe
 bruce	Storage	bruce-storage-free	Storage capacity	Show capacity for a storage type.	storage free <storage_type>	safe
-bruce	Scripts	bruce-javascript-file	Run JavaScript file	Run a Bruce JavaScript file.	js run_from_file <file_path>	active
-bruce	Scripts	bruce-javascript-stop	Stop JavaScript	Exit the JavaScript interpreter.	js exit	review
-bruce	Scripts	bruce-badusb-file	Run BadUSB file	Run a stored BadUSB script on supported USB hardware.	badusb run_from_file <file_path>	active
-bruce	Crypto	bruce-decrypt	Decrypt file	Decrypt a stored file.	decrypt <file_path> <password>	review
-bruce	Crypto	bruce-encrypt	Encrypt file	Encrypt a stored file.	encrypt <file_path> <password>	review
-bruce	Crypto	bruce-type-decrypted	Type decrypted file	Decrypt and type a file through supported USB HID hardware.	crypto type_from_file <file_path> <password>	active
+bruce	Scripts	bruce-javascript-file	Run JavaScript file	Run a Bruce JavaScript file.	js run_from_file <file_path>	safe
+bruce	Scripts	bruce-javascript-stop	Stop JavaScript	Exit the JavaScript interpreter.	js exit	safe
+bruce	Scripts	bruce-badusb-file	Run BadUSB file	Run a stored BadUSB script on supported USB hardware.	badusb run_from_file <file_path>	safe
+bruce	Crypto	bruce-decrypt	Decrypt file	Decrypt a stored file.	decrypt <file_path> <password>	safe
+bruce	Crypto	bruce-encrypt	Encrypt file	Encrypt a stored file.	encrypt <file_path> <password>	safe
+bruce	Crypto	bruce-type-decrypted	Type decrypted file	Decrypt and type a file through supported USB HID hardware.	crypto type_from_file <file_path> <password>	safe
 
 marauder	System	marauder-help	Command help	List commands supported by this build.	help	safe
 marauder	System	marauder-info	Device information	Show firmware and device information.	info	safe
 marauder	System	marauder-settings	Show settings	Display current Marauder settings.	settings	safe
-marauder	System	marauder-setting	Change setting	Enable or disable a named firmware setting.	settings -s <setting> <enable,disable>	review
-marauder	System	marauder-reset-settings	Reset settings	Reset firmware settings.	settings -r	active
-marauder	System	marauder-reboot	Restart device	Restart the device.	reboot	active
-marauder	System	marauder-update-sd	Update from storage	Start a firmware update from storage.	update -s	active
-marauder	System	marauder-update-web	Update from web	Start the firmware web-update flow.	update -w	active
+marauder	System	marauder-setting	Change setting	Enable or disable a named firmware setting.	settings -s <setting> <enable,disable>	safe
+marauder	System	marauder-reset-settings	Reset settings	Reset firmware settings.	settings -r	safe
+marauder	System	marauder-reboot	Restart device	Restart the device.	reboot	safe
+marauder	System	marauder-update-sd	Update from storage	Start a firmware update from storage.	update -s	safe
+marauder	System	marauder-update-web	Update from web	Start the firmware web-update flow.	update -w	safe
 marauder	System	marauder-channel-show	Show channel	Show the current Wi-Fi channel.	channel	safe
-marauder	System	marauder-channel-set	Set channel	Set the Wi-Fi channel.	channel -s <channel>	review
-marauder	Display	marauder-led-color	Set LED color	Set the status LED using a hex color.	led -s <hex_color>	review
-marauder	Display	marauder-led-rainbow	Rainbow LED	Run the LED rainbow pattern.	led -p rainbow	review
-marauder	Display	marauder-brightness	Set brightness	Set the display brightness level.	brightness -s <level_0_to_9>	review
-marauder	Display	marauder-brightness-cycle	Cycle brightness	Cycle to the next display brightness.	brightness -c cycle	review
+marauder	System	marauder-channel-set	Set channel	Set the Wi-Fi channel.	channel -s <channel>	safe
+marauder	Display	marauder-led-color	Set LED color	Set the status LED using a hex color.	led -s <hex_color>	safe
+marauder	Display	marauder-led-rainbow	Rainbow LED	Run the LED rainbow pattern.	led -p rainbow	safe
+marauder	Display	marauder-brightness	Set brightness	Set the display brightness level.	brightness -s <level_0_to_9>	safe
+marauder	Display	marauder-brightness-cycle	Cycle brightness	Cycle to the next display brightness.	brightness -c cycle	safe
 marauder	Storage	marauder-ls	List files	List a directory on device storage.	ls <directory>	safe
-marauder	Storage	marauder-sd	Virtual SD command	Run a documented SD subcommand. Storage synchronization traffic is hidden from the console.	sd <options...>	review
+marauder	Storage	marauder-sd	Virtual SD command	Run a documented SD subcommand. Storage synchronization traffic is hidden from the console.	sd <options...>	safe
 marauder	GPS	marauder-gpsdata	GPS data	Show raw GPS data.	gpsdata	safe
 marauder	GPS	marauder-nmea	NMEA stream	Start NMEA output.	nmea	safe
 marauder	GPS	marauder-gps-field	GPS field	Show a selected GPS field.	gps -g <fix,sat,lon,lat,alt,date,accuracy,text,nmea>	safe
-marauder	GPS	marauder-gps-constellation	GPS constellation	Select the reported satellite constellation.	gps -n <native,all,gps,glonass,galileo,navic,qzss,beidou>	review
-marauder	GPS	marauder-gps-poi-save	Save GPS point	Save the current location as a point of interest.	gpspoi -s	review
-marauder	GPS	marauder-gps-poi-mark	Mark GPS point	Mark a point of interest while scanning.	gpspoi -m	review
-marauder	GPS	marauder-gps-poi-end	End GPS point mode	Stop the point-of-interest operation.	gpspoi -e	review
-marauder	GPS	marauder-gps-tracker	GPS tracker	Start or stop GPS tracking.	gpstracker -c <start,stop>	review
-marauder	GPS	marauder-wardrive-poi	Wardrive point label	Tag a labeled GPS point during wardriving.	wardrivepoi <label>	review
+marauder	GPS	marauder-gps-constellation	GPS constellation	Select the reported satellite constellation.	gps -n <native,all,gps,glonass,galileo,navic,qzss,beidou>	safe
+marauder	GPS	marauder-gps-poi-save	Save GPS point	Save the current location as a point of interest.	gpspoi -s	safe
+marauder	GPS	marauder-gps-poi-mark	Mark GPS point	Mark a point of interest while scanning.	gpspoi -m	safe
+marauder	GPS	marauder-gps-poi-end	End GPS point mode	Stop the point-of-interest operation.	gpspoi -e	safe
+marauder	GPS	marauder-gps-tracker	GPS tracker	Start or stop GPS tracking.	gpstracker -c <start,stop>	safe
+marauder	GPS	marauder-wardrive-poi	Wardrive point label	Tag a labeled GPS point during wardriving.	wardrivepoi <label>	safe
 marauder	Wi-Fi Scan	marauder-scanall	Scan access points	Scan all Wi-Fi channels for access points.	scanall	safe
 marauder	Wi-Fi Scan	marauder-sniffraw	Capture raw Wi-Fi	Capture raw Wi-Fi frames to PCAP.	sniffraw	safe
 marauder	Wi-Fi Scan	marauder-sniffbeacon	Capture beacons	Capture Wi-Fi beacon frames.	sniffbeacon	safe
@@ -113,18 +113,18 @@ marauder	Wi-Fi Scan	marauder-sniffmultissid	Capture multi-SSID	Capture multi-SSI
 marauder	Wi-Fi Scan	marauder-sniffdeauth	Capture deauthentication	Capture deauthentication frames.	sniffdeauth	safe
 marauder	Wi-Fi Scan	marauder-sniffpmkid	Capture PMKID	Capture PMKID handshakes with optional settings.	sniffpmkid [options]	safe
 marauder	Wi-Fi Scan	marauder-sniffsae	Capture SAE	Capture WPA3 SAE exchanges.	sniffsae	safe
-marauder	Wi-Fi Scan	marauder-stopscan	Stop current operation	Stop the active scan or capture.	stopscan	review
-marauder	Wi-Fi Scan	marauder-stopscan-force	Force stop	Force stop the active scan or capture.	stopscan -f	review
+marauder	Wi-Fi Scan	marauder-stopscan	Stop current operation	Stop the active scan or capture.	stopscan	safe
+marauder	Wi-Fi Scan	marauder-stopscan-force	Force stop	Force stop the active scan or capture.	stopscan -f	safe
 marauder	Wi-Fi Scan	marauder-packetcount	Packet counters	Show live packet counts.	packetcount	safe
 marauder	Wi-Fi Scan	marauder-foxhunt-ap	Track access point	Track signal strength for an access point index.	foxhunt -w <ap_index>	safe
 marauder	Wi-Fi Scan	marauder-foxhunt-station	Track station	Track signal strength for a station associated with an access point.	foxhunt -s <ap_index> <station_index>	safe
 marauder	Wi-Fi Scan	marauder-foxhunt-ble	Track BLE device	Track signal strength for a BLE device index.	foxhunt -b <ble_index>	safe
 marauder	Wi-Fi Scan	marauder-wardrive	Wardrive	Start Wi-Fi wardriving and save results.	wardrive	safe
-marauder	Network	marauder-ping	Ping scan	Scan local hosts with ICMP ping.	pingscan	active
-marauder	Network	marauder-portscan-target	Port scan target	Scan ports on a selected IP result.	portscan -a -t <ip_index>	active
-marauder	Network	marauder-portscan-service	Service scan	Scan for a common network service.	portscan -s <ssh,telnet,dns,http,smtp,https,rdp>	active
-marauder	Network	marauder-arp	ARP scan	Scan the local network using ARP.	arpscan	active
-marauder	Network	marauder-arp-force	Force ARP scan	Start an ARP scan even if previous state remains.	arpscan -f	active
+marauder	Network	marauder-ping	Ping scan	Scan local hosts with ICMP ping.	pingscan	safe
+marauder	Network	marauder-portscan-target	Port scan target	Scan ports on a selected IP result.	portscan -a -t <ip_index>	safe
+marauder	Network	marauder-portscan-service	Service scan	Scan for a common network service.	portscan -s <ssh,telnet,dns,http,smtp,https,rdp>	safe
+marauder	Network	marauder-arp	ARP scan	Scan the local network using ARP.	arpscan	safe
+marauder	Network	marauder-arp-force	Force ARP scan	Start an ARP scan even if previous state remains.	arpscan -f	safe
 marauder	Network	marauder-mactrack	Track MAC	Track a selected MAC address.	mactrack	safe
 marauder	Lists	marauder-list-aps	List access points	Show scanned access points.	list -a	safe
 marauder	Lists	marauder-list-stations	List stations	Show scanned Wi-Fi stations.	list -s	safe
@@ -136,40 +136,40 @@ marauder	Lists	marauder-list-ble	List BLE	Show scanned Bluetooth devices.	list -
 marauder	Lists	marauder-list-findmy	List Find My	Show Find My devices.	list -f	safe
 marauder	Lists	marauder-list-flippers	List Flippers	Show detected Flipper devices.	list -x	safe
 marauder	Lists	marauder-list-multissid	List multi-SSID	Show multi-SSID devices.	list -m	safe
-marauder	Lists	marauder-clear-aps	Clear access points	Clear the access-point list.	clearlist -a	review
-marauder	Lists	marauder-clear-ssids	Clear SSIDs	Clear the SSID list.	clearlist -c	review
-marauder	Lists	marauder-clear-stations	Clear stations	Clear the station list.	clearlist -s	review
-marauder	Lists	marauder-select-ap	Select access points	Select one or more access-point indices.	select -a <indices>	review
-marauder	Lists	marauder-select-station	Select station	Select a station index.	select -s <index>	review
-marauder	Lists	marauder-select-ssid	Select SSIDs	Select one or more SSID indices.	select -c <indices>	review
-marauder	Lists	marauder-select-filter	Select by filter	Select items whose value equals or contains text.	select -f <filter_expression...>	review
+marauder	Lists	marauder-clear-aps	Clear access points	Clear the access-point list.	clearlist -a	safe
+marauder	Lists	marauder-clear-ssids	Clear SSIDs	Clear the SSID list.	clearlist -c	safe
+marauder	Lists	marauder-clear-stations	Clear stations	Clear the station list.	clearlist -s	safe
+marauder	Lists	marauder-select-ap	Select access points	Select one or more access-point indices.	select -a <indices>	safe
+marauder	Lists	marauder-select-station	Select station	Select a station index.	select -s <index>	safe
+marauder	Lists	marauder-select-ssid	Select SSIDs	Select one or more SSID indices.	select -c <indices>	safe
+marauder	Lists	marauder-select-filter	Select by filter	Select items whose value equals or contains text.	select -f <filter_expression...>	safe
 marauder	Lists	marauder-ap-info	Access point details	Show details for an access-point index.	info -a <index>	safe
-marauder	Profiles	marauder-ssid-generate	Generate SSIDs	Add generated SSIDs to the list.	ssid -a -g <count>	review
-marauder	Profiles	marauder-ssid-add	Add SSID	Add a named SSID to the list.	ssid -a -n <name>	review
-marauder	Profiles	marauder-ssid-remove	Remove SSID	Remove an SSID by index.	ssid -r <index>	review
-marauder	Profiles	marauder-save-aps	Save access points	Save the current access-point list.	save -a	review
-marauder	Profiles	marauder-save-stations	Save stations	Save the current station list.	save -s	review
-marauder	Profiles	marauder-load-aps	Load access points	Load a saved access-point list.	load -a	review
-marauder	Profiles	marauder-load-stations	Load stations	Load a saved station list.	load -s	review
-marauder	Network	marauder-join	Join selected network	Join a selected access point using a password.	join -a <ap_index> -p <password>	review
-marauder	Network	marauder-leave	Leave joined network	Disconnect the joined Wi-Fi network.	join -s	review
-marauder	Identity	marauder-random-ap-mac	Randomize AP MAC	Randomize the access-point MAC address.	randapmac	review
-marauder	Identity	marauder-random-sta-mac	Randomize station MAC	Randomize the station MAC address.	randstamac	review
-marauder	Identity	marauder-clone-ap-mac	Clone AP MAC	Clone an access-point MAC address.	cloneapmac [index]	review
-marauder	Identity	marauder-clone-sta-mac	Clone station MAC	Clone a station MAC address.	clonestamac [index]	review
-marauder	Lists	marauder-add-ap	Add access point	Add an access point manually.	add -a -b <mac_address> -ch <channel> -e <ssid>	review
-marauder	Lists	marauder-add-station	Add station	Add a station manually and associate it with an AP index.	add -c -b <mac_address> -ap <ap_index>	review
-marauder	Cloud	marauder-upload	Upload wardrive data	Upload wardrive results to a configured destination.	upload -d <wdg,wigle,both>	active
+marauder	Profiles	marauder-ssid-generate	Generate SSIDs	Add generated SSIDs to the list.	ssid -a -g <count>	safe
+marauder	Profiles	marauder-ssid-add	Add SSID	Add a named SSID to the list.	ssid -a -n <name>	safe
+marauder	Profiles	marauder-ssid-remove	Remove SSID	Remove an SSID by index.	ssid -r <index>	safe
+marauder	Profiles	marauder-save-aps	Save access points	Save the current access-point list.	save -a	safe
+marauder	Profiles	marauder-save-stations	Save stations	Save the current station list.	save -s	safe
+marauder	Profiles	marauder-load-aps	Load access points	Load a saved access-point list.	load -a	safe
+marauder	Profiles	marauder-load-stations	Load stations	Load a saved station list.	load -s	safe
+marauder	Network	marauder-join	Join selected network	Join a selected access point using a password.	join -a <ap_index> -p <password>	safe
+marauder	Network	marauder-leave	Leave joined network	Disconnect the joined Wi-Fi network.	join -s	safe
+marauder	Identity	marauder-random-ap-mac	Randomize AP MAC	Randomize the access-point MAC address.	randapmac	safe
+marauder	Identity	marauder-random-sta-mac	Randomize station MAC	Randomize the station MAC address.	randstamac	safe
+marauder	Identity	marauder-clone-ap-mac	Clone AP MAC	Clone an access-point MAC address.	cloneapmac [index]	safe
+marauder	Identity	marauder-clone-sta-mac	Clone station MAC	Clone a station MAC address.	clonestamac [index]	safe
+marauder	Lists	marauder-add-ap	Add access point	Add an access point manually.	add -a -b <mac_address> -ch <channel> -e <ssid>	safe
+marauder	Lists	marauder-add-station	Add station	Add a station manually and associate it with an AP index.	add -c -b <mac_address> -ap <ap_index>	safe
+marauder	Cloud	marauder-upload	Upload wardrive data	Upload wardrive results to a configured destination.	upload -d <wdg,wigle,both>	safe
 marauder	Bluetooth	marauder-sniffbt	Scan Bluetooth	Scan for nearby Bluetooth devices.	sniffbt	safe
 marauder	Bluetooth	marauder-sniffbt-type	Scan Bluetooth type	Scan for a specific Bluetooth advertiser type.	sniffbt -t <airtag,flipper,flock,meta>	safe
 marauder	Bluetooth	marauder-findmy	Track Find My device	Track a selected Find My device.	findmy -t <index>	safe
-marauder	Bluetooth	marauder-spoof-airtag	Spoof AirTag	Transmit as a selected AirTag.	spoofat -t <index>	active
+marauder	Bluetooth	marauder-spoof-airtag	Spoof AirTag	Transmit as a selected AirTag.	spoofat -t <index>	safe
 marauder	Bluetooth	marauder-sniff-skimmer	Scan for skimmers	Scan BLE advertisements for common skimmer signatures.	sniffskim	safe
-marauder	Bluetooth	marauder-ble-spam	BLE advertisement test	Transmit the selected BLE advertisement test pattern.	blespam -t <sourapple,applejuice,google,samsung,windows,flipper,all>	active
-marauder	Portal	marauder-evilportal-start	Start portal	Start the configured captive portal with an optional HTML file.	evilportal -c start [html_file]	active
-marauder	Portal	marauder-evilportal-html	Set portal HTML	Select a stored HTML file for the portal.	evilportal -c sethtml <html_file>	review
-marauder	Portal	marauder-karma	Karma test	Start a Karma test using a selected SSID index.	karma -p <ssid_index>	active
-marauder	Attack	marauder-attack	Wireless test action	Run a selected Marauder wireless test action against explicitly selected targets.	attack -t <quiet,csa,sae,beacon,deauth,probe,rickroll,badmsg,sleep>	active
+marauder	Bluetooth	marauder-ble-spam	BLE advertisement test	Transmit the selected BLE advertisement test pattern.	blespam -t <sourapple,applejuice,google,samsung,windows,flipper,all>	safe
+marauder	Portal	marauder-evilportal-start	Start portal	Start the configured captive portal with an optional HTML file.	evilportal -c start [html_file]	safe
+marauder	Portal	marauder-evilportal-html	Set portal HTML	Select a stored HTML file for the portal.	evilportal -c sethtml <html_file>	safe
+marauder	Portal	marauder-karma	Karma test	Start a Karma test using a selected SSID index.	karma -p <ssid_index>	safe
+marauder	Attack	marauder-attack	Wireless test action	Run a selected Marauder wireless test action against explicitly selected targets.	attack -t <quiet,csa,sae,beacon,deauth,probe,rickroll,badmsg,sleep>	safe
 
 ghostesp	System	ghost-help	Command help	Show command help, optionally for a category.	help [category]	safe
 ghostesp	System	ghost-version	Version	Show firmware, build, git, and IDF versions.	version	safe
@@ -184,207 +184,207 @@ ghostesp	System	ghost-whoami	Device identity	Show the current device identity.	w
 ghostesp	System	ghost-mem	Memory	Show memory usage.	mem	safe
 ghostesp	System	ghost-ps	Tasks	Show FreeRTOS task information.	ps	safe
 ghostesp	System	ghost-top	Task monitor	Show FreeRTOS task information.	top	safe
-ghostesp	System	ghost-reboot	Restart device	Restart the device.	reboot	active
+ghostesp	System	ghost-reboot	Restart device	Restart the device.	reboot	safe
 ghostesp	System	ghost-clear	Clear terminal	Clear an ANSI terminal display.	clear	safe
-ghostesp	System	ghost-crash	Crash diagnostic	Deliberately trigger a crash for diagnostic testing.	crash	active
+ghostesp	System	ghost-crash	Crash diagnostic	Deliberately trigger a crash for diagnostic testing.	crash	safe
 ghostesp	System	ghost-coredump	Core dump status	Show the saved core-dump summary.	coredump	safe
 ghostesp	System	ghost-coredump-dump	Print core dump	Print a saved core dump.	coredump dump	safe
-ghostesp	System	ghost-coredump-erase	Erase core dump	Erase the saved core dump.	coredump erase	active
+ghostesp	System	ghost-coredump-erase	Erase core dump	Erase the saved core dump.	coredump erase	safe
 ghostesp	Shell	ghost-echo	Echo text	Print text through the device shell.	echo <text...>	safe
 ghostesp	Shell	ghost-hostname	Show hostname	Show the prompt hostname.	hostname	safe
-ghostesp	Shell	ghost-hostname-set	Set hostname	Set the prompt hostname.	hostname <name>	review
-ghostesp	Shell	ghost-color	Prompt color	Set the ANSI prompt color.	color <color_or_off>	review
-ghostesp	Shell	ghost-cli-color	Prompt color alias	Set the ANSI prompt color using the compatibility command.	cli_color <color_or_off>	review
-ghostesp	Shell	ghost-banner	Boot banner	Control the boot banner.	banner <on,off,status>	review
-ghostesp	Shell	ghost-alias	Create shortcut	Create a persistent firmware command shortcut.	alias <name> <command...>	review
-ghostesp	Shell	ghost-unalias	Remove shortcut	Remove a saved firmware command shortcut.	unalias <name_or_all>	review
+ghostesp	Shell	ghost-hostname-set	Set hostname	Set the prompt hostname.	hostname <name>	safe
+ghostesp	Shell	ghost-color	Prompt color	Set the ANSI prompt color.	color <color_or_off>	safe
+ghostesp	Shell	ghost-cli-color	Prompt color alias	Set the ANSI prompt color using the compatibility command.	cli_color <color_or_off>	safe
+ghostesp	Shell	ghost-banner	Boot banner	Control the boot banner.	banner <on,off,status>	safe
+ghostesp	Shell	ghost-alias	Create shortcut	Create a persistent firmware command shortcut.	alias <name> <command...>	safe
+ghostesp	Shell	ghost-unalias	Remove shortcut	Remove a saved firmware command shortcut.	unalias <name_or_all>	safe
 ghostesp	Shell	ghost-history	Command history	Show firmware command history.	history	safe
-ghostesp	Shell	ghost-history-clear	Clear history	Clear firmware command history.	history -c	active
-ghostesp	Shell	ghost-didyoumean	Command suggestions	Control command spelling suggestions.	didyoumean [options]	review
+ghostesp	Shell	ghost-history-clear	Clear history	Clear firmware command history.	history -c	safe
+ghostesp	Shell	ghost-didyoumean	Command suggestions	Control command spelling suggestions.	didyoumean [options]	safe
 ghostesp	Shell	ghost-env	Environment	Show saved shell variables.	env	safe
-ghostesp	Shell	ghost-export	Set variable	Persist a shell variable.	export <name_and_value>	review
-ghostesp	Shell	ghost-watch	Repeat command	Repeat a command at an interval.	watch <seconds> <command...>	review
-ghostesp	Shell	ghost-watch-stop	Stop repeat	Stop the active watch command.	watch stop	review
+ghostesp	Shell	ghost-export	Set variable	Persist a shell variable.	export <name_and_value>	safe
+ghostesp	Shell	ghost-watch	Repeat command	Repeat a command at an interval.	watch <seconds> <command...>	safe
+ghostesp	Shell	ghost-watch-stop	Stop repeat	Stop the active watch command.	watch stop	safe
 ghostesp	Storage	ghost-df	Storage usage	Show mounted storage usage.	df	safe
 ghostesp	Storage	ghost-tail	Tail file	Print the end of a stored file.	tail <file_path> [line_count]	safe
 ghostesp	Storage	ghost-grep	Search file	Filter a stored file by a text pattern.	grep <pattern> <file_path>	safe
-ghostesp	Storage	ghost-source	Run command file	Run CLI commands from a stored file.	source <file_path>	active
-ghostesp	Storage	ghost-tee	Append text file	Append text to a stored file and echo it.	tee <file_path> <text...>	review
+ghostesp	Storage	ghost-source	Run command file	Run CLI commands from a stored file.	source <file_path>	safe
+ghostesp	Storage	ghost-tee	Append text file	Append text to a stored file and echo it.	tee <file_path> <text...>	safe
 ghostesp	Storage	ghost-sd-status	SD status	Show virtual or physical SD status and capacity.	sd status	safe
 ghostesp	Storage	ghost-sd-list	List files	List files and directories.	sd list [file_path]	safe
 ghostesp	Storage	ghost-sd-info	File information	Show file or directory details.	sd info <index_or_path>	safe
 ghostesp	Storage	ghost-sd-size	File size	Show a file size.	sd size <index_or_path>	safe
 ghostesp	Storage	ghost-sd-read	Read file	Read a range from a file.	sd read <index_or_path> [offset] [length]	safe
-ghostesp	Storage	ghost-sd-write	Write file	Create or overwrite a file from base64 data.	sd write <file_path> <base64_data...>	active
-ghostesp	Storage	ghost-sd-append	Append file	Append base64 data to a file.	sd append <file_path> <base64_data...>	review
-ghostesp	Storage	ghost-sd-mkdir	Create directory	Create a storage directory.	sd mkdir <file_path>	review
-ghostesp	Storage	ghost-sd-remove	Remove file	Delete a file or empty directory.	sd rm <index_or_path>	active
+ghostesp	Storage	ghost-sd-write	Write file	Create or overwrite a file from base64 data.	sd write <file_path> <base64_data...>	safe
+ghostesp	Storage	ghost-sd-append	Append file	Append base64 data to a file.	sd append <file_path> <base64_data...>	safe
+ghostesp	Storage	ghost-sd-mkdir	Create directory	Create a storage directory.	sd mkdir <file_path>	safe
+ghostesp	Storage	ghost-sd-remove	Remove file	Delete a file or empty directory.	sd rm <index_or_path>	safe
 ghostesp	Storage	ghost-sd-tree	Storage tree	Show a recursive storage listing.	sd tree [file_path] [depth]	safe
 ghostesp	Storage	ghost-sd-config	SD pin configuration	Show current SD GPIO configuration.	sd_config	safe
-ghostesp	Storage	ghost-sd-mmc	Set SDMMC pins	Configure SDMMC pins.	sd_pins_mmc <clk_pin> <cmd_pin> <d0_pin> <d1_pin> <d2_pin> <d3_pin>	review
-ghostesp	Storage	ghost-sd-spi	Set SD SPI pins	Configure SPI SD pins.	sd_pins_spi <cs_pin> <clk_pin> <miso_pin> <mosi_pin>	review
-ghostesp	Storage	ghost-sd-save	Save SD configuration	Save SD pin configuration to NVS.	sd_save_config	review
+ghostesp	Storage	ghost-sd-mmc	Set SDMMC pins	Configure SDMMC pins.	sd_pins_mmc <clk_pin> <cmd_pin> <d0_pin> <d1_pin> <d2_pin> <d3_pin>	safe
+ghostesp	Storage	ghost-sd-spi	Set SD SPI pins	Configure SPI SD pins.	sd_pins_spi <cs_pin> <clk_pin> <miso_pin> <mosi_pin>	safe
+ghostesp	Storage	ghost-sd-save	Save SD configuration	Save SD pin configuration to NVS.	sd_save_config	safe
 ghostesp	Wi-Fi	ghost-ifconfig	Network interfaces	Show STA, AP, and Ethernet interfaces.	ifconfig	safe
 ghostesp	Wi-Fi	ghost-scanap	Scan access points	Scan for Wi-Fi access points.	scanap [seconds]	safe
 ghostesp	Wi-Fi	ghost-scansta	Scan stations	Scan for Wi-Fi stations.	scansta	safe
-ghostesp	Wi-Fi	ghost-scanlocal	Look up local IPs	Discover local network hosts.	scanlocal [options]	active
-ghostesp	Wi-Fi	ghost-stopscan	Stop scan	Stop the active Wi-Fi scan.	stopscan	review
+ghostesp	Wi-Fi	ghost-scanlocal	Look up local IPs	Discover local network hosts.	scanlocal [options]	safe
+ghostesp	Wi-Fi	ghost-stopscan	Stop scan	Stop the active Wi-Fi scan.	stopscan	safe
 ghostesp	Wi-Fi	ghost-scanall	Wi-Fi and BLE scan	Run combined Wi-Fi and BLE scanning.	scanall [seconds]	safe
 ghostesp	Wi-Fi	ghost-sweep	Environment sweep	Run a timed Wi-Fi and BLE environment sweep.	sweep [options]	safe
 ghostesp	Wi-Fi	ghost-list-aps	List access points	List scanned Wi-Fi access points.	list -a	safe
 ghostesp	Wi-Fi	ghost-list-stations	List stations	List scanned Wi-Fi stations.	list -s	safe
-ghostesp	Wi-Fi	ghost-select-ap	Select access points	Select one or more access-point indices.	select -a <indices>	review
-ghostesp	Wi-Fi	ghost-select-station	Select station	Select a station index.	select -s <index>	review
-ghostesp	Wi-Fi	ghost-connect	Connect to Wi-Fi	Connect to a Wi-Fi network.	connect <ssid> [password]	review
-ghostesp	Wi-Fi	ghost-disconnect	Disconnect Wi-Fi	Disconnect the station interface.	disconnect	review
+ghostesp	Wi-Fi	ghost-select-ap	Select access points	Select one or more access-point indices.	select -a <indices>	safe
+ghostesp	Wi-Fi	ghost-select-station	Select station	Select a station index.	select -s <index>	safe
+ghostesp	Wi-Fi	ghost-connect	Connect to Wi-Fi	Connect to a Wi-Fi network.	connect <ssid> [password]	safe
+ghostesp	Wi-Fi	ghost-disconnect	Disconnect Wi-Fi	Disconnect the station interface.	disconnect	safe
 ghostesp	Wi-Fi	ghost-wifistatus	Wi-Fi status	Show current Wi-Fi state.	wifistatus	safe
-ghostesp	Wi-Fi	ghost-autoreconnect	Auto reconnect	Enable or disable Wi-Fi auto reconnect.	autoreconnect <on,off>	review
-ghostesp	Wi-Fi	ghost-apcred	Set AP credentials	Set the GhostNet access-point name and password.	apcred <ssid> <password>	review
-ghostesp	Wi-Fi	ghost-apenable	Access point state	Enable or disable the device access point.	apenable <on,off>	review
-ghostesp	Wi-Fi	ghost-ping	Ping host	Send ICMP echo requests.	ping <host> [count]	active
+ghostesp	Wi-Fi	ghost-autoreconnect	Auto reconnect	Enable or disable Wi-Fi auto reconnect.	autoreconnect <on,off>	safe
+ghostesp	Wi-Fi	ghost-apcred	Set AP credentials	Set the GhostNet access-point name and password.	apcred <ssid> <password>	safe
+ghostesp	Wi-Fi	ghost-apenable	Access point state	Enable or disable the device access point.	apenable <on,off>	safe
+ghostesp	Wi-Fi	ghost-ping	Ping host	Send ICMP echo requests.	ping <host> [count]	safe
 ghostesp	Wi-Fi	ghost-congestion	Channel congestion	Measure Wi-Fi channel congestion.	congestion	safe
 ghostesp	Wi-Fi	ghost-listenprobes	Listen for probes	Listen for Wi-Fi probe requests on an optional channel.	listenprobes [channel]	safe
-ghostesp	Wi-Fi	ghost-listenprobes-stop	Stop probe listener	Stop listening for Wi-Fi probes.	listenprobes stop	review
+ghostesp	Wi-Fi	ghost-listenprobes-stop	Stop probe listener	Stop listening for Wi-Fi probes.	listenprobes stop	safe
 ghostesp	Wi-Fi	ghost-wpa3check	WPA3 check	Check selected access points for WPA3 behavior.	wpa3check	safe
 ghostesp	Wi-Fi	ghost-pineap	PineAP detection	Detect PineAP behavior.	pineap [options]	safe
 ghostesp	Wi-Fi	ghost-trackap	Track access point	Track a selected access point.	trackap [options]	safe
 ghostesp	Wi-Fi	ghost-tracksta	Track station	Track a selected Wi-Fi station.	tracksta [options]	safe
-ghostesp	Network	ghost-scanports	Port scan	Scan ports on a local or specified target.	scanports <target_or_local>	active
-ghostesp	Network	ghost-scanarp	ARP scan	Scan the local network with ARP.	scanarp	active
-ghostesp	Network	ghost-scanssh	SSH scan	Scan the local network for SSH services.	scanssh	active
-ghostesp	Network	ghost-netbios	NetBIOS scan	Scan the local network for NetBIOS services.	netbiosscan	active
-ghostesp	Network	ghost-http-banner	HTTP banner scan	Collect HTTP service banners.	httpbannerscan	active
-ghostesp	Network	ghost-snmp	SNMP probe	Probe local devices for SNMP.	snmpprobe	active
-ghostesp	Network	ghost-enumscan	Enumeration scan	Run a configured network enumeration scan.	enumscan [options]	active
-ghostesp	Wi-Fi	ghost-webauth	Web authentication	Control Web UI authentication.	webauth <on,off,toggle,status>	review
-ghostesp	Wi-Fi	ghost-webuiap	Web UI AP	Control the Web UI access point.	webuiap [options]	review
-ghostesp	Settings	ghost-settings	Settings	Run a settings subcommand.	settings <operation> [arguments...]	review
-ghostesp	Settings	ghost-timezone	Timezone	Set the device timezone string.	timezone <timezone_string>	review
-ghostesp	Settings	ghost-settime	Set time	Set the device date and time.	settime <date_time...>	review
-ghostesp	Settings	ghost-setcountry	Set radio country	Set the two-letter regulatory country code on supported hardware.	setcountry <country_code>	review
-ghostesp	Settings	ghost-loadconfig	Load configuration	Load a saved configuration.	loadconfig <file_path>	review
-ghostesp	Settings	ghost-statusidle	Idle display	List or set the idle-display animation.	statusidle [options]	review
-ghostesp	Wi-Fi Test	ghost-attack-deauth	Deauthentication test	Run the selected deauthentication test.	attack -d	active
-ghostesp	Wi-Fi Test	ghost-attack-handshake	Handshake capture test	Run handshake capture with deauthentication on selected targets.	attack -hsd	active
-ghostesp	Wi-Fi Test	ghost-attack-channel	Channel-switch test	Send channel-switch announcements to selected targets.	attack -c	active
-ghostesp	Wi-Fi Test	ghost-attack-eapol	EAPOL logoff test	Send EAPOL logoff frames to selected targets.	attack -e	active
-ghostesp	Wi-Fi Test	ghost-attack-probe	Probe flood test	Run a probe-request load test.	attack -p	active
-ghostesp	Wi-Fi Test	ghost-attack-auth	Authentication flood test	Run an authentication-frame load test.	attack -a	active
-ghostesp	Wi-Fi Test	ghost-stopdeauth	Stop deauthentication	Stop an active deauthentication operation.	stopdeauth	review
-ghostesp	Wi-Fi Test	ghost-dhcpstarve	DHCP starvation test	Run a DHCP server capacity test.	dhcpstarve start [thread_count]	active
-ghostesp	Wi-Fi Test	ghost-saeflood	SAE load test	Run an SAE authentication load test against the selected WPA3 AP.	saeflood <password>	active
-ghostesp	Wi-Fi Test	ghost-stopsae	Stop SAE test	Stop the active SAE load test.	stopsaeflood	review
+ghostesp	Network	ghost-scanports	Port scan	Scan ports on a local or specified target.	scanports <target_or_local>	safe
+ghostesp	Network	ghost-scanarp	ARP scan	Scan the local network with ARP.	scanarp	safe
+ghostesp	Network	ghost-scanssh	SSH scan	Scan the local network for SSH services.	scanssh	safe
+ghostesp	Network	ghost-netbios	NetBIOS scan	Scan the local network for NetBIOS services.	netbiosscan	safe
+ghostesp	Network	ghost-http-banner	HTTP banner scan	Collect HTTP service banners.	httpbannerscan	safe
+ghostesp	Network	ghost-snmp	SNMP probe	Probe local devices for SNMP.	snmpprobe	safe
+ghostesp	Network	ghost-enumscan	Enumeration scan	Run a configured network enumeration scan.	enumscan [options]	safe
+ghostesp	Wi-Fi	ghost-webauth	Web authentication	Control Web UI authentication.	webauth <on,off,toggle,status>	safe
+ghostesp	Wi-Fi	ghost-webuiap	Web UI AP	Control the Web UI access point.	webuiap [options]	safe
+ghostesp	Settings	ghost-settings	Settings	Run a settings subcommand.	settings <operation> [arguments...]	safe
+ghostesp	Settings	ghost-timezone	Timezone	Set the device timezone string.	timezone <timezone_string>	safe
+ghostesp	Settings	ghost-settime	Set time	Set the device date and time.	settime <date_time...>	safe
+ghostesp	Settings	ghost-setcountry	Set radio country	Set the two-letter regulatory country code on supported hardware.	setcountry <country_code>	safe
+ghostesp	Settings	ghost-loadconfig	Load configuration	Load a saved configuration.	loadconfig <file_path>	safe
+ghostesp	Settings	ghost-statusidle	Idle display	List or set the idle-display animation.	statusidle [options]	safe
+ghostesp	Wi-Fi Test	ghost-attack-deauth	Deauthentication test	Run the selected deauthentication test.	attack -d	safe
+ghostesp	Wi-Fi Test	ghost-attack-handshake	Handshake capture test	Run handshake capture with deauthentication on selected targets.	attack -hsd	safe
+ghostesp	Wi-Fi Test	ghost-attack-channel	Channel-switch test	Send channel-switch announcements to selected targets.	attack -c	safe
+ghostesp	Wi-Fi Test	ghost-attack-eapol	EAPOL logoff test	Send EAPOL logoff frames to selected targets.	attack -e	safe
+ghostesp	Wi-Fi Test	ghost-attack-probe	Probe flood test	Run a probe-request load test.	attack -p	safe
+ghostesp	Wi-Fi Test	ghost-attack-auth	Authentication flood test	Run an authentication-frame load test.	attack -a	safe
+ghostesp	Wi-Fi Test	ghost-stopdeauth	Stop deauthentication	Stop an active deauthentication operation.	stopdeauth	safe
+ghostesp	Wi-Fi Test	ghost-dhcpstarve	DHCP starvation test	Run a DHCP server capacity test.	dhcpstarve start [thread_count]	safe
+ghostesp	Wi-Fi Test	ghost-saeflood	SAE load test	Run an SAE authentication load test against the selected WPA3 AP.	saeflood <password>	safe
+ghostesp	Wi-Fi Test	ghost-stopsae	Stop SAE test	Stop the active SAE load test.	stopsaeflood	safe
 ghostesp	Wi-Fi Test	ghost-saehelp	SAE test help	Show detailed SAE test help.	saefloodhelp	safe
-ghostesp	Wi-Fi Test	ghost-karma-start	Karma test	Start a Karma test with optional SSID names.	karma start [ssid_list...]	active
-ghostesp	Wi-Fi Test	ghost-karma-stop	Stop Karma	Stop the active Karma test.	karma stop	review
-ghostesp	Beacon	ghost-beaconspam	Beacon test	Start a selected beacon advertisement test.	beaconspam [options]	active
-ghostesp	Beacon	ghost-beaconadd	Add beacon SSID	Add an SSID to the beacon test list.	beaconadd <ssid>	review
-ghostesp	Beacon	ghost-beaconremove	Remove beacon SSID	Remove an SSID from the beacon test list.	beaconremove <ssid>	review
-ghostesp	Beacon	ghost-beaconclear	Clear beacon list	Clear the beacon test list.	beaconclear	active
+ghostesp	Wi-Fi Test	ghost-karma-start	Karma test	Start a Karma test with optional SSID names.	karma start [ssid_list...]	safe
+ghostesp	Wi-Fi Test	ghost-karma-stop	Stop Karma	Stop the active Karma test.	karma stop	safe
+ghostesp	Beacon	ghost-beaconspam	Beacon test	Start a selected beacon advertisement test.	beaconspam [options]	safe
+ghostesp	Beacon	ghost-beaconadd	Add beacon SSID	Add an SSID to the beacon test list.	beaconadd <ssid>	safe
+ghostesp	Beacon	ghost-beaconremove	Remove beacon SSID	Remove an SSID from the beacon test list.	beaconremove <ssid>	safe
+ghostesp	Beacon	ghost-beaconclear	Clear beacon list	Clear the beacon test list.	beaconclear	safe
 ghostesp	Beacon	ghost-beaconshow	Show beacon list	Show the beacon test list.	beaconshow	safe
-ghostesp	Beacon	ghost-beaconlist-start	Run beacon list	Start transmitting the configured beacon list.	beaconspamlist	active
-ghostesp	Beacon	ghost-stopspam	Stop beacon test	Stop the active beacon advertisement test.	stopspam	review
+ghostesp	Beacon	ghost-beaconlist-start	Run beacon list	Start transmitting the configured beacon list.	beaconspamlist	safe
+ghostesp	Beacon	ghost-stopspam	Stop beacon test	Stop the active beacon advertisement test.	stopspam	safe
 ghostesp	Capture	ghost-capture	Packet capture	Start a selected packet-capture mode with optional channel settings.	capture <capture_mode> [options]	safe
 ghostesp	Capture	ghost-capture-export	Export PCAP	Export a PCAP file through the firmware capture interface.	capture -export <pcap_file>	safe
 ghostesp	Capture	ghost-capture-wireshark	Wireshark stream	Stream captured frames for Wireshark.	capture -wireshark [channel]	safe
 ghostesp	Wardrive	ghost-startwd	Start wardrive	Start GPS wardriving with optional channel settings.	startwd [options]	safe
 ghostesp	Wardrive	ghost-wdstream-start	Start wardrive stream	Start a live wardrive stream.	wdstream start [options]	safe
-ghostesp	Wardrive	ghost-wdstream-stop	Stop wardrive stream	Stop live wardrive streaming.	wdstream stop	review
+ghostesp	Wardrive	ghost-wdstream-stop	Stop wardrive stream	Stop live wardrive streaming.	wdstream stop	safe
 ghostesp	Wardrive	ghost-wdstream-status	Wardrive stream status	Show wardrive stream status.	wdstream status	safe
-ghostesp	Wardrive	ghost-wigle-api	WiGLE credentials	Set WiGLE API credentials.	wigle API <api_token>	review
-ghostesp	Wardrive	ghost-wigle-auto	WiGLE automatic upload	Enable or disable automatic WiGLE uploads.	wigle auto <on,off>	review
-ghostesp	Wardrive	ghost-wigle-donate	WiGLE donate flag	Enable or disable the WiGLE donate flag.	wigle donate <on,off>	review
+ghostesp	Wardrive	ghost-wigle-api	WiGLE credentials	Set WiGLE API credentials.	wigle API <api_token>	safe
+ghostesp	Wardrive	ghost-wigle-auto	WiGLE automatic upload	Enable or disable automatic WiGLE uploads.	wigle auto <on,off>	safe
+ghostesp	Wardrive	ghost-wigle-donate	WiGLE donate flag	Enable or disable the WiGLE donate flag.	wigle donate <on,off>	safe
 ghostesp	Wardrive	ghost-wigle-show	WiGLE settings	Show WiGLE settings.	wigle show	safe
 ghostesp	Wardrive	ghost-wigle-files	WiGLE files	List wardrive CSV files.	wigle files [page]	safe
-ghostesp	Wardrive	ghost-wigle-upload	Upload WiGLE file	Upload a selected wardrive CSV file.	wigle upload <file_name>	active
+ghostesp	Wardrive	ghost-wigle-upload	Upload WiGLE file	Upload a selected wardrive CSV file.	wigle upload <file_name>	safe
 ghostesp	Wardrive	ghost-wigle-stats	WiGLE statistics	Show account statistics for the current API key.	wigle stats	safe
 ghostesp	GPS	ghost-gpsinfo	GPS information	Show GPS state and fix details.	gpsinfo [options]	safe
-ghostesp	GPS	ghost-gpspin	GPS RX pin	Set the external GPS receive pin.	gpspin <pin>	review
-ghostesp	GPS	ghost-gpsbaud	GPS baud rate	Set or auto-detect the GPS baud rate.	gpsbaud <auto,0,4800,9600,19200,38400,57600,115200>	review
+ghostesp	GPS	ghost-gpspin	GPS RX pin	Set the external GPS receive pin.	gpspin <pin>	safe
+ghostesp	GPS	ghost-gpsbaud	GPS baud rate	Set or auto-detect the GPS baud rate.	gpsbaud <auto,0,4800,9600,19200,38400,57600,115200>	safe
 ghostesp	Bluetooth	ghost-blescan	Scan Bluetooth	Scan nearby Bluetooth Low Energy devices.	blescan [options]	safe
 ghostesp	Bluetooth	ghost-blewardrive	BLE wardrive	Start Bluetooth wardriving.	blewardriving [options]	safe
 ghostesp	Bluetooth	ghost-listairtags	List AirTags	List detected AirTag-compatible advertisers.	listairtags	safe
-ghostesp	Bluetooth	ghost-selectairtag	Select AirTag	Select an AirTag result by index.	selectairtag <index>	review
-ghostesp	Bluetooth	ghost-spoofairtag	Spoof AirTag	Transmit as the selected AirTag.	spoofairtag [options]	active
-ghostesp	Bluetooth	ghost-stopspoof	Stop AirTag spoof	Stop active AirTag spoofing.	stopspoof	review
-ghostesp	Bluetooth	ghost-blespam	BLE advertisement test	Run a selected BLE advertisement test pattern.	blespam [options]	active
+ghostesp	Bluetooth	ghost-selectairtag	Select AirTag	Select an AirTag result by index.	selectairtag <index>	safe
+ghostesp	Bluetooth	ghost-spoofairtag	Spoof AirTag	Transmit as the selected AirTag.	spoofairtag [options]	safe
+ghostesp	Bluetooth	ghost-stopspoof	Stop AirTag spoof	Stop active AirTag spoofing.	stopspoof	safe
+ghostesp	Bluetooth	ghost-blespam	BLE advertisement test	Run a selected BLE advertisement test pattern.	blespam [options]	safe
 ghostesp	Bluetooth	ghost-listadv	List advertisers	List Bluetooth advertisers.	listadv	safe
 ghostesp	Bluetooth	ghost-listflippers	List Flippers	List detected Flipper devices.	listflippers	safe
-ghostesp	Bluetooth	ghost-selectflipper	Select Flipper	Select a Flipper result.	selectflipper <index>	review
+ghostesp	Bluetooth	ghost-selectflipper	Select Flipper	Select a Flipper result.	selectflipper <index>	safe
 ghostesp	Bluetooth	ghost-listgatt	List GATT devices	List discovered GATT devices.	listgatt	safe
-ghostesp	Bluetooth	ghost-selectgatt	Select GATT device	Select a GATT device by index.	selectgatt <index>	review
+ghostesp	Bluetooth	ghost-selectgatt	Select GATT device	Select a GATT device by index.	selectgatt <index>	safe
 ghostesp	Bluetooth	ghost-enumgatt	Enumerate GATT	Enumerate services for the selected GATT device.	enumgatt [options]	safe
 ghostesp	Bluetooth	ghost-trackgatt	Track GATT	Track a selected GATT device.	trackgatt [options]	safe
-ghostesp	Bluetooth	ghost-blebridge	BLE bridge	Start, stop, inspect, or pair the GhostLink bridge.	blebridge <start,stop,status,pair> [peer_name]	review
-ghostesp	Bluetooth	ghost-chameleon	Chameleon device	Run a Chameleon connection, scan, reader, emulator, or status operation.	chameleon <operation> [arguments...]	review
+ghostesp	Bluetooth	ghost-blebridge	BLE bridge	Start, stop, inspect, or pair the GhostLink bridge.	blebridge <start,stop,status,pair> [peer_name]	safe
+ghostesp	Bluetooth	ghost-chameleon	Chameleon device	Run a Chameleon connection, scan, reader, emulator, or status operation.	chameleon <operation> [arguments...]	safe
 ghostesp	Communication	ghost-commdiscovery	Peer discovery status	Show ESP communication peer discovery status.	commdiscovery	safe
-ghostesp	Communication	ghost-commconnect	Connect peer	Connect to a discovered ESP peer.	commconnect <peer_name>	review
-ghostesp	Communication	ghost-commsend	Send peer command	Send a command and optional data to the connected ESP peer.	commsend <command> [data...]	active
+ghostesp	Communication	ghost-commconnect	Connect peer	Connect to a discovered ESP peer.	commconnect <peer_name>	safe
+ghostesp	Communication	ghost-commsend	Send peer command	Send a command and optional data to the connected ESP peer.	commsend <command> [data...]	safe
 ghostesp	Communication	ghost-commstatus	Peer status	Show ESP communication status.	commstatus	safe
-ghostesp	Communication	ghost-commdisconnect	Disconnect peer	Disconnect the current ESP peer.	commdisconnect	review
-ghostesp	Communication	ghost-commsetpins	Set peer UART pins	Change ESP communication TX and RX pins.	commsetpins <tx_pin> <rx_pin>	review
-ghostesp	OTA	ghost-otarecv	Receive peer update	Prepare to receive an OTA firmware image from a peer.	otarecv [options]	active
+ghostesp	Communication	ghost-commdisconnect	Disconnect peer	Disconnect the current ESP peer.	commdisconnect	safe
+ghostesp	Communication	ghost-commsetpins	Set peer UART pins	Change ESP communication TX and RX pins.	commsetpins <tx_pin> <rx_pin>	safe
+ghostesp	OTA	ghost-otarecv	Receive peer update	Prepare to receive an OTA firmware image from a peer.	otarecv [options]	safe
 ghostesp	OTA	ghost-otastatus	OTA status	Show peer OTA transfer status.	otastatus	safe
-ghostesp	OTA	ghost-otaabort	Abort OTA	Abort the current OTA transfer.	otaabort	review
+ghostesp	OTA	ghost-otaabort	Abort OTA	Abort the current OTA transfer.	otaabort	safe
 ghostesp	OTA	ghost-otainfo	OTA information	Show peer OTA capabilities.	otainfo	safe
-ghostesp	Portal	ghost-startportal	Start portal	Start an Evil Portal using a file, SSID, and optional password.	startportal [file_path] [ap_ssid] [password]	active
-ghostesp	Portal	ghost-stopportal	Stop portal	Stop the active portal.	stopportal	review
+ghostesp	Portal	ghost-startportal	Start portal	Start an Evil Portal using a file, SSID, and optional password.	startportal [file_path] [ap_ssid] [password]	safe
+ghostesp	Portal	ghost-stopportal	Stop portal	Stop the active portal.	stopportal	safe
 ghostesp	Portal	ghost-listportals	List portals	List stored Evil Portal files.	listportals	safe
-ghostesp	Portal	ghost-evilportal	Portal command	Run an Evil Portal configuration command.	evilportal <options...>	active
-ghostesp	Portal	ghost-sinkhole	DNS sinkhole	Control the DNS sinkhole feature.	sinkhole [options]	active
-ghostesp	LED	ghost-rgbmode	LED effect	Select an RGB LED effect or color.	rgbmode <rainbow,police,strobe,knight,off,color>	review
-ghostesp	LED	ghost-setrgbmode	Set LED mode	Set the saved RGB LED mode.	setrgbmode <mode>	review
-ghostesp	LED	ghost-setrgbpins	Set RGB pins	Set red, green, and blue GPIO pins.	setrgbpins <red_pin> <green_pin> <blue_pin>	review
-ghostesp	LED	ghost-setrgbcount	Set RGB count	Set the number of attached RGB LEDs.	setrgbcount <led_count>	review
-ghostesp	LED	ghost-setbrightness	Set LED brightness	Set maximum NeoPixel brightness percentage.	setneopixelbrightness <percent>	review
+ghostesp	Portal	ghost-evilportal	Portal command	Run an Evil Portal configuration command.	evilportal <options...>	safe
+ghostesp	Portal	ghost-sinkhole	DNS sinkhole	Control the DNS sinkhole feature.	sinkhole [options]	safe
+ghostesp	LED	ghost-rgbmode	LED effect	Select an RGB LED effect or color.	rgbmode <rainbow,police,strobe,knight,off,color>	safe
+ghostesp	LED	ghost-setrgbmode	Set LED mode	Set the saved RGB LED mode.	setrgbmode <mode>	safe
+ghostesp	LED	ghost-setrgbpins	Set RGB pins	Set red, green, and blue GPIO pins.	setrgbpins <red_pin> <green_pin> <blue_pin>	safe
+ghostesp	LED	ghost-setrgbcount	Set RGB count	Set the number of attached RGB LEDs.	setrgbcount <led_count>	safe
+ghostesp	LED	ghost-setbrightness	Set LED brightness	Set maximum NeoPixel brightness percentage.	setneopixelbrightness <percent>	safe
 ghostesp	LED	ghost-getbrightness	LED brightness	Show maximum NeoPixel brightness.	getneopixelbrightness	safe
-ghostesp	Hardware	ghost-nfc	NFC command	Run a supported NFC subcommand.	nfc <options...>	review
-ghostesp	Hardware	ghost-nfctest	NFC self-test	Run the NFC hardware self-test.	nfctest	review
-ghostesp	Hardware	ghost-ir	Infrared command	Run an infrared send, learn, receive, list, show, universal, or dazzler operation.	ir <operation> [arguments...]	active
-ghostesp	Hardware	ghost-nrf24	nRF24 command	Run an nRF24 radio operation.	nrf24 <options...>	active
-ghostesp	Hardware	ghost-subghz	Sub-GHz command	Run a sub-GHz radio operation.	subghz <options...>	active
-ghostesp	Hardware	ghost-audio	Audio command	Run a supported audio operation.	audio <options...>	review
-ghostesp	Hardware	ghost-badusb	BadUSB command	Run a supported USB HID script operation.	badusb <options...>	active
-ghostesp	Hardware	ghost-usbkbd	USB keyboard	Run a USB keyboard operation on supported S3 hardware.	usbkbd <options...>	active
-ghostesp	Hardware	ghost-mic-cal	Microphone calibration	Run microphone calibration on supported hardware.	mic_cal [options]	review
-ghostesp	Hardware	ghost-identify	Identify device	Run the physical device identification indicator.	identify [options]	review
-ghostesp	Hardware	ghost-input	Input control	Send a firmware input action.	input <options...>	review
-ghostesp	Hardware	ghost-iobtn	I/O button	Configure or trigger an I/O button action.	iobtn <options...>	review
-ghostesp	Hardware	ghost-mirror	Mirror mode	Control device mirror mode.	mirror <options...>	review
-ghostesp	Hardware	ghost-rave	Rave mode	Control the device rave feature.	rave <options...>	review
-ghostesp	Hardware	ghost-raveport	Rave port	Configure the rave communication port.	raveport <options...>	review
+ghostesp	Hardware	ghost-nfc	NFC command	Run a supported NFC subcommand.	nfc <options...>	safe
+ghostesp	Hardware	ghost-nfctest	NFC self-test	Run the NFC hardware self-test.	nfctest	safe
+ghostesp	Hardware	ghost-ir	Infrared command	Run an infrared send, learn, receive, list, show, universal, or dazzler operation.	ir <operation> [arguments...]	safe
+ghostesp	Hardware	ghost-nrf24	nRF24 command	Run an nRF24 radio operation.	nrf24 <options...>	safe
+ghostesp	Hardware	ghost-subghz	Sub-GHz command	Run a sub-GHz radio operation.	subghz <options...>	safe
+ghostesp	Hardware	ghost-audio	Audio command	Run a supported audio operation.	audio <options...>	safe
+ghostesp	Hardware	ghost-badusb	BadUSB command	Run a supported USB HID script operation.	badusb <options...>	safe
+ghostesp	Hardware	ghost-usbkbd	USB keyboard	Run a USB keyboard operation on supported S3 hardware.	usbkbd <options...>	safe
+ghostesp	Hardware	ghost-mic-cal	Microphone calibration	Run microphone calibration on supported hardware.	mic_cal [options]	safe
+ghostesp	Hardware	ghost-identify	Identify device	Run the physical device identification indicator.	identify [options]	safe
+ghostesp	Hardware	ghost-input	Input control	Send a firmware input action.	input <options...>	safe
+ghostesp	Hardware	ghost-iobtn	I/O button	Configure or trigger an I/O button action.	iobtn <options...>	safe
+ghostesp	Hardware	ghost-mirror	Mirror mode	Control device mirror mode.	mirror <options...>	safe
+ghostesp	Hardware	ghost-rave	Rave mode	Control the device rave feature.	rave <options...>	safe
+ghostesp	Hardware	ghost-raveport	Rave port	Configure the rave communication port.	raveport <options...>	safe
 ghostesp	Hardware	ghost-aerialscan	Aerial scan	Scan for supported aerial devices.	aerialscan [options]	safe
 ghostesp	Hardware	ghost-aeriallist	List aerial devices	List detected aerial devices.	aeriallist	safe
 ghostesp	Hardware	ghost-aerialtrack	Track aerial device	Track a selected aerial device.	aerialtrack <index>	safe
-ghostesp	Hardware	ghost-aerialstop	Stop aerial operation	Stop the current aerial operation.	aerialstop	review
-ghostesp	Hardware	ghost-aerialspoof	Spoof aerial device	Transmit as a selected aerial device.	aerialspoof <index>	active
-ghostesp	Hardware	ghost-aerialspoofstop	Stop aerial spoof	Stop aerial spoofing.	aerialspoofstop	review
+ghostesp	Hardware	ghost-aerialstop	Stop aerial operation	Stop the current aerial operation.	aerialstop	safe
+ghostesp	Hardware	ghost-aerialspoof	Spoof aerial device	Transmit as a selected aerial device.	aerialspoof <index>	safe
+ghostesp	Hardware	ghost-aerialspoofstop	Stop aerial spoof	Stop aerial spoofing.	aerialspoofstop	safe
 ghostesp	Hardware	ghost-flockscan	Flock scan	Scan for Flock-compatible signals.	flockscan	safe
 ghostesp	Hardware	ghost-flocklist	List Flock devices	List detected Flock-compatible devices.	flocklist	safe
-ghostesp	Hardware	ghost-flockstop	Stop Flock scan	Stop Flock scanning.	flockstop	review
-ghostesp	Hardware	ghost-motion	Motion detection	Configure or control camera motion detection.	motion <operation> [arguments...]	review
-ghostesp	Hardware	ghost-camera	Camera stream	Configure or control the camera stream.	camerastream <operation> [arguments...]	review
-ghostesp	Hardware	ghost-apps	Applications	List or launch firmware applications.	apps [options]	review
-ghostesp	Ethernet	ghost-ethup	Start Ethernet	Bring up the Ethernet interface.	ethup	review
-ghostesp	Ethernet	ghost-ethdown	Stop Ethernet	Bring down the Ethernet interface.	ethdown	review
+ghostesp	Hardware	ghost-flockstop	Stop Flock scan	Stop Flock scanning.	flockstop	safe
+ghostesp	Hardware	ghost-motion	Motion detection	Configure or control camera motion detection.	motion <operation> [arguments...]	safe
+ghostesp	Hardware	ghost-camera	Camera stream	Configure or control the camera stream.	camerastream <operation> [arguments...]	safe
+ghostesp	Hardware	ghost-apps	Applications	List or launch firmware applications.	apps [options]	safe
+ghostesp	Ethernet	ghost-ethup	Start Ethernet	Bring up the Ethernet interface.	ethup	safe
+ghostesp	Ethernet	ghost-ethdown	Stop Ethernet	Bring down the Ethernet interface.	ethdown	safe
 ghostesp	Ethernet	ghost-ethinfo	Ethernet information	Show Ethernet link information.	ethinfo	safe
-ghostesp	Ethernet	ghost-ethfp	Ethernet fingerprint	Fingerprint devices over Ethernet.	ethfp [options]	active
-ghostesp	Ethernet	ghost-etharp	Ethernet ARP scan	Run an ARP scan over Ethernet.	etharp [options]	active
-ghostesp	Ethernet	ghost-ethports	Ethernet port scan	Scan Ethernet host ports.	ethports [ip_address] [port_range]	active
-ghostesp	Ethernet	ghost-ethping	Ethernet ping	Ping over Ethernet.	ethping [target]	active
-ghostesp	Ethernet	ghost-ethdns	Ethernet DNS	Resolve a hostname over Ethernet.	ethdns <hostname>	active
-ghostesp	Ethernet	ghost-ethtrace	Ethernet trace	Trace a route over Ethernet.	ethtrace <host> [max_hops]	active
+ghostesp	Ethernet	ghost-ethfp	Ethernet fingerprint	Fingerprint devices over Ethernet.	ethfp [options]	safe
+ghostesp	Ethernet	ghost-etharp	Ethernet ARP scan	Run an ARP scan over Ethernet.	etharp [options]	safe
+ghostesp	Ethernet	ghost-ethports	Ethernet port scan	Scan Ethernet host ports.	ethports [ip_address] [port_range]	safe
+ghostesp	Ethernet	ghost-ethping	Ethernet ping	Ping over Ethernet.	ethping [target]	safe
+ghostesp	Ethernet	ghost-ethdns	Ethernet DNS	Resolve a hostname over Ethernet.	ethdns <hostname>	safe
+ghostesp	Ethernet	ghost-ethtrace	Ethernet trace	Trace a route over Ethernet.	ethtrace <host> [max_hops]	safe
 ghostesp	Ethernet	ghost-ethstats	Ethernet statistics	Show Ethernet statistics.	ethstats	safe
-ghostesp	Ethernet	ghost-ethconfig	Ethernet configuration	Run an Ethernet configuration operation.	ethconfig <operation> [arguments...]	review
+ghostesp	Ethernet	ghost-ethconfig	Ethernet configuration	Run an Ethernet configuration operation.	ethconfig <operation> [arguments...]	safe
 ghostesp	Ethernet	ghost-ethmac	Ethernet MAC	Show the Ethernet MAC address.	ethmac	safe
-ghostesp	Ethernet	ghost-ethserv	Ethernet services	Discover services at an optional IP address.	ethserv [ip_address]	active
-ghostesp	Ethernet	ghost-ethntp	Ethernet NTP	Query an NTP server over Ethernet.	ethntp [ntp_server]	active
-ghostesp	Ethernet	ghost-ethhttp	Ethernet HTTP	Fetch a URL over Ethernet.	ethhttp <url> [lines_or_all]	active
-ghostesp	Ethernet	ghost-ethpoison	Ethernet poisoning test	Run the Ethernet poisoning test operation.	ethpoison <options...>	active
-ghostesp	Network	ghost-tplink	TP-Link test	Run the configured TP-Link device test.	tplinktest <options...>	active
-ghostesp	Network	ghost-wol	Wake on LAN	Send a Wake-on-LAN packet.	wol <mac_or_ip> [broadcast_ip]	active
-ghostesp	Network	ghost-govee	Govee control	Scan or control a Govee device.	govee <options...>	active
-ghostesp	Network	ghost-dial	Dial connect	Run the configured dial connection operation.	dialconnect	active
-ghostesp	Network	ghost-printer	Printer action	Send text to a configured network printer.	powerprinter <printer_ip> <text> <font_size> <alignment>	active
-ghostesp	Scripts	ghost-script	GhostScript	List, run, inspect, or stop a GhostScript.	script <list,run,status,stop> [index]	active
-ghostesp	System	ghost-stop	Stop current operation	Stop the active firmware operation.	stop	review
+ghostesp	Ethernet	ghost-ethserv	Ethernet services	Discover services at an optional IP address.	ethserv [ip_address]	safe
+ghostesp	Ethernet	ghost-ethntp	Ethernet NTP	Query an NTP server over Ethernet.	ethntp [ntp_server]	safe
+ghostesp	Ethernet	ghost-ethhttp	Ethernet HTTP	Fetch a URL over Ethernet.	ethhttp <url> [lines_or_all]	safe
+ghostesp	Ethernet	ghost-ethpoison	Ethernet poisoning test	Run the Ethernet poisoning test operation.	ethpoison <options...>	safe
+ghostesp	Network	ghost-tplink	TP-Link test	Run the configured TP-Link device test.	tplinktest <options...>	safe
+ghostesp	Network	ghost-wol	Wake on LAN	Send a Wake-on-LAN packet.	wol <mac_or_ip> [broadcast_ip]	safe
+ghostesp	Network	ghost-govee	Govee control	Scan or control a Govee device.	govee <options...>	safe
+ghostesp	Network	ghost-dial	Dial connect	Run the configured dial connection operation.	dialconnect	safe
+ghostesp	Network	ghost-printer	Printer action	Send text to a configured network printer.	powerprinter <printer_ip> <text> <font_size> <alignment>	safe
+ghostesp	Scripts	ghost-script	GhostScript	List, run, inspect, or stop a GhostScript.	script <list,run,status,stop> [index]	safe
+ghostesp	System	ghost-stop	Stop current operation	Stop the active firmware operation.	stop	safe
