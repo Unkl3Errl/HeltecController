@@ -195,6 +195,13 @@
 
             <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="QUICK ACTIONS // NO ATTACKS" />
 
+            <Button
+                android:id="@+id/marauderGuidedCommands"
+                style="@style/ActionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ALL COMMANDS" />
+
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
                 <Button android:id="@+id/cmdHelp" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="3dp" android:layout_weight="1" android:text="HELP" />
                 <Button android:id="@+id/cmdGpsFix" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="3dp" android:layout_marginRight="3dp" android:layout_weight="1" android:text="GPS FIX" />

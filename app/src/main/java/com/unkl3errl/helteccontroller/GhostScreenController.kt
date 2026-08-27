@@ -26,6 +26,8 @@ import android.widget.TextView
 import android.widget.Toast
 import com.unkl3errl.helteccontroller.ghost.GhostApiClient
 import com.unkl3errl.helteccontroller.ghost.GhostUsbSerial
+import com.unkl3errl.helteccontroller.guided.GuidedCommandDialog
+import com.unkl3errl.helteccontroller.guided.GuidedFirmware
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -129,6 +131,11 @@ class GhostScreenController(
         bindCommand(R.id.ghostCmdGpsInfo, "gpsinfo")
         bindCommand(R.id.ghostCmdWifiStatus, "wifistatus")
         bindCommand(R.id.ghostCmdStop, "stop")
+        root.findViewById<Button>(R.id.ghostGuidedCommands).setOnClickListener {
+            GuidedCommandDialog.show(activity, GuidedFirmware.GHOSTESP) { _, command ->
+                sendCommand(command)
+            }
+        }
 
         root.findViewById<Button>(R.id.ghostConsolePageUp).setOnClickListener {
             scrollConsoleBy(-(console.height * 3 / 4).coerceAtLeast(1))
