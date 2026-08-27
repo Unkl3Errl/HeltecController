@@ -569,17 +569,26 @@ private class StorageSpoolMirror(
 }
 
 private fun deviceFolderName(session: PersistentDeviceSession): String {
-    // Use the transport identity that created the session. A session can later gain its fallback
-    // transport, but its Android archive folder must not change in the middle of a transfer.
-    val identity = when {
-        ":ble:" in session.connectionId -> session.connectionId.substringAfter(":ble:")
-        else -> session.usbTarget?.serialNumber?.takeIf(String::isNotBlank)
-            ?: session.bluetoothAddress
-    }
-        ?: session.connectionId.substringAfterLast(':')
+    return stableArchiveDeviceFolderName(
+        connectionId = session.connectionId,
+        usbSerialNumber = session.usbTarget?.serialNumber,
+        bluetoothAddress = session.bluetoothAddress,
+    )
+}
+
+internal fun stableArchiveDeviceFolderName(
+    connectionId: String,
+    usbSerialNumber: String?,
+    bluetoothAddress: String?,
+): String {
+    // Prefer the USB serial once it is known. ESP32 USB and Bluetooth interfaces advertise
+    // related but different MAC addresses, and treating both as separate devices fragmented one
+    // physical board's archive. The identity itself is stable; a per-session hash is not needed.
+    val identity = usbSerialNumber?.takeIf(String::isNotBlank)
+        ?: bluetoothAddress?.takeIf(String::isNotBlank)
+        ?: connectionId.substringAfterLast(':')
     val safe = identity.replace(Regex("[^A-Za-z0-9._-]"), "-").take(48).ifBlank { "device" }
-    val suffix = session.connectionId.hashCode().toUInt().toString(16).padStart(8, '0')
-    return "$safe-$suffix"
+    return safe
 }
 
 private class HeltecBridgeResponseCollector {

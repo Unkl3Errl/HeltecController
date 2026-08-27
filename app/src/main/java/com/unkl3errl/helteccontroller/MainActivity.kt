@@ -362,6 +362,7 @@ class MainActivity :
         super.onResume()
         refreshAndroidStorageStatus()
         refreshSelectedGlobalStatus()
+        refreshScreenAwakeState()
         if (::firmwareRepository.isInitialized) {
             firmwareRepository.refreshIfStale(FIRMWARE_RESUME_REFRESH_AGE_MS)
         }
@@ -1200,8 +1201,21 @@ class MainActivity :
         }
     }
 
+    private fun refreshScreenAwakeState() {
+        val keepScreenOn = DeviceScreenAwakePolicy.shouldKeepScreenOn(
+            flashing = flashingKind != null,
+            deviceConnected = PersistentDeviceConnections.activeKinds().isNotEmpty(),
+        )
+        if (keepScreenOn) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
     override fun onDeviceConnectionsChanged(kind: PersistentUsbKind) = runOnUiThread {
         refreshAndroidStorageStatus()
+        refreshScreenAwakeState()
         setTabAppearance(selectedScreen)
         if (selectedScreen.toPersistentUsbKind() == kind) {
             updateDeviceTabs()
@@ -1357,7 +1371,8 @@ class MainActivity :
     }
 
     private fun firmwareTabLabel(label: String, kind: PersistentUsbKind): String {
-        val count = PersistentDeviceConnections.devices(kind).size
+        // Retain offline sessions for quick reconnect, but do not present them as live devices.
+        val count = PersistentDeviceConnections.devices(kind).count { it.connected }
         return if (count > 0) "$label ($count)" else label
     }
 
@@ -1602,7 +1617,7 @@ class MainActivity :
         if (detectedFirmware?.usbTarget?.samePhysicalDevice(target) == true) {
             detectedFirmware = null
         }
-        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        refreshScreenAwakeState()
         updateFirmwareCards()
         setGlobalStatus("FLASHING ${release.displayName.uppercase()}")
         detectionStatus.text =
@@ -1615,7 +1630,7 @@ class MainActivity :
 
             override fun onFlashComplete(flashedTarget: UsbDeviceTarget) = runOnUiThread {
                 flashingKind = null
-                window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                refreshScreenAwakeState()
                 detectionStatus.text = "${release.displayName} ${release.version} flashed and verified. Reconnecting…"
                 setGlobalStatus("FLASH VERIFIED")
                 updateFirmwareCards()
@@ -1638,7 +1653,7 @@ class MainActivity :
 
             override fun onFlashFailed(message: String) = runOnUiThread {
                 flashingKind = null
-                window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                refreshScreenAwakeState()
                 detectionStatus.text = "Flash stopped safely: $message"
                 setGlobalStatus("FLASH FAILED")
                 updateFirmwareCards()

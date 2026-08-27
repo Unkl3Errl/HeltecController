@@ -8,6 +8,7 @@ internal class SerialConsoleProtocolFilter {
     private var suppressLine = false
     private var storageLineVisible = false
     private var showStorageResponseUntilNanos = 0L
+    private var suppressLineFeedAfterCarriageReturn = false
 
     @Synchronized
     fun showNextStorageResponse() {
@@ -16,7 +17,7 @@ internal class SerialConsoleProtocolFilter {
 
     @Synchronized
     fun filter(chunk: String): String = buildString(chunk.length) {
-        chunk.forEach { character ->
+        canonicalChunk(chunk).forEach { character ->
             when {
                 suppressLine -> {
                     if (character == '\n') resetLine()
@@ -95,7 +96,26 @@ internal class SerialConsoleProtocolFilter {
     fun reset() {
         undecidedPrefix.clear()
         showStorageResponseUntilNanos = 0L
+        suppressLineFeedAfterCarriageReturn = false
         resetLine()
+    }
+
+    /** Treat CR, LF, and CRLF as equivalent boundaries before classifying the next line. */
+    private fun canonicalChunk(chunk: String): String = buildString(chunk.length) {
+        chunk.forEach { character ->
+            if (suppressLineFeedAfterCarriageReturn) {
+                suppressLineFeedAfterCarriageReturn = false
+                if (character == '\n') return@forEach
+            }
+            when (character) {
+                '\u0000' -> Unit
+                '\r' -> {
+                    append('\n')
+                    suppressLineFeedAfterCarriageReturn = true
+                }
+                else -> append(character)
+            }
+        }
     }
 
     private fun resetLine() {
@@ -109,18 +129,39 @@ internal class SerialConsoleProtocolFilter {
     private fun protocolCandidate(value: CharSequence): String {
         var index = 0
         while (true) {
-            while (index < value.length && value[index].isWhitespace()) index++
-
-            while (index < value.length && value[index] in PROMPT_CHARACTERS) {
-                index++
-                while (index < value.length && value[index].isWhitespace()) index++
-            }
+            index = skipTerminalDecorations(value, index) ?: return ""
 
             val candidate = value.substring(index)
             if (COMMAND_ECHO_PREFIX.startsWith(candidate, ignoreCase = true)) return ""
             if (!candidate.startsWith(COMMAND_ECHO_PREFIX, ignoreCase = true)) return candidate
 
             index += COMMAND_ECHO_PREFIX.length
+        }
+    }
+
+    /** Null means a split ANSI sequence is incomplete and the line is still undecided. */
+    private fun skipTerminalDecorations(value: CharSequence, start: Int): Int? {
+        var index = start
+        while (true) {
+            val before = index
+            while (index < value.length && value[index].isWhitespace()) index++
+            while (index < value.length && value[index] in PROMPT_CHARACTERS) {
+                index++
+                while (index < value.length && value[index].isWhitespace()) index++
+            }
+            if (index < value.length && value[index] == ANSI_ESCAPE) {
+                if (index + 1 >= value.length) return null
+                if (value[index + 1] != '[') {
+                    index += 2
+                    continue
+                }
+                var end = index + 2
+                while (end < value.length && value[end].code !in ANSI_FINAL_BYTE_RANGE) end++
+                if (end >= value.length) return null
+                index = end + 1
+                continue
+            }
+            if (index == before) return index
         }
     }
 
@@ -171,6 +212,8 @@ internal class SerialConsoleProtocolFilter {
         const val STORAGE_HOST_MARKER = "SD HOST"
         const val STORAGE_COMMAND_MARKER = "SD "
         const val STORAGE_RESPONSE_TIMEOUT_NANOS = 5_000_000_000L
+        const val ANSI_ESCAPE = '\u001b'
+        val ANSI_FINAL_BYTE_RANGE = 0x40..0x7e
         val ORPHAN_BRIDGE_RESPONSE = Regex("""\d+\s+(OK|ERROR)""", RegexOption.IGNORE_CASE)
         val PROMPT_CHARACTERS = setOf('>', '#', '$')
         val protocolMarkers = listOf(

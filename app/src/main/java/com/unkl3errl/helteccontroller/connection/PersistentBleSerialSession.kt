@@ -116,6 +116,7 @@ internal class PersistentBleSerialSession(
     val kind: PersistentUsbKind,
     private val profile: FirmwareBleProfile,
     private val preferenceKey: String,
+    private val onProfileRejected: (String) -> Unit,
 ) {
     interface Listener {
         fun onStatus(message: String, connected: Boolean)
@@ -237,7 +238,9 @@ internal class PersistentBleSerialSession(
             val hasControl = profile != FirmwareBleProfile.GHOST_BRIDGE ||
                 service?.getCharacteristic(GhostBleBridgeUuids.CTRL) != null
             if (write == null || notify == null || !hasControl) {
-                failConnection("The device does not expose the complete ${profile.advertisedName} service")
+                rejectProfile(
+                    "The device does not expose the complete ${profile.advertisedName} service",
+                )
                 return
             }
             writeCharacteristic = write
@@ -248,7 +251,7 @@ internal class PersistentBleSerialSession(
             }
             val descriptor = notify.getDescriptor(CLIENT_CONFIG)
             if (descriptor == null) {
-                failConnection("The Bluetooth notification descriptor is missing")
+                rejectProfile("The Bluetooth notification descriptor is missing")
                 return
             }
             writer.execute {
@@ -334,7 +337,7 @@ internal class PersistentBleSerialSession(
     }
 
     @SuppressLint("MissingPermission")
-    fun connect(address: String, remember: Boolean = true) {
+    fun connect(address: String) {
         if (!hasConnectPermission(appContext)) {
             emitError("Nearby devices permission is required for Bluetooth")
             return
@@ -359,10 +362,6 @@ internal class PersistentBleSerialSession(
         ready = false
         currentAddress = address
         connectionGeneration++
-        if (remember) {
-            appContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-                .edit().putString(preferenceKey, address).apply()
-        }
         DeviceConnectionService.start(appContext)
         emitStatus("Connecting to ${profile.advertisedName} over Bluetooth…", false)
         val opened = runCatching {
@@ -381,7 +380,7 @@ internal class PersistentBleSerialSession(
         if (ready || connecting || !hasConnectPermission(appContext)) return
         val saved = appContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
             .getString(preferenceKey, null) ?: return
-        connect(saved, remember = false)
+        connect(saved)
     }
 
     fun disconnect(forget: Boolean = false) {
@@ -646,6 +645,19 @@ internal class PersistentBleSerialSession(
         if (shouldReconnect) scheduleReconnect()
     }
 
+    private fun rejectProfile(message: String) {
+        Log.w(TAG, message)
+        val rejectedAddress = currentAddress
+        manualDisconnect = true
+        reconnectAttempts = 0
+        handler.removeCallbacksAndMessages(reconnectToken)
+        disconnectInternal(emit = false)
+        appContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+            .edit().remove(preferenceKey).apply()
+        emitStatus("${kind.displayName} Bluetooth profile does not match this device", false)
+        rejectedAddress?.let(onProfileRejected)
+    }
+
     @SuppressLint("MissingPermission")
     private fun disconnectInternal(emit: Boolean) {
         connectionGeneration++
@@ -685,15 +697,17 @@ internal class PersistentBleSerialSession(
     private val reconnectToken = Any()
 
     private fun scheduleReconnect() {
-        val saved = appContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-            .getString(preferenceKey, null) ?: return
+        // A first connection is persisted only after its GATT profile is verified. Retain its
+        // address in memory so a transient radio failure can still use the bounded retry path.
+        val reconnectAddress = appContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+            .getString(preferenceKey, null) ?: currentAddress ?: return
         if (manualDisconnect || !hasConnectPermission(appContext)) return
         val exponent = reconnectAttempts.coerceAtMost(4)
         val delay = (2_000L shl exponent).coerceAtMost(MAX_RECONNECT_DELAY_MS)
         reconnectAttempts++
         handler.removeCallbacksAndMessages(reconnectToken)
         handler.postAtTime({
-            if (!manualDisconnect && !ready && !connecting) connect(saved, remember = false)
+            if (!manualDisconnect && !ready && !connecting) connect(reconnectAddress)
         }, reconnectToken, android.os.SystemClock.uptimeMillis() + delay)
         emitStatus("${kind.displayName} Bluetooth disconnected · retrying in ${delay / 1_000}s", false)
     }
