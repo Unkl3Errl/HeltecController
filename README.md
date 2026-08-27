@@ -102,6 +102,10 @@ descriptor and NetworkSpecifier request alive. The ongoing **Firmware device
 session** notification returns to the controller; reopening the Activity attaches
 to the live session instead of probing and reopening the device. Serial output
 received while the screen is absent is buffered and delivered when it returns.
+While the controller Activity is visible, any live USB or Bluetooth device keeps
+the display awake automatically. The foreground service uses a partial wake lock
+for active device transfers, so manually locking the display does not stop the
+USB/Bluetooth storage drain.
 On Android 13 and newer, allow the notification permission when first prompted so
 that this ongoing background-session indicator remains visible.
 
@@ -294,7 +298,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.13.15`, code 47.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.13.18`, code 50.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password

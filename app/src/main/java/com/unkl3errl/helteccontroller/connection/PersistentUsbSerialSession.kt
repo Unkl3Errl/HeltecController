@@ -432,6 +432,7 @@ object PersistentDeviceConnections {
 
     fun bindUsb(context: Context, kind: PersistentUsbKind, target: UsbDeviceTarget): String {
         val id: String
+        val removedKinds = mutableSetOf<PersistentUsbKind>()
         synchronized(lock) {
             val conflictingIds = deviceSessions.values
                 .filter {
@@ -445,7 +446,10 @@ object PersistentDeviceConnections {
                         )
                 }
                 .map(PersistentDeviceSession::connectionId)
-            conflictingIds.forEach { removeSessionLocked(it, forgetBluetooth = true) }
+            conflictingIds.forEach { conflictId ->
+                deviceSessions[conflictId]?.kind?.let(removedKinds::add)
+                removeSessionLocked(conflictId, forgetBluetooth = true)
+            }
 
             // USB exposes the ESP32 base MAC while BLE commonly exposes another address from
             // the same four-address block. Attach USB to that existing BLE session so one board
@@ -473,6 +477,7 @@ object PersistentDeviceConnections {
             selectedIds[kind] = id
             selectors[kind]?.refreshSelection()
         }
+        removedKinds.forEach(::notifyChanged)
         notifyChanged(kind)
         return id
     }
@@ -487,15 +492,9 @@ object PersistentDeviceConnections {
         val id: String
         val session: PersistentDeviceSession
         synchronized(lock) {
-            val conflictingIds = deviceSessions.values
-                .filter {
-                    it.kind != kind &&
-                        Esp32BluetoothIdentity.sameHardware(it.bluetoothAddress, normalized)
-                }
-                .map(PersistentDeviceSession::connectionId)
-            conflictingIds.forEach { removeSessionLocked(it, forgetBluetooth = true) }
-            rememberBluetoothOwner(context, kind, normalized)
-
+            // Do not evict or reclassify another firmware session until this device has exposed
+            // the complete requested GATT profile. A remembered address or stale scan result is
+            // not sufficient proof that the board is running the selected firmware.
             val existing = deviceSessions.values.firstOrNull {
                 it.kind == kind && it.bluetoothAddress.equals(normalized, ignoreCase = true)
             }
@@ -666,6 +665,9 @@ object PersistentDeviceConnections {
                 kind,
                 it,
                 "$BLE_KEY_PREFIX${kind.name}:$connectionId",
+                onProfileRejected = { address ->
+                    rejectBluetoothProfile(appContext, kind, connectionId, address)
+                },
             )
         }
         val session = PersistentDeviceSession(appContext, kind, connectionId, usb, bluetooth)
@@ -721,7 +723,13 @@ object PersistentDeviceConnections {
         synchronized(lock) {
             val conflicts = deviceSessions.values.filter { candidate ->
                 candidate !== owner && candidate.kind != owner.kind &&
-                    Esp32BluetoothIdentity.sameHardware(candidate.bluetoothAddress, address)
+                    (
+                        Esp32BluetoothIdentity.sameHardware(candidate.bluetoothAddress, address) ||
+                            Esp32BluetoothIdentity.sameHardware(
+                                candidate.usbTarget?.serialNumber,
+                                address,
+                            )
+                    )
             }
             conflicts.forEach { candidate ->
                 removedKinds += candidate.kind
@@ -731,6 +739,46 @@ object PersistentDeviceConnections {
             selectors.values.forEach(SelectedDeviceSession::refreshSelection)
         }
         removedKinds.forEach(::notifyChanged)
+    }
+
+    private fun rejectBluetoothProfile(
+        context: Context,
+        kind: PersistentUsbKind,
+        connectionId: String,
+        address: String,
+    ) {
+        synchronized(lock) {
+            val session = deviceSessions[connectionId] ?: return@synchronized
+            if (session.usbTarget == null && !session.isUsbConnected) {
+                removeSessionLocked(connectionId, forgetBluetooth = true)
+            } else {
+                session.disconnectBluetooth(forget = true)
+            }
+            selectedIds[kind]?.takeIf { it == connectionId }?.let {
+                selectedIds.remove(kind)
+            }
+            selectors[kind]?.refreshSelection()
+            forgetBluetoothOwner(context, kind, address)
+        }
+        notifyChanged(kind)
+    }
+
+    private fun forgetBluetoothOwner(
+        context: Context,
+        kind: PersistentUsbKind,
+        address: String,
+    ) {
+        val preferences = context.getSharedPreferences(BLE_PREFERENCES, Context.MODE_PRIVATE)
+        val editor = preferences.edit()
+        val ownerKey = "$BLE_OWNER_PREFIX${address.uppercase()}"
+        if (preferences.getString(ownerKey, null) == kind.name) editor.remove(ownerKey)
+        Esp32BluetoothIdentity.hardwareKey(address)?.let { hardwareKey ->
+            val hardwareOwnerKey = "$BLE_HARDWARE_OWNER_PREFIX$hardwareKey"
+            if (preferences.getString(hardwareOwnerKey, null) == kind.name) {
+                editor.remove(hardwareOwnerKey)
+            }
+        }
+        editor.apply()
     }
 
     private fun notifyChanged(kind: PersistentUsbKind) {

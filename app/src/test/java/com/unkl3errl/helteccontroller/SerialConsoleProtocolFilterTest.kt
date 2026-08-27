@@ -10,7 +10,7 @@ class SerialConsoleProtocolFilterTest {
 
         assertEquals("", filter.filter("@HELT"))
         assertEquals("", filter.filter("EC-BRIDGE 7 OK {\"saved\":true}\r\n"))
-        assertEquals("ready\r\n", filter.filter("ready\r\n"))
+        assertEquals("ready\n", filter.filter("ready\r\n"))
     }
 
     @Test
@@ -51,7 +51,7 @@ class SerialConsoleProtocolFilterTest {
     fun `keeps ordinary numeric console output visible`() {
         val filter = SerialConsoleProtocolFilter()
 
-        assertEquals("8 devices found\r\n", filter.filter("8 devices found\r\n"))
+        assertEquals("8 devices found\n", filter.filter("8 devices found\r\n"))
     }
 
     @Test
@@ -65,8 +65,8 @@ class SerialConsoleProtocolFilterTest {
     fun `keeps ordinary Bruce command echoes visible`() {
         val filter = SerialConsoleProtocolFilter()
 
-        assertEquals("# COMMAND: info\r\n", filter.filter("# COMMAND: info\r\n"))
-        assertEquals("Bruce v1.16.1\r\n", filter.filter("Bruce v1.16.1\r\n"))
+        assertEquals("# COMMAND: info\n", filter.filter("# COMMAND: info\r\n"))
+        assertEquals("Bruce v1.16.1\n", filter.filter("Bruce v1.16.1\r\n"))
     }
 
     @Test
@@ -87,7 +87,30 @@ class SerialConsoleProtocolFilterTest {
         assertEquals("", filter.filter("# SD:HOST:free=123\r\n"))
         assertEquals("", filter.filter("SD:OK:host-capacity\r\n"))
         assertEquals("", filter.filter("# \r\n"))
-        assertEquals("ready\r\n", filter.filter("ready\r\n"))
+        assertEquals("ready\n", filter.filter("ready\r\n"))
+    }
+
+    @Test
+    fun `hides bare and ANSI prompts after mixed line endings`() {
+        val filter = SerialConsoleProtocolFilter()
+
+        assertEquals(
+            "first\nsecond\nthird\n",
+            filter.filter(
+                "first\r>\rsecond\r\n\u001b[38;5;36m>\u001b[0m\r\nthird\n#\n",
+            ),
+        )
+
+        val coloredPrompt = "\u001b[38;5;36m>\u001b[0m\r\n"
+        for (splitAt in 0..coloredPrompt.length) {
+            val splitFilter = SerialConsoleProtocolFilter()
+            assertEquals(
+                "split at $splitAt",
+                "",
+                splitFilter.filter(coloredPrompt.substring(0, splitAt)) +
+                    splitFilter.filter(coloredPrompt.substring(splitAt)),
+            )
+        }
     }
 
     @Test
@@ -95,8 +118,8 @@ class SerialConsoleProtocolFilterTest {
         val filter = SerialConsoleProtocolFilter()
         filter.showNextStorageResponse()
 
-        assertEquals("SD:STATUS:mounted=true\r\n", filter.filter("SD:STATUS:mounted=true\r\n"))
-        assertEquals("SD:OK\r\n", filter.filter("SD:OK\r\n"))
+        assertEquals("SD:STATUS:mounted=true\n", filter.filter("SD:STATUS:mounted=true\r\n"))
+        assertEquals("SD:OK\n", filter.filter("SD:OK\r\n"))
         assertEquals("", filter.filter("SD:HOST:free=123\r\n"))
     }
 
@@ -106,8 +129,8 @@ class SerialConsoleProtocolFilterTest {
         filter.showNextStorageResponse()
 
         assertEquals("", filter.filter("SD:HOST:free=123\r\nSD:OK:host-capacity\r\n"))
-        assertEquals("SD:STATUS:mounted=true\r\n", filter.filter("SD:STATUS:mounted=true\r\n"))
-        assertEquals("SD:OK\r\n", filter.filter("SD:OK\r\n"))
+        assertEquals("SD:STATUS:mounted=true\n", filter.filter("SD:STATUS:mounted=true\r\n"))
+        assertEquals("SD:OK\n", filter.filter("SD:OK\r\n"))
     }
 
     @Test
@@ -116,7 +139,7 @@ class SerialConsoleProtocolFilterTest {
         filter.showNextStorageResponse()
 
         assertEquals(
-            "SD:STATUS:mounted=true\r\nSD:OK\r\n",
+            "SD:STATUS:mounted=true\nSD:OK\n",
             filter.filter("# # # SD:STATUS:mounted=true\r\nSD:OK\r\n"),
         )
     }
