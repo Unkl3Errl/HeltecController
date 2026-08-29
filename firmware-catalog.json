@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-26",
+  "generatedAt": "2026-08-29",
   "board": {
     "id": "heltec-wifi-lora-32-v4",
     "name": "Heltec WiFi LoRa 32 V4",
@@ -57,12 +57,12 @@
     {
       "id": "marauder",
       "displayName": "Marauder",
-      "version": "1.15.0-mobile.5",
-      "releasedAt": "2026-08-21",
-      "summary": "Complete recovery image with persistent phone-facing Bluetooth, Android-sized virtual SD reporting, acknowledged rolling handoff, and loss-resistant spool backpressure.",
+      "version": "1.15.0-mobile.6",
+      "releasedAt": "2026-08-29",
+      "summary": "Complete recovery image with corrected Karma probe selection, verified PCAP/log/GPX creation, and loss-resistant virtual-SD handoff to Android and macOS.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
-        "commit": "f5d941db3db9f28ed0eab9e743a4e7b2cef10aae"
+        "commit": "f16691d2b933ac8002b1fcb4f70533a6be48602f"
       },
       "upstream": {
         "repository": "https://github.com/justcallmekoko/ESP32Marauder",
@@ -71,10 +71,10 @@
         "baselineCommit": "6e375e377abb70084720484e9b25de485627f688"
       },
       "image": {
-        "asset": "marauder-1.15.0-mobile.5.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.3/marauder-1.15.0-mobile.5.bin",
-        "sha256": "d56d4797093160d92edc72e427e2301528b8ef89a50e9928daa1f83348167735",
-        "sizeBytes": 1286608
+        "asset": "marauder-1.15.0-mobile.6.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.20/marauder-1.15.0-mobile.6.bin",
+        "sha256": "3808496f85e10406ea534e575bec7d8861c5f0abdd75eb0945a1100655ea7f20",
+        "sizeBytes": 1289040
       }
     }
   ]

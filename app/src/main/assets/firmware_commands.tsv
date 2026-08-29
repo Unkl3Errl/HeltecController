@@ -127,36 +127,36 @@ marauder	Network	marauder-arp	ARP scan	Scan the local network using ARP.	arpscan
 marauder	Network	marauder-arp-force	Force ARP scan	Start an ARP scan even if previous state remains.	arpscan -f	safe
 marauder	Network	marauder-mactrack	Track MAC	Track a selected MAC address.	mactrack	safe
 marauder	Lists	marauder-list-aps	List access points	Show scanned access points.	list -a	safe
-marauder	Lists	marauder-list-stations	List stations	Show scanned Wi-Fi stations.	list -s	safe
-marauder	Lists	marauder-list-ssids	List SSIDs	Show the SSID list.	list -c	safe
+marauder	Lists	marauder-list-stations	List stations	Show scanned Wi-Fi stations.	list -c	safe
+marauder	Lists	marauder-list-ssids	List SSIDs	Show the SSID list.	list -s	safe
 marauder	Lists	marauder-list-targets	List targets	Show selected targets.	list -t	safe
 marauder	Lists	marauder-list-ips	List IPs	Show discovered IP addresses.	list -i	safe
-marauder	Lists	marauder-list-pmksa	List PMKSA	Show captured PMKSA data.	list -p	safe
+marauder	Lists	marauder-list-probes	List probe requests	Show captured probe-request SSIDs and their indices for Karma.	list -p	safe
 marauder	Lists	marauder-list-ble	List BLE	Show scanned Bluetooth devices.	list -b	safe
 marauder	Lists	marauder-list-findmy	List Find My	Show Find My devices.	list -f	safe
 marauder	Lists	marauder-list-flippers	List Flippers	Show detected Flipper devices.	list -x	safe
 marauder	Lists	marauder-list-multissid	List multi-SSID	Show multi-SSID devices.	list -m	safe
 marauder	Lists	marauder-clear-aps	Clear access points	Clear the access-point list.	clearlist -a	safe
-marauder	Lists	marauder-clear-ssids	Clear SSIDs	Clear the SSID list.	clearlist -c	safe
-marauder	Lists	marauder-clear-stations	Clear stations	Clear the station list.	clearlist -s	safe
+marauder	Lists	marauder-clear-ssids	Clear SSIDs	Clear the SSID list.	clearlist -s	safe
+marauder	Lists	marauder-clear-stations	Clear stations	Clear the station list.	clearlist -c	safe
 marauder	Lists	marauder-select-ap	Select access points	Select one or more access-point indices.	select -a <indices>	safe
-marauder	Lists	marauder-select-station	Select station	Select a station index.	select -s <index>	safe
-marauder	Lists	marauder-select-ssid	Select SSIDs	Select one or more SSID indices.	select -c <indices>	safe
+marauder	Lists	marauder-select-station	Select station	Select a station index.	select -c <index>	safe
+marauder	Lists	marauder-select-ssid	Select SSIDs	Select one or more SSID indices.	select -s <indices>	safe
 marauder	Lists	marauder-select-filter	Select by filter	Select items whose value equals or contains text.	select -f <filter_expression...>	safe
 marauder	Lists	marauder-ap-info	Access point details	Show details for an access-point index.	info -a <index>	safe
 marauder	Profiles	marauder-ssid-generate	Generate SSIDs	Add generated SSIDs to the list.	ssid -a -g <count>	safe
 marauder	Profiles	marauder-ssid-add	Add SSID	Add a named SSID to the list.	ssid -a -n <name>	safe
 marauder	Profiles	marauder-ssid-remove	Remove SSID	Remove an SSID by index.	ssid -r <index>	safe
 marauder	Profiles	marauder-save-aps	Save access points	Save the current access-point list.	save -a	safe
-marauder	Profiles	marauder-save-stations	Save stations	Save the current station list.	save -s	safe
+marauder	Profiles	marauder-save-ssids	Save SSIDs	Save the current SSID list to virtual SD.	save -s	safe
 marauder	Profiles	marauder-load-aps	Load access points	Load a saved access-point list.	load -a	safe
-marauder	Profiles	marauder-load-stations	Load stations	Load a saved station list.	load -s	safe
+marauder	Profiles	marauder-load-ssids	Load SSIDs	Load a saved SSID list.	load -s	safe
 marauder	Network	marauder-join	Join selected network	Join a selected access point using a password.	join -a <ap_index> -p <password>	safe
-marauder	Network	marauder-leave	Leave joined network	Disconnect the joined Wi-Fi network.	join -s	safe
+marauder	Network	marauder-join-saved	Join saved network	Join using the Wi-Fi credentials saved in Marauder settings.	join -s	safe
 marauder	Identity	marauder-random-ap-mac	Randomize AP MAC	Randomize the access-point MAC address.	randapmac	safe
 marauder	Identity	marauder-random-sta-mac	Randomize station MAC	Randomize the station MAC address.	randstamac	safe
-marauder	Identity	marauder-clone-ap-mac	Clone AP MAC	Clone an access-point MAC address.	cloneapmac [index]	safe
-marauder	Identity	marauder-clone-sta-mac	Clone station MAC	Clone a station MAC address.	clonestamac [index]	safe
+marauder	Identity	marauder-clone-ap-mac	Clone AP MAC	Clone an access-point MAC address by AP index.	cloneapmac -a <index>	safe
+marauder	Identity	marauder-clone-sta-mac	Clone station MAC	Clone a station MAC address by station index.	clonestamac -s <index>	safe
 marauder	Lists	marauder-add-ap	Add access point	Add an access point manually.	add -a -b <mac_address> -ch <channel> -e <ssid>	safe
 marauder	Lists	marauder-add-station	Add station	Add a station manually and associate it with an AP index.	add -c -b <mac_address> -ap <ap_index>	safe
 marauder	Cloud	marauder-upload	Upload wardrive data	Upload wardrive results to a configured destination.	upload -d <wdg,wigle,both>	safe
@@ -166,9 +166,9 @@ marauder	Bluetooth	marauder-findmy	Track Find My device	Track a selected Find My
 marauder	Bluetooth	marauder-spoof-airtag	Spoof AirTag	Transmit as a selected AirTag.	spoofat -t <index>	safe
 marauder	Bluetooth	marauder-sniff-skimmer	Scan for skimmers	Scan BLE advertisements for common skimmer signatures.	sniffskim	safe
 marauder	Bluetooth	marauder-ble-spam	BLE advertisement test	Transmit the selected BLE advertisement test pattern.	blespam -t <sourapple,applejuice,google,samsung,windows,flipper,all>	safe
-marauder	Portal	marauder-evilportal-start	Start portal	Start the configured captive portal with an optional HTML file.	evilportal -c start [html_file]	safe
+marauder	Portal	marauder-evilportal-start	Start portal	Start the configured captive portal. Use Set portal HTML first to choose a stored page.	evilportal -c start	safe
 marauder	Portal	marauder-evilportal-html	Set portal HTML	Select a stored HTML file for the portal.	evilportal -c sethtml <html_file>	safe
-marauder	Portal	marauder-karma	Karma test	Start a Karma test using a selected SSID index.	karma -p <ssid_index>	safe
+marauder	Portal	marauder-karma	Karma test	Start a Karma test using an index from captured probe requests (run sniffprobe, stopscan, then list -p).	karma -p <probe_index>	safe
 marauder	Attack	marauder-attack	Wireless test action	Run a selected Marauder wireless test action against explicitly selected targets.	attack -t <quiet,csa,sae,beacon,deauth,probe,rickroll,badmsg,sleep>	safe
 
 ghostesp	System	ghost-help	Command help	Show command help, optionally for a category.	help [category]	safe

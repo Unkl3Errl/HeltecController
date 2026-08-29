@@ -99,6 +99,51 @@ class SdStorageProtocolTest {
     }
 
     @Test
+    fun archivePolicySelectsEveryMarauderOutputFamily() {
+        val generatedFiles = listOf(
+            "ap_1.pcap",
+            "ap_sta_1.pcap",
+            "packet_rate_1.pcap",
+            "eapol_1.pcap",
+            "pinescan_1.pcap",
+            "multissid_1.pcap",
+            "pwnagotchi_1.pcap",
+            "beacon_1.pcap",
+            "raw_1.pcap",
+            "deauth_1.pcap",
+            "sae_commit_1.pcap",
+            "probe_1.pcap",
+            "flock_1.pcap",
+            "mac_track_1.pcap",
+            "pingscan_1.log",
+            "arpscan_1.log",
+            "sshscan_1.log",
+            "telnetscan_1.log",
+            "smtp_1.log",
+            "dns_1.log",
+            "http_1.log",
+            "https_1.log",
+            "rdp_1.log",
+            "portscan_1.log",
+            "Airtags_1.log",
+            "APs_1.log",
+            "SSIDs_1.log",
+            "evil_portal_1.log",
+            "wardrive_1.log",
+            "tracker_1.gpx",
+            "poi_1.gpx",
+            "wardrive_poi_1.gpx",
+        )
+
+        generatedFiles.forEach { fileName ->
+            assertTrue(
+                "Marauder output was not routed to virtual SD: $fileName",
+                SdStorageProtocol.isArchiveCandidate(PersistentUsbKind.MARAUDER, "/$fileName"),
+            )
+        }
+    }
+
+    @Test
     fun parsesNamesWithSpacesAndOptionalModifiedTime() {
         val result = SdStorageProtocol.parseListing(
             listOf(

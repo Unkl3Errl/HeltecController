@@ -25,6 +25,18 @@ class GuidedCommandCatalogTest {
             val rendered = command.render(values)
             assertFalse("Unrendered template: $rendered", rendered.contains('<'))
         }
+
+        val marauder = commands.filter { it.firmware == GuidedFirmware.MARAUDER }
+            .associateBy(GuidedCommand::id)
+        assertEquals("list -c", marauder.getValue("marauder-list-stations").template)
+        assertEquals("list -s", marauder.getValue("marauder-list-ssids").template)
+        assertEquals("list -p", marauder.getValue("marauder-list-probes").template)
+        assertEquals("select -c <index>", marauder.getValue("marauder-select-station").template)
+        assertEquals("select -s <indices>", marauder.getValue("marauder-select-ssid").template)
+        assertEquals("save -s", marauder.getValue("marauder-save-ssids").template)
+        assertEquals("cloneapmac -a <index>", marauder.getValue("marauder-clone-ap-mac").template)
+        assertEquals("clonestamac -s <index>", marauder.getValue("marauder-clone-sta-mac").template)
+        assertEquals("karma -p <probe_index>", marauder.getValue("marauder-karma").template)
     }
 
     @Test

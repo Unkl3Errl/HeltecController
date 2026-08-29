@@ -20,9 +20,9 @@ GhostESP 2.1.1-mobile.12
   Source: https://github.com/Unkl3Errl/GhostESP/tree/3bb18496beb7be7270e304d40cabdb0042276af6
   License text: ghostesp-GPL-3.0.txt
 
-ESP32 Marauder 1.15.0-mobile.5
+ESP32 Marauder 1.15.0-mobile.6
   License: MIT License
-  Source: https://github.com/Unkl3Errl/ESP32Marauder/tree/f5d941db3db9f28ed0eab9e743a4e7b2cef10aae
+  Source: https://github.com/Unkl3Errl/ESP32Marauder/tree/f16691d2b933ac8002b1fcb4f70533a6be48602f
   License text: marauder-MIT.txt
 
 The app also uses AndroidX and Kotlin components under Apache License 2.0 and

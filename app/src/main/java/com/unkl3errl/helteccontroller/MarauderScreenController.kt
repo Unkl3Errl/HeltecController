@@ -23,6 +23,7 @@ import com.unkl3errl.helteccontroller.guided.GuidedFirmware
 import com.unkl3errl.helteccontroller.marauder.CommandRisk
 import com.unkl3errl.helteccontroller.marauder.CommandSafety
 import com.unkl3errl.helteccontroller.marauder.MarauderCommandGuidance
+import com.unkl3errl.helteccontroller.marauder.MarauderDeviceDisplayView
 import com.unkl3errl.helteccontroller.marauder.MarauderAccessPoint
 import com.unkl3errl.helteccontroller.marauder.MarauderBleDevice
 import com.unkl3errl.helteccontroller.marauder.MarauderResultParser
@@ -131,9 +132,11 @@ class MarauderScreenController(
 
         bindCommand(R.id.cmdHelp, "help")
         root.findViewById<Button>(R.id.marauderGuidedCommands).setOnClickListener {
-            GuidedCommandDialog.show(activity, GuidedFirmware.MARAUDER) { _, command ->
-                sendGuarded(command)
-            }
+            showGuidedCommands()
+        }
+        root.findViewById<MarauderDeviceDisplayView>(R.id.marauderDeviceDisplay).apply {
+            onCommand = ::sendGuarded
+            onOpenCommands = ::showGuidedCommands
         }
         bindCommand(R.id.cmdGpsFix, "gps -g fix")
         bindCommand(R.id.cmdGpsData, "gpsdata")
@@ -174,6 +177,12 @@ class MarauderScreenController(
         }
         updateRecordingStatus()
         updateStructuredResults()
+    }
+
+    private fun showGuidedCommands() {
+        GuidedCommandDialog.show(activity, GuidedFirmware.MARAUDER) { _, command ->
+            sendGuarded(command)
+        }
     }
 
     fun connectUsb() {
