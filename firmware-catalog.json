@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-29",
+  "generatedAt": "2026-08-30",
   "board": {
     "id": "heltec-wifi-lora-32-v4",
     "name": "Heltec WiFi LoRa 32 V4",
@@ -11,12 +11,12 @@
     {
       "id": "bruce",
       "displayName": "Bruce",
-      "version": "1.16.1-mobile.7",
-      "releasedAt": "2026-08-26",
-      "summary": "Complete recovery image with reliable simultaneous BruceNet and phone-facing Bluetooth, acknowledged virtual-SD handoff, stoppable Wi-Fi sniffer sessions, and continuous or time-bounded external OOK RF receive without console lockups.",
+      "version": "1.16.1-mobile.10",
+      "releasedAt": "2026-08-30",
+      "summary": "Recovery image with staged app-to-device text uploads, working encrypt/decrypt round trips, simultaneous BruceNet field logging, transactional capture writes, safe active-file handoff, Android-backed virtual-SD routing, and the full Heltec V4 command set.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/HeltecFirmware",
-        "commit": "d04a2aa692b9cdf652a0a0b98434027ce2deadea"
+        "commit": "375106a89477a270290eb1d06eff46c9a6a9cf2b"
       },
       "upstream": {
         "repository": "https://github.com/BruceDevices/firmware",
@@ -25,21 +25,21 @@
         "baselineCommit": "ba519c936c87b89c9c667c15b932d7faca5360d5"
       },
       "image": {
-        "asset": "bruce-1.16.1-mobile.7.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.15/bruce-1.16.1-mobile.7.bin",
-        "sha256": "359473c53cac73fce0e6d596104112f15a2dad90d02f1794c7fddf620867beb3",
-        "sizeBytes": 3892160
+        "asset": "bruce-1.16.1-mobile.10.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/bruce-1.16.1-mobile.10.bin",
+        "sha256": "fb9c6f96a72444d68f7f06041cf02626ec4a2c8c05089daab650b293773c410f",
+        "sizeBytes": 3894048
       }
     },
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.1-mobile.12",
-      "releasedAt": "2026-08-24",
-      "summary": "GhostESP 2.1.1 recovery image with cache-safe queued PCAP writes, full-environment sweep and NimBLE flash operations, reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, and persistent Web UI settings.",
+      "version": "2.1.1-mobile.13",
+      "releasedAt": "2026-08-30",
+      "summary": "GhostESP 2.1.1 recovery image with Karma probe-response event logging and orderly capture cleanup, cache-safe queued PCAP writes, reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, and persistent Web UI settings.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "3bb18496beb7be7270e304d40cabdb0042276af6"
+        "commit": "65720bb543f7c0e8d4101d528492ac1ff8479a9b"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
@@ -48,33 +48,33 @@
         "baselineCommit": "4ea9b59b9f6eb921a6d2566d86fdc02e2bedfbf6"
       },
       "image": {
-        "asset": "ghostesp-2.1.1-mobile.12.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.14/ghostesp-2.1.1-mobile.12.bin",
-        "sha256": "1fa66cd7533852b717114ed1884669ed3dfe380161d93895fd7301e203428af2",
-        "sizeBytes": 3176112
+        "asset": "ghostesp-2.1.1-mobile.13.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/ghostesp-2.1.1-mobile.13.bin",
+        "sha256": "7673f82e6203c83f73b0a69a5e1e050fc12d2a790cd1590c6153f81bfb79a4d6",
+        "sizeBytes": 3150256
       }
     },
     {
       "id": "marauder",
       "displayName": "Marauder",
-      "version": "1.15.0-mobile.6",
-      "releasedAt": "2026-08-29",
-      "summary": "Complete recovery image with corrected Karma probe selection, verified PCAP/log/GPX creation, and loss-resistant virtual-SD handoff to Android and macOS.",
+      "version": "1.15.1-mobile.1",
+      "releasedAt": "2026-08-30",
+      "summary": "Upstream 1.15.1 recovery image with the versioned SPIFFS migration protocol, corrected hidden-AP initialization, verified PCAP/log/GPX creation, and loss-resistant virtual-SD handoff to Android and macOS.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
-        "commit": "f16691d2b933ac8002b1fcb4f70533a6be48602f"
+        "commit": "9b43e647aa042016ce8d30cc50b21d70937b8191"
       },
       "upstream": {
         "repository": "https://github.com/justcallmekoko/ESP32Marauder",
         "latestReleaseApi": "https://api.github.com/repos/justcallmekoko/ESP32Marauder/releases/latest",
-        "baselineVersion": "1.15.0",
-        "baselineCommit": "6e375e377abb70084720484e9b25de485627f688"
+        "baselineVersion": "1.15.1",
+        "baselineCommit": "91724fd8e964cb6f55cd7da60a3320570919de5b"
       },
       "image": {
-        "asset": "marauder-1.15.0-mobile.6.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.20/marauder-1.15.0-mobile.6.bin",
-        "sha256": "3808496f85e10406ea534e575bec7d8861c5f0abdd75eb0945a1100655ea7f20",
-        "sizeBytes": 1289040
+        "asset": "marauder-1.15.1-mobile.1.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/marauder-1.15.1-mobile.1.bin",
+        "sha256": "9007eeda3e3d9e66cf515a1705eba3114cee17a62d74d6752c436cae394833ee",
+        "sizeBytes": 1292416
       }
     }
   ]

@@ -180,7 +180,7 @@ class MarauderScreenController(
     }
 
     private fun showGuidedCommands() {
-        GuidedCommandDialog.show(activity, GuidedFirmware.MARAUDER) { _, command ->
+        GuidedCommandDialog.show(activity, GuidedFirmware.MARAUDER) { _, command, _ ->
             sendGuarded(command)
         }
     }

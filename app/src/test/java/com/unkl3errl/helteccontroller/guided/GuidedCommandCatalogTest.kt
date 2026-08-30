@@ -37,6 +37,15 @@ class GuidedCommandCatalogTest {
         assertEquals("cloneapmac -a <index>", marauder.getValue("marauder-clone-ap-mac").template)
         assertEquals("clonestamac -s <index>", marauder.getValue("marauder-clone-sta-mac").template)
         assertEquals("karma -p <probe_index>", marauder.getValue("marauder-karma").template)
+
+        val bruce = commands.filter { it.firmware == GuidedFirmware.BRUCE }
+            .associateBy(GuidedCommand::id)
+        assertEquals("wifi on", bruce.getValue("bruce-wifi-on").template)
+        assertEquals("wifi add <ssid> <password>", bruce.getValue("bruce-wifi-add").template)
+        assertEquals("wifi off", bruce.getValue("bruce-wifi-off").template)
+        assertEquals("storage write <file_path>", bruce.getValue("bruce-storage-write").template)
+        assertTrue(bruce.getValue("bruce-storage-write").requiresSerialPayload)
+        assertTrue(bruce.getValue("bruce-encrypt").requiresSerialPayload)
     }
 
     @Test

@@ -98,6 +98,7 @@ class MarauderDeviceDisplayView @JvmOverloads constructor(
         val row = rowBounds.firstOrNull { it.second.contains(event.x, event.y) }
         if (row != null) {
             selected = row.first
+            activateSelection()
             invalidate()
             return true
         }

@@ -10,19 +10,19 @@ controller-GPL-3.0.txt. Source: https://github.com/Unkl3Errl/HeltecController
 Bundled flashable firmware images remain separate programs under their own
 licenses. Exact source revisions are authenticated by assets/firmware/catalog.json.
 
-Bruce 1.16.1-mobile.7
+Bruce 1.16.1-mobile.10
   License: GNU Affero General Public License, version 3
-  Source: https://github.com/Unkl3Errl/HeltecFirmware/tree/90515338f83d32444a2f2ad18a4b69304fa2f274
+  Source: https://github.com/Unkl3Errl/HeltecFirmware/tree/375106a89477a270290eb1d06eff46c9a6a9cf2b
   License text: bruce-AGPL-3.0.txt
 
-GhostESP 2.1.1-mobile.12
+GhostESP 2.1.1-mobile.13
   License: GNU General Public License, version 3
-  Source: https://github.com/Unkl3Errl/GhostESP/tree/3bb18496beb7be7270e304d40cabdb0042276af6
+  Source: https://github.com/Unkl3Errl/GhostESP/tree/65720bb543f7c0e8d4101d528492ac1ff8479a9b
   License text: ghostesp-GPL-3.0.txt
 
-ESP32 Marauder 1.15.0-mobile.6
+ESP32 Marauder 1.15.1-mobile.1
   License: MIT License
-  Source: https://github.com/Unkl3Errl/ESP32Marauder/tree/f16691d2b933ac8002b1fcb4f70533a6be48602f
+  Source: https://github.com/Unkl3Errl/ESP32Marauder/tree/9b43e647aa042016ce8d30cc50b21d70937b8191
   License text: marauder-MIT.txt
 
 The app also uses AndroidX and Kotlin components under Apache License 2.0 and

@@ -72,6 +72,33 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BRUCE DEVICE DISPLAY" />
+
+            <TextView
+                style="@style/MutedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="Official Heltec WiFi LoRa 32 V4 OLED menu. Tap a row to open or run it; PREV/BACK/SELECT/NEXT remain available for display-style navigation." />
+
+            <com.unkl3errl.helteccontroller.bruce.BruceDeviceDisplayView
+                android:id="@+id/bruceDeviceDisplay"
+                android:layout_width="match_parent"
+                android:layout_height="220dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
             <TextView style="@style/SectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BRUCENET WEB UI" />
 
             <TextView

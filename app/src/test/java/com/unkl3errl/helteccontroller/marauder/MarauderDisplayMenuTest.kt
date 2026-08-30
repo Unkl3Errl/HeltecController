@@ -28,4 +28,16 @@ class MarauderDisplayMenuTest {
         assertTrue("list -s" in commands)
         assertTrue("list -p" in commands)
     }
+
+    @Test
+    fun deviceSubmenuEntriesResolveToWorkingActions() {
+        val items = MarauderDisplayMenu.pages.getValue("device").items.associateBy { it.label }
+
+        assertEquals(MarauderDisplayMenu.ROOT, items.getValue("Back").destination)
+        assertTrue(items.getValue("Save/Load Files").opensCommands)
+        assertEquals("brightness -c", items.getValue("Brightness").command)
+        assertEquals("info", items.getValue("Device Info").command)
+        assertEquals("settings", items.getValue("Settings").command)
+        assertEquals("ls /", items.getValue("List SD Files").command)
+    }
 }

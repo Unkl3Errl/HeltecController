@@ -254,6 +254,32 @@ class PersistentUsbSerialSession internal constructor(
             }
         }
 
+    internal fun <T> withExclusiveWrites(block: ((ByteArray) -> Unit) -> T): T =
+        commandLock.withLock {
+            exclusiveDataActive = true
+            try {
+                block { data ->
+                    val activePort = port
+                    if (activePort == null || !activePort.isOpen) {
+                        throw IllegalStateException("${kind.displayName} USB is disconnected")
+                    }
+                    try {
+                        activePort.write(data, 2_000)
+                    } catch (error: Exception) {
+                        closePort(expectRunError = true)
+                        emitError("USB write failed: ${error.message ?: error.javaClass.simpleName}")
+                        emitStatus(
+                            "${kind.displayName} USB disconnected after a transport error",
+                            false,
+                        )
+                        throw error
+                    }
+                }
+            } finally {
+                exclusiveDataActive = false
+            }
+        }
+
     fun disconnect() {
         val wasConnected = isConnected || pendingDriver != null
         pendingDriver = null

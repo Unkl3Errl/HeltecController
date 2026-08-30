@@ -414,6 +414,12 @@ internal class PersistentBleSerialSession(
             block(::writeCommandBlocking)
         }
 
+    fun <T> withExclusiveWrites(block: ((ByteArray) -> Unit) -> T): T =
+        commandLock.withLock {
+            check(ready) { "${kind.displayName} Bluetooth is disconnected" }
+            block { data -> writeBlocking(data, isCommand = false) }
+        }
+
     private fun writeCommandBlocking(command: String) {
         val clean = command.trim()
         require(clean.isNotEmpty()) { "Command must not be empty" }

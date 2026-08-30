@@ -56,6 +56,9 @@ class BruceUsbSerial(
     fun writeCommand(command: String, onDispatched: () -> Unit = {}) =
         session.writeCommand(command, onDispatched)
 
+    fun writeStagedCommand(command: String, payload: ByteArray, onDispatched: () -> Unit = {}) =
+        session.writeStagedCommand(command, payload, onDispatched)
+
     fun <T> withExclusiveCommands(block: ((String) -> Unit) -> T): T =
         session.withExclusiveCommands(block)
 
