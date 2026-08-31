@@ -57,12 +57,12 @@
     {
       "id": "marauder",
       "displayName": "Marauder",
-      "version": "1.15.1-mobile.1",
-      "releasedAt": "2026-08-30",
-      "summary": "Upstream 1.15.1 recovery image with the versioned SPIFFS migration protocol, corrected hidden-AP initialization, verified PCAP/log/GPX creation, and loss-resistant virtual-SD handoff to Android and macOS.",
+      "version": "1.15.1-mobile.2",
+      "releasedAt": "2026-08-31",
+      "summary": "Upstream 1.15.1 recovery image with the versioned SPIFFS migration protocol, corrected hidden-AP initialization, verified PCAP/log/GPX creation, durable virtual-SD writes, and safe recovery from unusable cross-firmware FAT volumes.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
-        "commit": "9b43e647aa042016ce8d30cc50b21d70937b8191"
+        "commit": "6b098bd11798437cc96d88fd9f5d43e7e2f75a76"
       },
       "upstream": {
         "repository": "https://github.com/justcallmekoko/ESP32Marauder",
@@ -71,10 +71,10 @@
         "baselineCommit": "91724fd8e964cb6f55cd7da60a3320570919de5b"
       },
       "image": {
-        "asset": "marauder-1.15.1-mobile.1.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/marauder-1.15.1-mobile.1.bin",
-        "sha256": "9007eeda3e3d9e66cf515a1705eba3114cee17a62d74d6752c436cae394833ee",
-        "sizeBytes": 1292416
+        "asset": "marauder-1.15.1-mobile.2.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/marauder-1.15.1-mobile.2.bin",
+        "sha256": "7643b9127100ba56ba41ea431023a2bb73d4a751b5f2a204ba99b06da0b2926c",
+        "sizeBytes": 1293632
       }
     }
   ]

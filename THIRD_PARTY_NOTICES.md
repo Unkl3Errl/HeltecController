@@ -19,10 +19,10 @@ terms.
 - Upstream project: [GhostESP-Revival/GhostESP](https://github.com/GhostESP-Revival/GhostESP)
 - License copy in the APK: `assets/licenses/ghostesp-GPL-3.0.txt`
 
-## ESP32 Marauder 1.15.1-mobile.1
+## ESP32 Marauder 1.15.1-mobile.2
 
 - License: MIT License
-- Corresponding source: [`9b43e647aa042016ce8d30cc50b21d70937b8191`](https://github.com/Unkl3Errl/ESP32Marauder/tree/9b43e647aa042016ce8d30cc50b21d70937b8191)
+- Corresponding source: [`6b098bd11798437cc96d88fd9f5d43e7e2f75a76`](https://github.com/Unkl3Errl/ESP32Marauder/tree/6b098bd11798437cc96d88fd9f5d43e7e2f75a76)
 - Upstream project: [justcallmekoko/ESP32Marauder](https://github.com/justcallmekoko/ESP32Marauder)
 - License copy in the APK: `assets/licenses/marauder-MIT.txt`
 

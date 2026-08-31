@@ -125,7 +125,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="10dp"
-                android:text="Built for ESP32 Marauder v1.15.1-mobile.1 on the Heltec V4 device type. OLED PRG: 1x next, hold select/start, 2x back/stop; the first press wakes a blank display." />
+                android:text="Built for ESP32 Marauder v1.15.1-mobile.2 on the Heltec V4 device type. OLED PRG: 1x next, hold select/start, 2x back/stop; the first press wakes a blank display." />
 
             <LinearLayout
                 android:layout_width="match_parent"
