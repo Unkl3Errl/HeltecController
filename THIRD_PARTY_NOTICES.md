@@ -12,10 +12,10 @@ terms.
 - Upstream project: [BruceDevices/firmware](https://github.com/BruceDevices/firmware)
 - License copy in the APK: `assets/licenses/bruce-AGPL-3.0.txt`
 
-## GhostESP 2.1.1-mobile.13
+## GhostESP 2.1.1-mobile.14
 
 - License: GNU General Public License, version 3
-- Corresponding source: [`65720bb543f7c0e8d4101d528492ac1ff8479a9b`](https://github.com/Unkl3Errl/GhostESP/tree/65720bb543f7c0e8d4101d528492ac1ff8479a9b)
+- Corresponding source: [`e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba`](https://github.com/Unkl3Errl/GhostESP/tree/e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba)
 - Upstream project: [GhostESP-Revival/GhostESP](https://github.com/GhostESP-Revival/GhostESP)
 - License copy in the APK: `assets/licenses/ghostesp-GPL-3.0.txt`
 

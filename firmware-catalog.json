@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-30",
+  "generatedAt": "2026-08-31",
   "board": {
     "id": "heltec-wifi-lora-32-v4",
     "name": "Heltec WiFi LoRa 32 V4",
@@ -34,12 +34,12 @@
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.1-mobile.13",
-      "releasedAt": "2026-08-30",
-      "summary": "GhostESP 2.1.1 recovery image with Karma probe-response event logging and orderly capture cleanup, cache-safe queued PCAP writes, reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, and persistent Web UI settings.",
+      "version": "2.1.1-mobile.14",
+      "releasedAt": "2026-08-31",
+      "summary": "GhostESP 2.1.1 recovery image with Karma probe-response event logging, repeatable captive-portal DNS startup and orderly capture cleanup, cache-safe queued PCAP writes, reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, and persistent Web UI settings.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "65720bb543f7c0e8d4101d528492ac1ff8479a9b"
+        "commit": "e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
@@ -48,10 +48,10 @@
         "baselineCommit": "4ea9b59b9f6eb921a6d2566d86fdc02e2bedfbf6"
       },
       "image": {
-        "asset": "ghostesp-2.1.1-mobile.13.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/ghostesp-2.1.1-mobile.13.bin",
-        "sha256": "7673f82e6203c83f73b0a69a5e1e050fc12d2a790cd1590c6153f81bfb79a4d6",
-        "sizeBytes": 3150256
+        "asset": "ghostesp-2.1.1-mobile.14.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/ghostesp-2.1.1-mobile.14.bin",
+        "sha256": "6544be6be347911e4b2aca9984d752d886f44499c1b62583b5603bf31080bbc5",
+        "sizeBytes": 3178352
       }
     },
     {

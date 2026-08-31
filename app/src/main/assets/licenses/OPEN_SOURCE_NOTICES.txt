@@ -15,9 +15,9 @@ Bruce 1.16.1-mobile.10
   Source: https://github.com/Unkl3Errl/HeltecFirmware/tree/375106a89477a270290eb1d06eff46c9a6a9cf2b
   License text: bruce-AGPL-3.0.txt
 
-GhostESP 2.1.1-mobile.13
+GhostESP 2.1.1-mobile.14
   License: GNU General Public License, version 3
-  Source: https://github.com/Unkl3Errl/GhostESP/tree/65720bb543f7c0e8d4101d528492ac1ff8479a9b
+  Source: https://github.com/Unkl3Errl/GhostESP/tree/e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba
   License text: ghostesp-GPL-3.0.txt
 
 ESP32 Marauder 1.15.1-mobile.1
