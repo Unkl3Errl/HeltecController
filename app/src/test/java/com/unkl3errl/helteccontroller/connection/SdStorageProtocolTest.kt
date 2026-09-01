@@ -144,6 +144,45 @@ class SdStorageProtocolTest {
     }
 
     @Test
+    fun archivePolicySelectsEveryBruceOutputFamily() {
+        val generatedFiles = listOf(
+            "/BrucePCAP/raw_12.pcap",
+            "/BruceWardriving/wardrive_7.csv",
+            "/BruceGPS/tracker_2.gpx",
+            "/Bruce/Terminal/ssh-host_1.log",
+            "/BruceEvilCreds/portal_creds.csv",
+            "/BruceSniffer/sniffer_1234.txt",
+            "/BruceResponder/ntlm_hashes.txt",
+            "/BruceRFID/Scans/scan_result.rfidscan",
+            "/BruceRFID/Scans/emv_card.txt",
+            "/BruceMIC/recording_0.wav",
+            "/PortalCreds/captures_master.txt",
+            "/ProbeData/network_history_1234.csv",
+        )
+
+        generatedFiles.forEach { path ->
+            assertTrue(
+                "Bruce output was not routed to virtual SD: $path",
+                SdStorageProtocol.isArchiveCandidate(PersistentUsbKind.BRUCE, path),
+            )
+        }
+
+        // These are replay libraries, templates, or configuration files. They live on the
+        // virtual card but must not be drained after a sync because Bruce still consumes them.
+        listOf(
+            "/BruceRF/raw_0.sub",
+            "/BruceIR/tv.ir",
+            "/BruceRFID/saved_tag.rfid",
+            "/BruceWardriving/alert.txt",
+        ).forEach { path ->
+            assertFalse(
+                "Bruce input must remain on virtual SD: $path",
+                SdStorageProtocol.isArchiveCandidate(PersistentUsbKind.BRUCE, path),
+            )
+        }
+    }
+
+    @Test
     fun parsesNamesWithSpacesAndOptionalModifiedTime() {
         val result = SdStorageProtocol.parseListing(
             listOf(

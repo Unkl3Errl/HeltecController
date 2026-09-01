@@ -99,6 +99,8 @@ internal class SelectedDeviceSession(
     override fun write(data: ByteArray) = current()?.write(data) ?: emitNoSelection()
     override fun writeCommand(command: String, onDispatched: () -> Unit) =
         current()?.writeCommand(command, onDispatched) ?: emitNoSelection()
+    override fun writeStagedCommand(command: String, payload: ByteArray, onDispatched: () -> Unit) =
+        current()?.writeStagedCommand(command, payload, onDispatched) ?: emitNoSelection()
 
     override fun <T> withExclusiveCommands(block: ((String) -> Unit) -> T): T =
         requireSelected().withExclusiveCommands(block)

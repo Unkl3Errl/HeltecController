@@ -14,6 +14,8 @@ import android.widget.TextView
 import android.widget.Toast
 import com.unkl3errl.helteccontroller.bruce.BruceCommandRisk
 import com.unkl3errl.helteccontroller.bruce.BruceCommandSafety
+import com.unkl3errl.helteccontroller.bruce.BruceSerialUpload
+import com.unkl3errl.helteccontroller.bruce.BruceSerialUploadProtocol
 import com.unkl3errl.helteccontroller.bruce.BruceUsbSerial
 import com.unkl3errl.helteccontroller.guided.GuidedCommandDialog
 import com.unkl3errl.helteccontroller.guided.GuidedFirmware
@@ -111,8 +113,15 @@ class BruceUsbConsoleController(
         bind(root, R.id.bruceUsbFree, "free")
         bind(root, R.id.bruceUsbOptions, "optionsJSON")
         root.findViewById<Button>(R.id.bruceGuidedCommands).setOnClickListener {
-            GuidedCommandDialog.show(activity, GuidedFirmware.BRUCE) { _, command ->
-                sendGuarded(command)
+            GuidedCommandDialog.show(activity, GuidedFirmware.BRUCE) { guided, command, payload ->
+                if (payload == null) {
+                    sendGuarded(command)
+                } else {
+                    runCatching {
+                        BruceSerialUploadProtocol.prepare(guided.id, command, payload)
+                    }.onSuccess(::sendStaged)
+                        .onFailure { toast(it.message ?: "Could not prepare Bruce upload") }
+                }
             }
         }
     }
@@ -190,9 +199,13 @@ class BruceUsbConsoleController(
         sendGuarded(command) { input.text.clear() }
     }
 
-    private fun sendGuarded(command: String, sent: () -> Unit = {}) {
+    fun sendGuarded(command: String, sent: () -> Unit = {}) {
         if (!serial.isConnected) {
             toast("Connect Bruce over USB or Bluetooth first")
+            return
+        }
+        BruceSerialUploadProtocol.commandIdFor(command)?.let { commandId ->
+            showPayloadPrompt(commandId, command, sent)
             return
         }
         when (BruceCommandSafety.classify(command)) {
@@ -205,6 +218,51 @@ class BruceUsbConsoleController(
                 .show()
             BruceCommandRisk.ACTIVE -> typedConfirmation(command, sent)
         }
+    }
+
+    private fun showPayloadPrompt(commandId: String, command: String, sent: () -> Unit) {
+        val encrypting = commandId == BruceSerialUploadProtocol.ENCRYPT_ID
+        val editor = EditText(activity).apply {
+            hint = if (encrypting) "Plaintext to encrypt" else "File contents"
+            minLines = 6
+            gravity = android.view.Gravity.TOP
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            setPadding(48, 16, 48, 16)
+        }
+        val dialog = AlertDialog.Builder(activity)
+            .setTitle(if (encrypting) "Encrypt and save" else "Write virtual-SD file")
+            .setMessage(
+                if (encrypting) {
+                    "Enter the plaintext Bruce should encrypt and save at the requested output path."
+                } else {
+                    "Enter the text Bruce should save at the requested virtual-SD path."
+                },
+            )
+            .setView(editor)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Upload", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                runCatching {
+                    BruceSerialUploadProtocol.prepare(commandId, command, editor.text.toString())
+                }.onSuccess { upload ->
+                    dialog.dismiss()
+                    sendStaged(upload, sent)
+                }.onFailure { error -> editor.error = error.message ?: "File contents are required" }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun sendStaged(upload: BruceSerialUpload, sent: () -> Unit = {}) {
+        if (!serial.isConnected) {
+            toast("Connect Bruce over USB or Bluetooth first")
+            return
+        }
+        append("\n> ${upload.command}\n[uploading ${upload.contentBytes} bytes followed by EOF]\n")
+        serial.writeStagedCommand(upload.command, upload.wirePayload)
+        sent()
     }
 
     private fun typedConfirmation(command: String, sent: () -> Unit) {

@@ -132,7 +132,7 @@ class GhostScreenController(
         bindCommand(R.id.ghostCmdWifiStatus, "wifistatus")
         bindCommand(R.id.ghostCmdStop, "stop")
         root.findViewById<Button>(R.id.ghostGuidedCommands).setOnClickListener {
-            GuidedCommandDialog.show(activity, GuidedFirmware.GHOSTESP) { _, command ->
+            GuidedCommandDialog.show(activity, GuidedFirmware.GHOSTESP) { _, command, _ ->
                 sendCommand(command)
             }
         }

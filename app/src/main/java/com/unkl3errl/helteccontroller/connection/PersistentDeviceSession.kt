@@ -40,6 +40,7 @@ internal interface DeviceSerialSession {
     fun disconnectAll()
     fun write(data: ByteArray)
     fun writeCommand(command: String, onDispatched: () -> Unit = {})
+    fun writeStagedCommand(command: String, payload: ByteArray, onDispatched: () -> Unit = {})
     fun <T> withExclusiveCommands(block: ((String) -> Unit) -> T): T
     fun description(): String
 }
@@ -199,6 +200,42 @@ internal class PersistentDeviceSession(
             }.onFailure { error ->
                 emitError(
                     "${kind.displayName} command failed: " +
+                        (error.message ?: error.javaClass.simpleName),
+                )
+            }
+        }
+    }
+
+    override fun writeStagedCommand(command: String, payload: ByteArray, onDispatched: () -> Unit) {
+        userCommandWriter.execute {
+            runCatching {
+                commandLock.withLock {
+                    val commandBytes = (command.trim() + "\r\n").toByteArray(Charsets.UTF_8)
+                    val sent = when {
+                        usb.isConnected -> {
+                            usb.withExclusiveWrites { write ->
+                                onDispatched()
+                                write(commandBytes)
+                                write(payload)
+                            }
+                            true
+                        }
+                        bluetooth?.isConnected == true -> {
+                            bluetooth.withExclusiveWrites { write ->
+                                onDispatched()
+                                write(commandBytes)
+                                write(payload)
+                            }
+                            true
+                        }
+                        else -> false
+                    }
+                    if (sent) markUserResponseWindow()
+                    else emitError("Connect ${kind.displayName} over USB or Bluetooth first")
+                }
+            }.onFailure { error ->
+                emitError(
+                    "${kind.displayName} upload failed: " +
                         (error.message ?: error.javaClass.simpleName),
                 )
             }

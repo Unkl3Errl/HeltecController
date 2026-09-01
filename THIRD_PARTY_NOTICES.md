@@ -5,24 +5,24 @@ flashable firmware images remain separate programs under their respective
 upstream licenses. The controller license does not replace or weaken those
 terms.
 
-## Bruce 1.16.1-mobile.7
+## Bruce 1.16.1-mobile.10
 
 - License: GNU Affero General Public License, version 3
-- Corresponding source: [`90515338f83d32444a2f2ad18a4b69304fa2f274`](https://github.com/Unkl3Errl/HeltecFirmware/tree/90515338f83d32444a2f2ad18a4b69304fa2f274)
+- Corresponding source: [`375106a89477a270290eb1d06eff46c9a6a9cf2b`](https://github.com/Unkl3Errl/HeltecFirmware/tree/375106a89477a270290eb1d06eff46c9a6a9cf2b)
 - Upstream project: [BruceDevices/firmware](https://github.com/BruceDevices/firmware)
 - License copy in the APK: `assets/licenses/bruce-AGPL-3.0.txt`
 
-## GhostESP 2.1.1-mobile.12
+## GhostESP 2.1.1-mobile.14
 
 - License: GNU General Public License, version 3
-- Corresponding source: [`3bb18496beb7be7270e304d40cabdb0042276af6`](https://github.com/Unkl3Errl/GhostESP/tree/3bb18496beb7be7270e304d40cabdb0042276af6)
+- Corresponding source: [`e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba`](https://github.com/Unkl3Errl/GhostESP/tree/e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba)
 - Upstream project: [GhostESP-Revival/GhostESP](https://github.com/GhostESP-Revival/GhostESP)
 - License copy in the APK: `assets/licenses/ghostesp-GPL-3.0.txt`
 
-## ESP32 Marauder 1.15.0-mobile.6
+## ESP32 Marauder 1.15.1-mobile.2
 
 - License: MIT License
-- Corresponding source: [`f16691d2b933ac8002b1fcb4f70533a6be48602f`](https://github.com/Unkl3Errl/ESP32Marauder/tree/f16691d2b933ac8002b1fcb4f70533a6be48602f)
+- Corresponding source: [`6b098bd11798437cc96d88fd9f5d43e7e2f75a76`](https://github.com/Unkl3Errl/ESP32Marauder/tree/6b098bd11798437cc96d88fd9f5d43e7e2f75a76)
 - Upstream project: [justcallmekoko/ESP32Marauder](https://github.com/justcallmekoko/ESP32Marauder)
 - License copy in the APK: `assets/licenses/marauder-MIT.txt`
 

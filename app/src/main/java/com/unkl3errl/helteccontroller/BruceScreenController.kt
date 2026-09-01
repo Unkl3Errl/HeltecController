@@ -24,6 +24,8 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import com.unkl3errl.helteccontroller.bruce.BruceApiClient
+import com.unkl3errl.helteccontroller.bruce.BruceDeviceDisplayView
+import com.unkl3errl.helteccontroller.bruce.BruceDisplayAction
 import com.unkl3errl.helteccontroller.bruce.BruceRemoteView
 import com.unkl3errl.helteccontroller.bruce.PhoneWifiObservation
 import com.unkl3errl.helteccontroller.bruce.encodeQuery
@@ -90,12 +92,9 @@ class BruceScreenController(
     )
 
     init {
-        root.findViewById<Button>(R.id.bruceJoinWifi).setOnClickListener {
-            loginAfterNetworkApproval = true
-            connectionStatus.text = "Waiting for Android to approve the device network…"
-            setGlobalStatus("JOINING…")
-            requestWifi(ssid.text.toString().trim(), wifiPassword.text.toString())
-        }
+        root.findViewById<BruceDeviceDisplayView>(R.id.bruceDeviceDisplay).onAction =
+            ::handleBruceDisplayAction
+        root.findViewById<Button>(R.id.bruceJoinWifi).setOnClickListener { connectAndLogin() }
         root.findViewById<Button>(R.id.bruceRefresh).setOnClickListener { login() }
         root.findViewById<Button>(R.id.bruceGpsStart).setOnClickListener { gpsAction("start") }
         root.findViewById<Button>(R.id.bruceGpsStop).setOnClickListener { gpsAction("stop") }
@@ -124,6 +123,137 @@ class BruceScreenController(
         root.findViewById<Button>(R.id.bruceRemoteSelect).setOnClickListener { navigateRemote("sel") }
         root.findViewById<Button>(R.id.bruceRemoteDown).setOnClickListener { navigateRemote("down") }
         root.findViewById<Button>(R.id.bruceFileManager).setOnClickListener { showFileManager("/") }
+    }
+
+    private fun handleBruceDisplayAction(action: BruceDisplayAction) {
+        when (action) {
+            BruceDisplayAction.NETWORK_STATUS -> showSystemSnapshot("Network status")
+            BruceDisplayAction.WEBUI_LOGIN -> connectAndLogin()
+            BruceDisplayAction.GPS_STATUS -> showSystemSnapshot("GPS status")
+            BruceDisplayAction.GPS_TOGGLE -> toggleGpsMonitor()
+            BruceDisplayAction.LORA_STATUS -> showLoraStatus()
+            BruceDisplayAction.LORA_TOGGLE -> toggleLoraReceiver()
+            BruceDisplayAction.FIELD_LOG_STATUS -> showFieldLogStatus()
+            BruceDisplayAction.FIELD_LOG_START -> startOfficialFieldLogger()
+            BruceDisplayAction.FIELD_LOG_STOP -> loggerAction("stop")
+            BruceDisplayAction.HARDWARE_STATUS -> showSystemSnapshot("Hardware status")
+            BruceDisplayAction.DEVICE_INFO -> if (usbBridgeConnected) {
+                usbConsole.sendGuarded("info")
+            } else {
+                showSystemSnapshot("Device info")
+            }
+            BruceDisplayAction.BUTTON_HELP -> showTextDialog(
+                "Bruce button help",
+                "Official device controls\n\n1x: next item\n2x: back / stop\nHold: select / start\n\nThe app controls below the OLED mirror those gestures.",
+            )
+            BruceDisplayAction.TIMEOUT_OFF -> setDisplayTimeout(0)
+            BruceDisplayAction.TIMEOUT_15 -> setDisplayTimeout(15)
+            BruceDisplayAction.TIMEOUT_30 -> setDisplayTimeout(30)
+            BruceDisplayAction.TIMEOUT_45 -> setDisplayTimeout(45)
+            BruceDisplayAction.TIMEOUT_60 -> setDisplayTimeout(60)
+            BruceDisplayAction.SLEEP -> typedConfirmation(
+                title = "Put Bruce to sleep?",
+                message = "Bruce enters deep sleep and wakes from the PRG button. Type SLEEP to continue.",
+                expected = "SLEEP",
+            ) { usbConsole.sendGuarded("sleep") }
+            BruceDisplayAction.POWER_DOWN -> typedConfirmation(
+                title = "Power Bruce down?",
+                message = "Bruce powers down until a hardware reset. Type POWER DOWN to continue.",
+                expected = "POWER DOWN",
+            ) { usbConsole.sendGuarded("poweroff") }
+        }
+    }
+
+    private fun showSystemSnapshot(title: String) {
+        if (!hasHttpTransport()) {
+            if (usbBridgeConnected) usbConsole.sendGuarded("info")
+            else toast("Connect and authenticate to BruceNet for live $title")
+            return
+        }
+        configureClient()
+        work("READING ${title.uppercase()}…", { client.getJson("/api/heltec/status") }) { json ->
+            systemStatus.text = formatSystem(json)
+            showTextDialog(title, formatSystem(json))
+        }
+    }
+
+    private fun toggleGpsMonitor() {
+        if (!hasHttpTransport()) {
+            toast("Connect and authenticate to BruceNet to control the GPS monitor")
+            return
+        }
+        configureClient()
+        work("TOGGLING GPS…", {
+            val status = client.getJson("/api/heltec/status")
+            val monitorState = status.optJSONObject("gps")?.optString("monitorState") ?: "off"
+            val action = if (monitorState == "off") "start" else "stop"
+            client.postForm("/api/heltec/gps", mapOf("action" to action))
+        }) { systemStatus.text = formatSystem(it) }
+    }
+
+    private fun showLoraStatus() {
+        if (!hasHttpTransport()) {
+            toast("Connect and authenticate to BruceNet for live LoRa status")
+            return
+        }
+        configureClient()
+        work("READING LORA…", { client.getJson("/api/heltec/lora") }) { json ->
+            loraStatus.text = formatLora(json)
+            showTextDialog("LoRa status", formatLora(json))
+        }
+    }
+
+    private fun toggleLoraReceiver() {
+        if (!hasHttpTransport()) {
+            toast("Connect and authenticate to BruceNet to control the LoRa receiver")
+            return
+        }
+        val frequency = root.findViewById<EditText>(R.id.loraFrequency).text.toString().trim()
+        if (frequency.toDoubleOrNull() == null) {
+            toast("Enter a valid LoRa frequency in the receiver card")
+            return
+        }
+        configureClient()
+        work("TOGGLING LORA RX…", {
+            val status = client.getJson("/api/heltec/lora")
+            if (status.optBoolean("listening")) {
+                client.postForm("/api/heltec/lora", mapOf("action" to "stop"))
+            } else {
+                client.postForm(
+                    "/api/heltec/lora",
+                    mapOf("action" to "start", "frequencyMHz" to frequency),
+                )
+            }
+        }) { loraStatus.text = formatLora(it) }
+    }
+
+    private fun showFieldLogStatus() {
+        if (!hasFieldLogTransport()) {
+            toast("Connect BruceNet, USB, or Bluetooth for field-log status")
+            return
+        }
+        configureClient()
+        work("READING FIELD LOG…", {
+            if (hasHttpTransport()) client.getJson("/api/heltec/fieldlog")
+            else usbConsole.bridgeRequest("logger-status")
+        }) { json ->
+            loggerStatus.text = formatLogger(json)
+            applyLoggerSnapshot(json)
+            showTextDialog("Field-log status", formatLogger(json))
+        }
+    }
+
+    private fun startOfficialFieldLogger() {
+        root.findViewById<Switch>(R.id.loggerGps).isChecked = true
+        root.findViewById<Switch>(R.id.loggerBle).isChecked = true
+        root.findViewById<Switch>(R.id.loggerWifi).isChecked = true
+        startLogger()
+    }
+
+    private fun setDisplayTimeout(seconds: Int) {
+        usbConsole.sendGuarded("settings dimmerSet $seconds") {
+            toast(if (seconds == 0) "Bruce display set to always on" else "Bruce display timeout set to ${seconds}s")
+        }
     }
 
     fun refreshGlobalStatus() {
@@ -419,6 +549,17 @@ class BruceScreenController(
         connectionStatus.text = "Error: $message"
         setGlobalStatus("BRUCE ERROR")
         toast(message)
+    }
+
+    private fun connectAndLogin() {
+        if (client.network != null) {
+            login()
+            return
+        }
+        loginAfterNetworkApproval = true
+        connectionStatus.text = "Waiting for Android to approve the device network…"
+        setGlobalStatus("JOINING…")
+        requestWifi(ssid.text.toString().trim(), wifiPassword.text.toString())
     }
 
     private fun login() {

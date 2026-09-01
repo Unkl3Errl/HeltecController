@@ -34,6 +34,19 @@ data class GuidedCommand(
     val template: String,
     val risk: GuidedCommandRisk,
 ) {
+    val requiresSerialPayload: Boolean
+        get() = firmware == GuidedFirmware.BRUCE && id in BRUCE_SERIAL_PAYLOAD_COMMANDS
+
+    val serialPayloadLabel: String
+        get() = if (id == "bruce-encrypt") "Plaintext to encrypt" else "File contents"
+
+    val serialPayloadHelp: String
+        get() = if (id == "bruce-encrypt") {
+            "The app sends this text to Bruce and saves the encrypted result at the output path."
+        } else {
+            "The app sends this text to Bruce and saves it at the selected virtual-SD path."
+        }
+
     val parameters: List<GuidedCommandParameter> by lazy {
         PLACEHOLDER.findAll(template).map { match ->
             val requiredValue = match.groups[1]?.value
@@ -89,6 +102,10 @@ data class GuidedCommand(
     }
 
     companion object {
+        private val BRUCE_SERIAL_PAYLOAD_COMMANDS = setOf(
+            "bruce-storage-write",
+            "bruce-encrypt",
+        )
         private val PLACEHOLDER = Regex("<([^>]+)>|\\[([A-Za-z][A-Za-z0-9_.-]*(?:\\.\\.\\.)?)\\]")
         private val WHITESPACE = Regex("\\s+")
 

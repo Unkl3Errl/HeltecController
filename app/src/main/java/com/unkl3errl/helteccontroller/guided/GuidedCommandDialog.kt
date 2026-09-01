@@ -24,7 +24,7 @@ object GuidedCommandDialog {
     fun show(
         activity: Activity,
         firmware: GuidedFirmware,
-        onRun: (GuidedCommand, String) -> Unit,
+        onRun: (GuidedCommand, String, String?) -> Unit,
     ) {
         val commands = runCatching { GuidedCommandCatalog.load(activity, firmware) }
             .getOrElse {
@@ -97,9 +97,9 @@ object GuidedCommandDialog {
                     compoundDrawablePadding = activity.dp(12)
                     setPadding(activity.dp(12), activity.dp(8), activity.dp(12), activity.dp(8))
                     setOnClickListener {
-                        showForm(activity, command) { rendered ->
+                        showForm(activity, command) { rendered, payload ->
                             dialog.dismiss()
-                            onRun(command, rendered)
+                            onRun(command, rendered, payload)
                         }
                     }
                 }, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -124,7 +124,7 @@ object GuidedCommandDialog {
     private fun showForm(
         activity: Activity,
         command: GuidedCommand,
-        onRun: (String) -> Unit,
+        onRun: (String, String?) -> Unit,
     ) {
         val values = mutableMapOf<String, String>()
         val editors = mutableMapOf<String, EditText>()
@@ -187,6 +187,25 @@ object GuidedCommandDialog {
             }
         }
 
+        val payloadEditor = if (command.requiresSerialPayload) {
+            content.addView(TextView(activity).apply {
+                text = "${command.serialPayloadLabel} *"
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, activity.dp(10), 0, 0)
+            })
+            content.addView(TextView(activity).apply {
+                text = command.serialPayloadHelp
+                setPadding(0, 0, 0, activity.dp(4))
+            })
+            EditText(activity).apply {
+                hint = command.serialPayloadLabel
+                minLines = 5
+                gravity = android.view.Gravity.TOP
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                content.addView(this, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            }
+        } else null
+
         content.addView(TextView(activity).apply {
             text = when (command.risk) {
                 GuidedCommandRisk.SAFE -> "Read-only or passive action"
@@ -217,15 +236,25 @@ object GuidedCommandDialog {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 try {
                     val rendered = command.render(values)
+                    val payload = payloadEditor?.text?.toString()
+                    if (command.requiresSerialPayload) {
+                        require(!payload.isNullOrBlank()) { "${command.serialPayloadLabel} is required" }
+                        require(payload.lineSequence().none { it.trimEnd('\r') == "EOF" }) {
+                            "A line containing only EOF is reserved by the Bruce transfer protocol"
+                        }
+                    }
                     confirmRun(activity, command, rendered) {
                         dialog.dismiss()
-                        onRun(rendered)
+                        onRun(rendered, payload)
                     }
                 } catch (error: IllegalArgumentException) {
                     val missing = command.parameters.firstOrNull {
                         it.required && values[it.token].isNullOrBlank()
                     }
                     missing?.let { editors[it.token]?.error = "Required" }
+                    if (command.requiresSerialPayload && payloadEditor?.text.isNullOrBlank()) {
+                        payloadEditor?.error = "Required"
+                    }
                     Toast.makeText(activity, error.message ?: "Complete the required fields", Toast.LENGTH_LONG).show()
                 }
             }
