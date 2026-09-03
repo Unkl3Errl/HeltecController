@@ -144,6 +144,50 @@ class SdStorageProtocolTest {
     }
 
     @Test
+    fun marauderGpxRequiresAClosingMarkerBeforeArchival() {
+        listOf("/tracker_1.gpx", "/poi_1.GPX", "/wardrive_poi_1.gpx").forEach { path ->
+            assertTrue(
+                "Marauder GPX should require a close marker: $path",
+                SdStorageProtocol.requiresClosedGpxMarker(PersistentUsbKind.MARAUDER, path),
+            )
+        }
+        assertFalse(
+            SdStorageProtocol.requiresClosedGpxMarker(
+                PersistentUsbKind.MARAUDER,
+                "/wardrive_poi_1.gpx.part",
+            ),
+        )
+        assertFalse(
+            SdStorageProtocol.isArchiveCandidate(
+                PersistentUsbKind.MARAUDER,
+                "/wardrive_poi_1.gpx.part",
+            ),
+        )
+        assertFalse(
+            SdStorageProtocol.requiresClosedGpxMarker(
+                PersistentUsbKind.BRUCE,
+                "/BruceGPS/tracker_1.gpx",
+            ),
+        )
+
+        assertFalse(
+            SdStorageProtocol.hasClosedGpxMarker(
+                "<?xml version=\"1.0\"?><gpx>".toByteArray(),
+            ),
+        )
+        assertTrue(
+            SdStorageProtocol.hasClosedGpxMarker(
+                "<gpx><wpt /></gpx>\n  \r\n".toByteArray(),
+            ),
+        )
+        assertFalse(
+            SdStorageProtocol.hasClosedGpxMarker(
+                "<gpx></GPX>".toByteArray(),
+            ),
+        )
+    }
+
+    @Test
     fun archivePolicySelectsEveryBruceOutputFamily() {
         val generatedFiles = listOf(
             "/BrucePCAP/raw_12.pcap",

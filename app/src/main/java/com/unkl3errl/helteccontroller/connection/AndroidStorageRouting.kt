@@ -145,6 +145,7 @@ private class StorageSpoolMirror(
         const val SYNC_INTERVAL_SECONDS = 2L
         const val COMMAND_TIMEOUT_SECONDS = 8L
         const val READ_CHUNK_BYTES = 768L
+        const val GPX_TAIL_BYTES = 256L
         // GhostESP emits command replies through glog's 512-byte line buffer.
         // Keep the base64 line, prefix, and newline below that hard limit.
         const val GHOST_READ_CHUNK_BYTES = 360L
@@ -257,6 +258,7 @@ private class StorageSpoolMirror(
             .thenBy { it.path })
 
         stable.forEach { file ->
+            if (!isReadyToArchive(file)) return@forEach
             archiveFile(archiveRoot, file)
             observations.remove(file.path)
             released++
@@ -510,6 +512,18 @@ private class StorageSpoolMirror(
             "Final Android archive checksum failed; the device source was retained"
         }
         acknowledgeRemote(remote.path, checksum)
+    }
+
+    private fun isReadyToArchive(remote: SdRemoteFile): Boolean {
+        if (!SdStorageProtocol.requiresClosedGpxMarker(session.kind, remote.path)) return true
+        if (remote.size < 6L) return false
+        val length = minOf(GPX_TAIL_BYTES, remote.size)
+        val offset = remote.size - length
+        val response = transact(
+            "sd read ${SdStorageProtocol.quotedPath(remote.path)} $offset $length --base64",
+        )
+        val tail = SdStorageProtocol.decodeRead(response, offset, length)
+        return SdStorageProtocol.hasClosedGpxMarker(tail)
     }
 
     private fun appendRemote(remote: SdRemoteFile, document: DocumentFile) {

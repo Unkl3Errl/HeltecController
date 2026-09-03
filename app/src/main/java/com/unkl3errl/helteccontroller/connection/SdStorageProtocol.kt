@@ -19,6 +19,7 @@ internal data class SdRemoteChecksum(
 )
 
 internal object SdStorageProtocol {
+    private const val GPX_CLOSE_TAG = "</gpx>"
     private val bruceOutputRules = listOf(
         "/brucepcap/" to setOf("pcap"),
         "/brucewardriving/" to setOf("csv"),
@@ -138,6 +139,18 @@ internal object SdStorageProtocol {
                 )
         }
     }
+
+    fun requiresClosedGpxMarker(kind: PersistentUsbKind, path: String): Boolean {
+        if (kind != PersistentUsbKind.MARAUDER || path.count { it == '/' } != 1) return false
+        val name = path.substringAfterLast('/')
+        return (name.startsWith("tracker_") ||
+            name.startsWith("poi_") ||
+            name.startsWith("wardrive_poi_")) &&
+            name.endsWith(".gpx", ignoreCase = true)
+    }
+
+    fun hasClosedGpxMarker(tail: ByteArray): Boolean =
+        tail.toString(Charsets.UTF_8).trimEnd().endsWith(GPX_CLOSE_TAG)
 
     private fun valueAfter(lines: List<String>, prefix: String): String? =
         lines.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix)

@@ -26,7 +26,7 @@
       },
       "image": {
         "asset": "bruce-1.16.1-mobile.10.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/bruce-1.16.1-mobile.10.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.26/bruce-1.16.1-mobile.10.bin",
         "sha256": "fb9c6f96a72444d68f7f06041cf02626ec4a2c8c05089daab650b293773c410f",
         "sizeBytes": 3894048
       }
@@ -49,7 +49,7 @@
       },
       "image": {
         "asset": "ghostesp-2.1.1-mobile.14.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/ghostesp-2.1.1-mobile.14.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.26/ghostesp-2.1.1-mobile.14.bin",
         "sha256": "6544be6be347911e4b2aca9984d752d886f44499c1b62583b5603bf31080bbc5",
         "sizeBytes": 3178352
       }
@@ -57,12 +57,12 @@
     {
       "id": "marauder",
       "displayName": "Marauder",
-      "version": "1.15.1-mobile.2",
-      "releasedAt": "2026-08-31",
-      "summary": "Upstream 1.15.1 recovery image with the versioned SPIFFS migration protocol, corrected hidden-AP initialization, verified PCAP/log/GPX creation, durable virtual-SD writes, and safe recovery from unusable cross-firmware FAT volumes.",
+      "version": "1.15.1-mobile.3",
+      "releasedAt": "2026-09-03",
+      "summary": "Upstream 1.15.1 recovery image with atomically finalized POI GPX files, the versioned SPIFFS migration protocol, corrected hidden-AP initialization, durable virtual-SD writes, and safe recovery from unusable cross-firmware FAT volumes.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
-        "commit": "6b098bd11798437cc96d88fd9f5d43e7e2f75a76"
+        "commit": "c4358bc719ea84f60bb93e071b9658cc205d1d30"
       },
       "upstream": {
         "repository": "https://github.com/justcallmekoko/ESP32Marauder",
@@ -71,10 +71,10 @@
         "baselineCommit": "91724fd8e964cb6f55cd7da60a3320570919de5b"
       },
       "image": {
-        "asset": "marauder-1.15.1-mobile.2.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.25/marauder-1.15.1-mobile.2.bin",
-        "sha256": "7643b9127100ba56ba41ea431023a2bb73d4a751b5f2a204ba99b06da0b2926c",
-        "sizeBytes": 1293632
+        "asset": "marauder-1.15.1-mobile.3.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.26/marauder-1.15.1-mobile.3.bin",
+        "sha256": "f6630d4472727c7bef66279bdde3163a88b15fbf5c055a14e9f6831ad6d29def",
+        "sizeBytes": 1294064
       }
     }
   ]
