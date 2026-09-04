@@ -303,6 +303,8 @@ ghostesp	Wardrive	ghost-wigle-show	WiGLE settings	Show WiGLE settings.	wigle sho
 ghostesp	Wardrive	ghost-wigle-files	WiGLE files	List wardrive CSV files.	wigle files [page]	safe
 ghostesp	Wardrive	ghost-wigle-upload	Upload WiGLE file	Upload a selected wardrive CSV file.	wigle upload <file_name>	safe
 ghostesp	Wardrive	ghost-wigle-stats	WiGLE statistics	Show account statistics for the current API key.	wigle stats	safe
+ghostesp	GPS	ghost-tag-poi	Tag POI	Tag the current GPS position during an active wardrive.	tagpoi	safe
+ghostesp	GPS	ghost-tag-poi-label	Tag labeled POI	Tag the current GPS position with a label during an active wardrive.	tagpoi <label>	safe
 ghostesp	GPS	ghost-gpsinfo	GPS information	Show GPS state and fix details.	gpsinfo [options]	safe
 ghostesp	GPS	ghost-gpspin	GPS RX pin	Set the external GPS receive pin.	gpspin <pin>	safe
 ghostesp	GPS	ghost-gpsbaud	GPS baud rate	Set or auto-detect the GPS baud rate.	gpsbaud <auto,0,4800,9600,19200,38400,57600,115200>	safe

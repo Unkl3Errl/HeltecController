@@ -40,6 +40,12 @@ class GuidedCommandCatalogTest {
         assertEquals("wardrivepoi", marauder.getValue("marauder-wardrive-poi-tag").template)
         assertTrue(marauder.getValue("marauder-wardrive-poi-tag").parameters.isEmpty())
 
+        val ghost = commands.filter { it.firmware == GuidedFirmware.GHOSTESP }
+            .associateBy(GuidedCommand::id)
+        assertEquals("tagpoi", ghost.getValue("ghost-tag-poi").template)
+        assertTrue(ghost.getValue("ghost-tag-poi").parameters.isEmpty())
+        assertEquals("tagpoi <label>", ghost.getValue("ghost-tag-poi-label").template)
+
         val bruce = commands.filter { it.firmware == GuidedFirmware.BRUCE }
             .associateBy(GuidedCommand::id)
         assertEquals("wifi on", bruce.getValue("bruce-wifi-on").template)

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-31",
+  "generatedAt": "2026-09-04",
   "board": {
     "id": "heltec-wifi-lora-32-v4",
     "name": "Heltec WiFi LoRa 32 V4",
@@ -11,12 +11,12 @@
     {
       "id": "bruce",
       "displayName": "Bruce",
-      "version": "1.16.1-mobile.10",
-      "releasedAt": "2026-08-30",
-      "summary": "Recovery image with staged app-to-device text uploads, working encrypt/decrypt round trips, simultaneous BruceNet field logging, transactional capture writes, safe active-file handoff, Android-backed virtual-SD routing, and the full Heltec V4 command set.",
+      "version": "1.16.1-mobile.11",
+      "releasedAt": "2026-09-04",
+      "summary": "Recovery image with the shared 3 MiB mobile spool, safe empty-volume repair, durable read-back-verified writes, atomically finalized GPS tracks, staged app-to-device uploads, simultaneous BruceNet field logging, and the full Heltec V4 command set.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/HeltecFirmware",
-        "commit": "375106a89477a270290eb1d06eff46c9a6a9cf2b"
+        "commit": "e6468a9625d04d5951d3aec25c17f8316101ba42"
       },
       "upstream": {
         "repository": "https://github.com/BruceDevices/firmware",
@@ -25,21 +25,21 @@
         "baselineCommit": "ba519c936c87b89c9c667c15b932d7faca5360d5"
       },
       "image": {
-        "asset": "bruce-1.16.1-mobile.10.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.27/bruce-1.16.1-mobile.10.bin",
-        "sha256": "fb9c6f96a72444d68f7f06041cf02626ec4a2c8c05089daab650b293773c410f",
-        "sizeBytes": 3894048
+        "asset": "bruce-1.16.1-mobile.11.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.28/bruce-1.16.1-mobile.11.bin",
+        "sha256": "79163c60bcadd9e24c042750e37c31fcdfb6ba9e6abe7b723afa9096b306d4e3",
+        "sizeBytes": 3895760
       }
     },
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.1-mobile.14",
-      "releasedAt": "2026-08-31",
-      "summary": "GhostESP 2.1.1 recovery image with Karma probe-response event logging, repeatable captive-portal DNS startup and orderly capture cleanup, cache-safe queued PCAP writes, reliable phone-facing Bluetooth, concurrent GhostNet, Android-capacity reporting, acknowledged archive handoff, and persistent Web UI settings.",
+      "version": "2.1.1-mobile.15",
+      "releasedAt": "2026-09-04",
+      "summary": "GhostESP 2.1.1 recovery image with the shared 3 MiB mobile spool, safe empty-volume repair, durable read-back-verified writes, active-wardrive POI sidecars and one-tap tagging, Karma event logging, repeatable captive-portal DNS, reliable phone-facing Bluetooth, concurrent GhostNet, and acknowledged archive handoff.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba"
+        "commit": "10b871c14969ff7a17402122afab79e3e73a29e9"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
@@ -48,10 +48,10 @@
         "baselineCommit": "4ea9b59b9f6eb921a6d2566d86fdc02e2bedfbf6"
       },
       "image": {
-        "asset": "ghostesp-2.1.1-mobile.14.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.27/ghostesp-2.1.1-mobile.14.bin",
-        "sha256": "6544be6be347911e4b2aca9984d752d886f44499c1b62583b5603bf31080bbc5",
-        "sizeBytes": 3178352
+        "asset": "ghostesp-2.1.1-mobile.15.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.28/ghostesp-2.1.1-mobile.15.bin",
+        "sha256": "61b096888f5cc8a71c8ced0cb18169b2328bb81e225cade7349488f360357bbd",
+        "sizeBytes": 3182992
       }
     },
     {
@@ -72,7 +72,7 @@
       },
       "image": {
         "asset": "marauder-1.15.1-mobile.4.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.27/marauder-1.15.1-mobile.4.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.28/marauder-1.15.1-mobile.4.bin",
         "sha256": "3f6e676d01264e8a46a81982bf1cedce08fed2fcbd6cdc6b8d6b7da45bf7d2f8",
         "sizeBytes": 1294160
       }

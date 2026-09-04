@@ -130,7 +130,10 @@ wardriving CSV writers and Marauder PCAP/log writers also roll at approximately
 128 KiB, making older closed segments available while collection continues.
 Active writer files, firmware configuration, scripts, themes, app assets, API
 credentials, and Bruce's dedicated field-log directory are excluded from the
-generic release path.
+generic release path. Files ending in `.part` are always retained on the board,
+and Bruce/Marauder GPX tracks are archived only after an exact closing marker is
+present. All three bundled mobile images use the same 3 MiB physical spool range,
+so normal offset-zero firmware switching preserves pending captures.
 
 No finite spool can guarantee unlimited capture if the phone is disconnected,
 its selected folder permission is revoked, or Android itself runs out of space.
@@ -298,7 +301,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.13.27`, code 59.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.13.28`, code 60.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password
