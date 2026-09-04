@@ -144,7 +144,7 @@ class SdStorageProtocolTest {
     }
 
     @Test
-    fun marauderGpxRequiresAClosingMarkerBeforeArchival() {
+    fun firmwareGpxRequiresAClosingMarkerBeforeArchival() {
         listOf("/tracker_1.gpx", "/poi_1.GPX", "/wardrive_poi_1.gpx").forEach { path ->
             assertTrue(
                 "Marauder GPX should require a close marker: $path",
@@ -163,12 +163,19 @@ class SdStorageProtocolTest {
                 "/wardrive_poi_1.gpx.part",
             ),
         )
-        assertFalse(
+        assertTrue(
             SdStorageProtocol.requiresClosedGpxMarker(
                 PersistentUsbKind.BRUCE,
                 "/BruceGPS/tracker_1.gpx",
             ),
         )
+        listOf(
+            PersistentUsbKind.BRUCE to "/BruceGPS/tracker_1.gpx.part",
+            PersistentUsbKind.GHOSTESP to "/mnt/ghostesp/gps/wardrive_poi_1.csv.part",
+            PersistentUsbKind.MARAUDER to "/wardrive_poi_1.gpx.part",
+        ).forEach { (kind, path) ->
+            assertFalse("Partial output must not be archived: $path", SdStorageProtocol.isArchiveCandidate(kind, path))
+        }
 
         assertFalse(
             SdStorageProtocol.hasClosedGpxMarker(

@@ -116,37 +116,48 @@ internal object SdStorageProtocol {
         return SdRemoteChecksum(size, value)
     }
 
-    fun isArchiveCandidate(kind: PersistentUsbKind, path: String): Boolean = when (kind) {
-        PersistentUsbKind.BRUCE -> {
-            val normalized = path.lowercase()
-            val extension = normalized.substringAfterLast('.', "")
-            bruceOutputRules.any { (root, extensions) ->
-                normalized.startsWith(root) && extension in extensions
+    fun isArchiveCandidate(kind: PersistentUsbKind, path: String): Boolean {
+        val normalized = path.lowercase()
+        if (normalized.endsWith(".part")) return false
+        return when (kind) {
+            PersistentUsbKind.BRUCE -> {
+                val extension = normalized.substringAfterLast('.', "")
+                bruceOutputRules.any { (root, extensions) ->
+                    normalized.startsWith(root) && extension in extensions
+                }
             }
-        }
 
-        PersistentUsbKind.GHOSTESP -> ghostArchiveRoots.any(path::startsWith)
+            PersistentUsbKind.GHOSTESP -> ghostArchiveRoots.any(normalized::startsWith)
 
-        PersistentUsbKind.MARAUDER -> {
-            val name = path.substringAfterLast('/')
-            path.count { it == '/' } == 1 && (
-                name.endsWith(".pcap", ignoreCase = true) ||
-                    name.endsWith(".log", ignoreCase = true) ||
+            PersistentUsbKind.MARAUDER -> {
+                val name = normalized.substringAfterLast('/')
+                normalized.count { it == '/' } == 1 && (
+                    name.endsWith(".pcap") ||
+                    name.endsWith(".log") ||
                     ((name.startsWith("tracker_") ||
                         name.startsWith("poi_") ||
                         name.startsWith("wardrive_poi_")) &&
-                        name.endsWith(".gpx", ignoreCase = true))
-                )
+                        name.endsWith(".gpx"))
+                    )
+            }
         }
     }
 
     fun requiresClosedGpxMarker(kind: PersistentUsbKind, path: String): Boolean {
-        if (kind != PersistentUsbKind.MARAUDER || path.count { it == '/' } != 1) return false
-        val name = path.substringAfterLast('/')
-        return (name.startsWith("tracker_") ||
-            name.startsWith("poi_") ||
-            name.startsWith("wardrive_poi_")) &&
-            name.endsWith(".gpx", ignoreCase = true)
+        val normalized = path.lowercase()
+        if (normalized.endsWith(".part")) return false
+        val name = normalized.substringAfterLast('/')
+        return when (kind) {
+            PersistentUsbKind.BRUCE ->
+                normalized.startsWith("/brucegps/") && name.endsWith(".gpx")
+
+            PersistentUsbKind.MARAUDER ->
+                normalized.count { it == '/' } == 1 &&
+                    (name.startsWith("tracker_") || name.startsWith("poi_") ||
+                        name.startsWith("wardrive_poi_")) && name.endsWith(".gpx")
+
+            PersistentUsbKind.GHOSTESP -> false
+        }
     }
 
     fun hasClosedGpxMarker(tail: ByteArray): Boolean =

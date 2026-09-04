@@ -5,17 +5,17 @@ flashable firmware images remain separate programs under their respective
 upstream licenses. The controller license does not replace or weaken those
 terms.
 
-## Bruce 1.16.1-mobile.10
+## Bruce 1.16.1-mobile.11
 
 - License: GNU Affero General Public License, version 3
-- Corresponding source: [`375106a89477a270290eb1d06eff46c9a6a9cf2b`](https://github.com/Unkl3Errl/HeltecFirmware/tree/375106a89477a270290eb1d06eff46c9a6a9cf2b)
+- Corresponding source: [`e6468a9625d04d5951d3aec25c17f8316101ba42`](https://github.com/Unkl3Errl/HeltecFirmware/tree/e6468a9625d04d5951d3aec25c17f8316101ba42)
 - Upstream project: [BruceDevices/firmware](https://github.com/BruceDevices/firmware)
 - License copy in the APK: `assets/licenses/bruce-AGPL-3.0.txt`
 
-## GhostESP 2.1.1-mobile.14
+## GhostESP 2.1.1-mobile.15
 
 - License: GNU General Public License, version 3
-- Corresponding source: [`e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba`](https://github.com/Unkl3Errl/GhostESP/tree/e1330f2625dfcad6a6ddc2f1548dd5fbe9bc76ba)
+- Corresponding source: [`10b871c14969ff7a17402122afab79e3e73a29e9`](https://github.com/Unkl3Errl/GhostESP/tree/10b871c14969ff7a17402122afab79e3e73a29e9)
 - Upstream project: [GhostESP-Revival/GhostESP](https://github.com/GhostESP-Revival/GhostESP)
 - License copy in the APK: `assets/licenses/ghostesp-GPL-3.0.txt`
 
