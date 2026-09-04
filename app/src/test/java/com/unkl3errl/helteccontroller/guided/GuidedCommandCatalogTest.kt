@@ -37,6 +37,8 @@ class GuidedCommandCatalogTest {
         assertEquals("cloneapmac -a <index>", marauder.getValue("marauder-clone-ap-mac").template)
         assertEquals("clonestamac -s <index>", marauder.getValue("marauder-clone-sta-mac").template)
         assertEquals("karma -p <probe_index>", marauder.getValue("marauder-karma").template)
+        assertEquals("wardrivepoi", marauder.getValue("marauder-wardrive-poi-tag").template)
+        assertTrue(marauder.getValue("marauder-wardrive-poi-tag").parameters.isEmpty())
 
         val bruce = commands.filter { it.firmware == GuidedFirmware.BRUCE }
             .associateBy(GuidedCommand::id)

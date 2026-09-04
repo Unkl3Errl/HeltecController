@@ -106,6 +106,7 @@ marauder	GPS	marauder-gps-poi-save	Save GPS point	Save the current location as a
 marauder	GPS	marauder-gps-poi-mark	Mark GPS point	Mark a point of interest while scanning.	gpspoi -m	safe
 marauder	GPS	marauder-gps-poi-end	End GPS point mode	Stop the point-of-interest operation.	gpspoi -e	safe
 marauder	GPS	marauder-gps-tracker	GPS tracker	Start or stop GPS tracking.	gpstracker -c <start,stop>	safe
+marauder	GPS	marauder-wardrive-poi-tag	Tag POI	Tag the current GPS position during an active wardrive.	wardrivepoi	safe
 marauder	GPS	marauder-wardrive-poi	Wardrive point label	Tag a labeled GPS point during wardriving.	wardrivepoi <label>	safe
 marauder	Wi-Fi Scan	marauder-scanall	Scan access points	Scan all Wi-Fi channels for access points.	scanall	safe
 marauder	Wi-Fi Scan	marauder-sniffraw	Capture raw Wi-Fi	Capture raw Wi-Fi frames to PCAP.	sniffraw	safe
