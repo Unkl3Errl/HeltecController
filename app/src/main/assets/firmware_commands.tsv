@@ -187,6 +187,7 @@ ghostesp	System	ghost-date	Date and time	Show the current time.	date	safe
 ghostesp	System	ghost-time	Time	Show the current time.	time	safe
 ghostesp	System	ghost-whoami	Device identity	Show the current device identity.	whoami	safe
 ghostesp	System	ghost-mem	Memory	Show memory usage.	mem	safe
+ghostesp	System	ghost-loglevel	Log level	Show or change the global firmware log level.	loglevel [none,error,warn,info,debug,verbose]	safe
 ghostesp	System	ghost-ps	Tasks	Show FreeRTOS task information.	ps	safe
 ghostesp	System	ghost-top	Task monitor	Show FreeRTOS task information.	top	safe
 ghostesp	System	ghost-reboot	Restart device	Restart the device.	reboot	active
@@ -269,6 +270,8 @@ ghostesp	Settings	ghost-settime	Set time	Set the device date and time.	settime <
 ghostesp	Settings	ghost-setcountry	Set radio country	Set the two-letter regulatory country code on supported hardware.	setcountry <country_code>	safe
 ghostesp	Settings	ghost-loadconfig	Load configuration	Load a saved configuration.	loadconfig <file_path>	safe
 ghostesp	Settings	ghost-statusidle	Idle display	List or set the idle-display animation.	statusidle [options]	safe
+ghostesp	Settings	ghost-fav	Favorites	List or change favorites and PIN-bypass behavior.	fav [list,add,remove,toggle,clear,bypass] [value]	safe
+ghostesp	Settings	ghost-favorites	Favorites alias	Use the long-form alias for the favorites command.	favorites [list,add,remove,toggle,clear,bypass] [value]	safe
 ghostesp	Wi-Fi Test	ghost-attack-deauth	Deauthentication test	Run the selected deauthentication test.	attack -d	safe
 ghostesp	Wi-Fi Test	ghost-attack-handshake	Handshake capture test	Run handshake capture with deauthentication on selected targets.	attack -hsd	safe
 ghostesp	Wi-Fi Test	ghost-attack-channel	Channel-switch test	Send channel-switch announcements to selected targets.	attack -c	safe
@@ -334,6 +337,7 @@ ghostesp	OTA	ghost-otarecv	Receive peer update	Prepare to receive an OTA firmwar
 ghostesp	OTA	ghost-otastatus	OTA status	Show peer OTA transfer status.	otastatus	safe
 ghostesp	OTA	ghost-otaabort	Abort OTA	Abort the current OTA transfer.	otaabort	safe
 ghostesp	OTA	ghost-otainfo	OTA information	Show peer OTA capabilities.	otainfo	safe
+ghostesp	OTA	ghost-c6ota	Hosted C6 update	Check or force the ESP32-P4 hosted-C6 firmware update on supported boards.	c6ota [force]	active
 ghostesp	Portal	ghost-startportal	Start portal	Start an Evil Portal using a file, SSID, and optional password.	startportal [file_path] [ap_ssid] [password]	safe
 ghostesp	Portal	ghost-stopportal	Stop portal	Stop the active portal.	stopportal	safe
 ghostesp	Portal	ghost-listportals	List portals	List stored Evil Portal files.	listportals	safe
@@ -352,6 +356,7 @@ ghostesp	Hardware	ghost-nrf24	nRF24 command	Run an nRF24 radio operation.	nrf24 
 ghostesp	Hardware	ghost-subghz	Sub-GHz command	Run a sub-GHz radio operation.	subghz <options...>	safe
 ghostesp	Hardware	ghost-audio	Audio command	Run a supported audio operation.	audio <options...>	safe
 ghostesp	Hardware	ghost-badusb	BadUSB command	Run a supported USB HID script operation.	badusb <options...>	safe
+ghostesp	Hardware	ghost-badble	BadBLE command	Run a BLE HID keyboard or script operation on supported boards.	badble <status,list,run,stop,keyboard_start,keyboard_stop,type,keysend,name,set_name> [arguments...]	active
 ghostesp	Hardware	ghost-usbkbd	USB keyboard	Run a USB keyboard operation on supported S3 hardware.	usbkbd <options...>	safe
 ghostesp	Hardware	ghost-mic-cal	Microphone calibration	Run microphone calibration on supported hardware.	mic_cal [options]	safe
 ghostesp	Hardware	ghost-identify	Identify device	Run the physical device identification indicator.	identify [options]	safe
@@ -372,6 +377,9 @@ ghostesp	Hardware	ghost-flockstop	Stop Flock scan	Stop Flock scanning.	flockstop
 ghostesp	Hardware	ghost-motion	Motion detection	Configure or control camera motion detection.	motion <operation> [arguments...]	safe
 ghostesp	Hardware	ghost-camera	Camera stream	Configure or control the camera stream.	camerastream <operation> [arguments...]	safe
 ghostesp	Hardware	ghost-apps	Applications	List or launch firmware applications.	apps [options]	safe
+ghostesp	Hardware	ghost-lcdclock	LCD pixel clock	Inspect or change the RGB LCD pixel clock on supported CrowPanel boards.	lcdclock [8..21]	review
+ghostesp	Hardware	ghost-lcddiag	LCD diagnostics	Show or reset RGB LCD diagnostic counters on supported CrowPanel boards.	lcddiag [reset]	safe
+ghostesp	Hardware	ghost-lcdsimd	LCD SIMD renderer	Show or toggle the accelerated RGB565 renderer on supported CrowPanel boards.	lcdsimd [on,off]	review
 ghostesp	Ethernet	ghost-ethup	Start Ethernet	Bring up the Ethernet interface.	ethup	safe
 ghostesp	Ethernet	ghost-ethdown	Stop Ethernet	Bring down the Ethernet interface.	ethdown	safe
 ghostesp	Ethernet	ghost-ethinfo	Ethernet information	Show Ethernet link information.	ethinfo	safe
