@@ -26,7 +26,7 @@
       },
       "image": {
         "asset": "bruce-1.16.1-mobile.11.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.28/bruce-1.16.1-mobile.11.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.29/bruce-1.16.1-mobile.11.bin",
         "sha256": "79163c60bcadd9e24c042750e37c31fcdfb6ba9e6abe7b723afa9096b306d4e3",
         "sizeBytes": 3895760
       }
@@ -34,24 +34,24 @@
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.1-mobile.15",
-      "releasedAt": "2026-09-04",
-      "summary": "GhostESP 2.1.1 recovery image with the shared 3 MiB mobile spool, safe empty-volume repair, durable read-back-verified writes, active-wardrive POI sidecars and one-tap tagging, Karma event logging, repeatable captive-portal DNS, reliable phone-facing Bluetooth, concurrent GhostNet, and acknowledged archive handoff.",
+      "version": "2.1.3-mobile.1",
+      "releasedAt": "2026-09-05",
+      "summary": "GhostESP 2.1.3 recovery image with the shared 3 MiB mobile spool, safe empty-volume repair, durable read-back-verified writes, active-wardrive POI sidecars and one-tap tagging, Karma event logging, repeatable captive-portal DNS, reliable phone-facing Bluetooth, concurrent GhostNet, acknowledged archive handoff, and the current upstream command and hardware foundation.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "10b871c14969ff7a17402122afab79e3e73a29e9"
+        "commit": "12510391407cf4372daa864687ba425d73970846"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
         "latestReleaseApi": "https://api.github.com/repos/GhostESP-Revival/GhostESP/releases/latest",
-        "baselineVersion": "2.1.1",
-        "baselineCommit": "4ea9b59b9f6eb921a6d2566d86fdc02e2bedfbf6"
+        "baselineVersion": "2.1.3",
+        "baselineCommit": "33ab49c8f877d1d9db49897baadc612fac88b962"
       },
       "image": {
-        "asset": "ghostesp-2.1.1-mobile.15.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.28/ghostesp-2.1.1-mobile.15.bin",
-        "sha256": "61b096888f5cc8a71c8ced0cb18169b2328bb81e225cade7349488f360357bbd",
-        "sizeBytes": 3182992
+        "asset": "ghostesp-2.1.3-mobile.1.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.29/ghostesp-2.1.3-mobile.1.bin",
+        "sha256": "228552d62738550decb375894e770c8811b5731e2016dfc127f7da6fbd6dca8d",
+        "sizeBytes": 3204192
       }
     },
     {
@@ -72,7 +72,7 @@
       },
       "image": {
         "asset": "marauder-1.15.1-mobile.4.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.28/marauder-1.15.1-mobile.4.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.29/marauder-1.15.1-mobile.4.bin",
         "sha256": "3f6e676d01264e8a46a81982bf1cedce08fed2fcbd6cdc6b8d6b7da45bf7d2f8",
         "sizeBytes": 1294160
       }
