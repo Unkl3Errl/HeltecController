@@ -1,5 +1,11 @@
 # Firmware Controller for Android
 
+Version **0.14.3** bundles Bruce `1.16.1-mobile.11`, GhostESP
+`2.2.2-mobile.1`, and Marauder `1.18.0-mobile.1`, including the matching signed
+catalog and updated command shortcuts. This is an integration prerelease for
+physical-device validation; phone upgrades, firmware switching, reconnect, and
+interrupted archival still require hardware checks.
+
 This is the single Android companion for the independent Heltec WiFi LoRa 32 V4
 firmware builds in this workspace:
 
@@ -301,7 +307,7 @@ Gradle instead uses
 `~/Library/Caches/HeltecController/app/outputs/apk/debug/app-debug.apk` to keep
 concurrent build output outside File Provider-managed Documents folders.
 
-The app ID is `com.unkl3errl.helteccontroller`, version `0.13.29`, code 61.
+The app ID is `com.unkl3errl.helteccontroller`, version `0.14.3`, code 66.
 Release builds use the four `HELTEC_RELEASE_*` environment variables documented
 in [`SIGNING.md`](SIGNING.md). On the provisioned macOS development machine,
 `./scripts/build-release-macos.sh` loads the project-specific signing password

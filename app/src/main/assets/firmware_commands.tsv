@@ -403,3 +403,25 @@ ghostesp	Network	ghost-dial	Dial connect	Run the configured dial connection oper
 ghostesp	Network	ghost-printer	Printer action	Send text to a configured network printer.	powerprinter <printer_ip> <text> <font_size> <alignment>	safe
 ghostesp	Scripts	ghost-script	GhostScript	List, run, inspect, or stop a GhostScript.	script <list,run,status,stop> [index]	safe
 ghostesp	System	ghost-stop	Stop current operation	Stop the active firmware operation.	stop	safe
+ghostesp	Bluetooth	ghost-bledetect-list	Detected BLE devices	List retained tracker, skimmer, and beacon detections.	bledetect -l	safe
+ghostesp	GPS	ghost-dualwd	Dual wardriving	Record Wi-Fi and BLE observations with GPS on PSRAM boards.	dualwd [start,-s]	review
+ghostesp	Wi-Fi	ghost-hop-status	Channel hop plan	Show the current country-aware scan channel plan.	hop	safe
+ghostesp	System	ghost-devices	Hardware devices	List enabled peripherals, pins, and state.	devices	safe
+ghostesp	System	ghost-clockstyle	Clock style	Change the clock display style.	clockstyle <style>	review
+ghostesp	System	ghost-statusbarclock	Status bar clock	Show the status bar clock setting.	statusbarclock status	safe
+ghostesp	System	ghost-privacy	Privacy mode status	Show whether displayed device identities are redacted.	privacy status	safe
+ghostesp	System	ghost-privacy-set	Set privacy mode	Enable or disable display identity redaction.	privacy <on,off>	review
+ghostesp	Infrared	ghost-irpin	IR pins	Show configured IR transmitter and receiver pins.	irpin	safe
+ghostesp	GhostLink	ghost-glbench	GhostLink benchmark status	Show the current GhostLink throughput benchmark state.	glbench status	safe
+ghostesp	Network	ghost-mdnssniff	Local name monitor	Passively monitor mDNS, LLMNR, SSDP, and NetBIOS names.	mdnssniff <ip_or_all>	safe
+ghostesp	LoRa	ghost-lora-status	LoRa status	Show radio state on a LoRa-enabled firmware target.	lora status	safe
+ghostesp	LoRa	ghost-meshtastic-status	Meshtastic status	Show Meshtastic state on a LoRa-enabled firmware target.	meshtastic status	safe
+ghostesp	LoRa	ghost-meshcore-status	MeshCore status	Show MeshCore state on a compatible firmware target.	meshcore status	safe
+ghostesp	LoRa	ghost-mc-status	MeshCore status alias	Show MeshCore state using its short command alias.	mc status	safe
+ghostesp	LoRa	ghost-mesh-status	Active mesh status	Show the active mesh protocol on a compatible target.	mesh status	safe
+ghostesp	Storage	ghost-usbsd-status	USB SD status	Show USB SD passthrough state on a supported target.	usbsd status	safe
+ghostesp	Storage	ghost-usbsd-set	USB SD passthrough	Hand the SD card to USB or remount it; the serial session may detach.	usbsd <on,off>	review
+marauder	Wi-Fi	marauder-recon-status	Recon session status	Show the current Wi-Fi or BLE recon session.	recon status	safe
+marauder	Wi-Fi	marauder-remoteid-list	Remote ID observations	List retained broadcast drone Remote ID observations.	remoteid list	safe
+marauder	Wi-Fi	marauder-remoteid-scan	Scan Remote ID	Passively collect broadcast drone Remote ID observations.	remoteid scan	safe
+marauder	GPS	marauder-geofence-list	Geofences	List configured GPS geofence regions.	geofence list	safe

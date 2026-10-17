@@ -12,14 +12,14 @@ terms.
 - Upstream project: [BruceDevices/firmware](https://github.com/BruceDevices/firmware)
 - License copy in the APK: `assets/licenses/bruce-AGPL-3.0.txt`
 
-## GhostESP 2.1.3-mobile.1
+## GhostESP 2.2.2-mobile.1
 
 - License: GNU General Public License, version 3
 - Corresponding source: [`12510391407cf4372daa864687ba425d73970846`](https://github.com/Unkl3Errl/GhostESP/tree/12510391407cf4372daa864687ba425d73970846)
 - Upstream project: [GhostESP-Revival/GhostESP](https://github.com/GhostESP-Revival/GhostESP)
 - License copy in the APK: `assets/licenses/ghostesp-GPL-3.0.txt`
 
-## ESP32 Marauder 1.15.1-mobile.4
+## ESP32 Marauder 1.18.0-mobile.1
 
 - License: MIT License
 - Corresponding source: [`97749015c9d7ae108be0e0008610a5b9a28afc5e`](https://github.com/Unkl3Errl/ESP32Marauder/tree/97749015c9d7ae108be0e0008610a5b9a28afc5e)
