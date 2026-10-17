@@ -18,7 +18,7 @@ expected_certificate="372baeb4329b91789654b372cb9fb0fe954739f1582849a3592347a723
 install -m 0644 "$catalog" "$bundled_catalog"
 install -m 0644 "$catalog_signature" "$bundled_signature"
 
-"$script_dir/build-release-macos.sh" testDebugUnitTest lintDebug assembleRelease
+"$script_dir/build-release-macos.sh" testDebugUnitTest lintDebug assembleDebug assembleRelease
 
 "$build_tools/apksigner" verify --verbose "$source_apk"
 "$script_dir/verify-apk-icon.sh" "$source_apk"

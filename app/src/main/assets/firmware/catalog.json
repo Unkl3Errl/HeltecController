@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-04",
+  "generatedAt": "2026-10-17",
   "board": {
     "id": "heltec-wifi-lora-32-v4",
     "name": "Heltec WiFi LoRa 32 V4",
@@ -26,7 +26,7 @@
       },
       "image": {
         "asset": "bruce-1.16.1-mobile.11.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.29/bruce-1.16.1-mobile.11.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.14.4/bruce-1.16.1-mobile.11.bin",
         "sha256": "79163c60bcadd9e24c042750e37c31fcdfb6ba9e6abe7b723afa9096b306d4e3",
         "sizeBytes": 3895760
       }
@@ -34,47 +34,47 @@
     {
       "id": "ghostesp",
       "displayName": "GhostESP",
-      "version": "2.1.3-mobile.1",
-      "releasedAt": "2026-09-05",
-      "summary": "GhostESP 2.1.3 recovery image with the shared 3 MiB mobile spool, safe empty-volume repair, durable read-back-verified writes, active-wardrive POI sidecars and one-tap tagging, Karma event logging, repeatable captive-portal DNS, reliable phone-facing Bluetooth, concurrent GhostNet, acknowledged archive handoff, and the current upstream command and hardware foundation.",
+      "version": "2.2.2-mobile.2",
+      "releasedAt": "2026-10-17",
+      "summary": "GhostESP 2.2.2 Heltec V4 integration build with the shared mobile spool, POI tagging, DNS lifecycle fixes, segmented captures, and newer GPS, privacy and detection support. Recovered capture segments are measured from EOF consistently across platforms. Build and host checks pass; hardware validation is pending.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/GhostESP",
-        "commit": "12510391407cf4372daa864687ba425d73970846"
+        "commit": "1f5487191369d2f871fd298646c6bd0903594130"
       },
       "upstream": {
         "repository": "https://github.com/GhostESP-Revival/GhostESP",
         "latestReleaseApi": "https://api.github.com/repos/GhostESP-Revival/GhostESP/releases/latest",
-        "baselineVersion": "2.1.3",
-        "baselineCommit": "33ab49c8f877d1d9db49897baadc612fac88b962"
+        "baselineVersion": "2.2.2",
+        "baselineCommit": "98d92efb8202cb4139e995600e4357ae50bbaab6"
       },
       "image": {
-        "asset": "ghostesp-2.1.3-mobile.1.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.29/ghostesp-2.1.3-mobile.1.bin",
-        "sha256": "228552d62738550decb375894e770c8811b5731e2016dfc127f7da6fbd6dca8d",
-        "sizeBytes": 3204192
+        "asset": "ghostesp-2.2.2-mobile.2.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.14.4/ghostesp-2.2.2-mobile.2.bin",
+        "sha256": "d38afd0fcc09fd4ed4e90ebe79b2dc0f4c7e2b1d45db39550b2240c010286ced",
+        "sizeBytes": 3264000
       }
     },
     {
       "id": "marauder",
       "displayName": "Marauder",
-      "version": "1.15.1-mobile.4",
-      "releasedAt": "2026-09-03",
-      "summary": "Upstream 1.15.1 recovery image with reachable live wardrive POI tagging, atomically finalized POI GPX files, the versioned SPIFFS migration protocol, corrected hidden-AP initialization, durable virtual-SD writes, and safe recovery from unusable cross-firmware FAT volumes.",
+      "version": "1.18.0-mobile.1",
+      "releasedAt": "2026-10-17",
+      "summary": "Marauder 1.18.0 Heltec V4 integration build with the shared mobile spool, protected recon session files, atomic Remote ID GPX publication, memory safeguards, and retained BLE/OLED controls. Build and host checks pass; hardware validation is pending.",
       "source": {
         "repository": "https://github.com/Unkl3Errl/ESP32Marauder",
-        "commit": "97749015c9d7ae108be0e0008610a5b9a28afc5e"
+        "commit": "607e4ed05c4f230bc9faeda3b1455cf15c6cf693"
       },
       "upstream": {
         "repository": "https://github.com/justcallmekoko/ESP32Marauder",
         "latestReleaseApi": "https://api.github.com/repos/justcallmekoko/ESP32Marauder/releases/latest",
-        "baselineVersion": "1.15.1",
-        "baselineCommit": "91724fd8e964cb6f55cd7da60a3320570919de5b"
+        "baselineVersion": "1.18.0",
+        "baselineCommit": "b2b9f92382eb60b39b8741be3b567e416cdbe672"
       },
       "image": {
-        "asset": "marauder-1.15.1-mobile.4.bin",
-        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.13.29/marauder-1.15.1-mobile.4.bin",
-        "sha256": "3f6e676d01264e8a46a81982bf1cedce08fed2fcbd6cdc6b8d6b7da45bf7d2f8",
-        "sizeBytes": 1294160
+        "asset": "marauder-1.18.0-mobile.1.bin",
+        "url": "https://github.com/Unkl3Errl/HeltecController/releases/download/v0.14.4/marauder-1.18.0-mobile.1.bin",
+        "sha256": "c91fdb40ef509d4e03e71f5ce6070421bcb0e8d5e511119b988691b94ed9b137",
+        "sizeBytes": 1338608
       }
     }
   ]
